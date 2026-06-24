@@ -12,9 +12,8 @@ from functools import lru_cache
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
-import openai
 
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -72,15 +71,9 @@ class ChromaDBClient:
         self.client = None
         self.collections = {}
         
-        # Initialize OpenAI for embeddings
-        openai.api_key = settings.OPENAI_API_KEY
-        
-        # Embedding function
-        self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
-            api_key=settings.OPENAI_API_KEY,
-            model_name="text-embedding-3-large",
-            dimensions=1536,  # Reduced from 3072 for performance
-        )
+        # Use default embedding function for ChromaDB (sentence-transformers)
+        # Works offline and is compatible with all AI providers
+        self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
         
         logger.info("ChromaDB client initialized")
     
@@ -574,12 +567,24 @@ async def close_chromadb_client() -> None:
         await _chromadb_client.disconnect()
         _chromadb_client = None
 
+# Aliases for compatibility with main.py
+async def init_chromadb() -> None:
+    """Initialize ChromaDB client (alias for get_chromadb_client)"""
+    await get_chromadb_client()
+
+
+async def close_chromadb() -> None:
+    """Close ChromaDB client (alias for close_chromadb_client)"""
+    await close_chromadb_client()
+
 
 # Export public API
 __all__ = [
     "ChromaDBClient",
     "get_chromadb_client",
     "close_chromadb_client",
+    "init_chromadb",
+    "close_chromadb",
 ]
 
 # Made with Bob

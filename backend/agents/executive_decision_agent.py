@@ -10,8 +10,9 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 import logging
 
-from backend.agents.base_agent import BaseAgent
-from backend.memory.chromadb_client import get_chromadb_client
+from .base_agent import BaseAgent
+from memory.chromadb_client import get_chromadb_client
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,6 @@ class ExecutiveDecisionAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             agent_name="executive_decision_agent",
-            agent_type="executive",
             domain="enterprise"
         )
         
@@ -253,25 +253,20 @@ class ExecutiveDecisionAgent(BaseAgent):
         # Use OpenAI to correlate findings
         prompt = self._build_correlation_prompt(agent_inputs)
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a Fortune 500 COO analyzing reports from domain experts. "
-                        "Correlate findings across domains to identify patterns, "
-                        "dependencies, and systemic issues. Focus on business impact."
-                    )
-                },
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a Fortune 500 COO analyzing reports from domain experts. Correlate findings across domains to identify patterns, dependencies, and systemic issues. Focus on business impact."},
+                {"role": "user", "content": f"{prompt}\n\nProvide your response in JSON format."}
             ],
-            response_format={"type": "json_object"},
-            temperature=0.3
+            temperature=0.3,
+            response_format={"type": "json_object"}
         )
         
         import json
-        correlated = json.loads(response.choices[0].message.content)
+        # Extract JSON from response
+        text = response.choices[0].message.content
+        correlated = json.loads(text)
         
         return correlated
     
@@ -285,26 +280,19 @@ class ExecutiveDecisionAgent(BaseAgent):
         # Build prompt with historical context
         prompt = self._build_root_cause_prompt(correlated_findings, historical_context)
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert in root cause analysis. Use 5 Whys, "
-                        "Fishbone diagrams, and Pareto analysis to identify root causes. "
-                        "Distinguish between symptoms and actual root causes. "
-                        "Provide confidence scores and supporting evidence."
-                    )
-                },
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are an expert in root cause analysis. Use 5 Whys, Fishbone diagrams, and Pareto analysis to identify root causes. Distinguish between symptoms and actual root causes. Provide confidence scores and supporting evidence."},
+                {"role": "user", "content": f"{prompt}\n\nProvide your response in JSON format."}
             ],
-            response_format={"type": "json_object"},
-            temperature=0.3
+            temperature=0.3,
+            response_format={"type": "json_object"}
         )
         
         import json
-        rca_data = json.loads(response.choices[0].message.content)
+        text = response.choices[0].message.content or '{"root_causes": []}'
+        rca_data = json.loads(text)
         
         # Parse into RootCause objects
         root_causes = []
@@ -322,32 +310,25 @@ class ExecutiveDecisionAgent(BaseAgent):
         
         prompt = self._build_risk_assessment_prompt(correlated_findings, root_causes)
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a risk management expert. Assess business risks using "
-                        "likelihood (1-5) and impact (1-5) scoring. Calculate risk scores "
-                        "and prioritize. Estimate financial exposure. Consider both "
-                        "immediate and long-term risks."
-                    )
-                },
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a risk management expert. Assess business risks using likelihood (1-5) and impact (1-5) scoring. Calculate risk scores and prioritize. Estimate financial exposure. Consider both immediate and long-term risks."},
+                {"role": "user", "content": f"{prompt}\n\nProvide your response in JSON format."}
             ],
-            response_format={"type": "json_object"},
-            temperature=0.3
+            temperature=0.3,
+            response_format={"type": "json_object"}
         )
         
         import json
-        risk_data = json.loads(response.choices[0].message.content)
+        text = response.choices[0].message.content or '{"risks": []}'
+        risk_data = json.loads(text)
         
         # Parse and calculate risk scores
         business_risks = []
         for risk in risk_data.get("risks", []):
-            likelihood = risk["likelihood"]
-            impact = risk["impact"]
+            likelihood = risk.get("likelihood", 3)
+            impact = risk.get("impact", 3)
             risk_score = self.risk_matrix.get((likelihood, impact), likelihood * impact)
             
             business_risks.append(BusinessRisk(
@@ -374,27 +355,19 @@ class ExecutiveDecisionAgent(BaseAgent):
         
         prompt = self._build_recommendations_prompt(root_causes, business_risks, historical_context)
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a strategic business consultant. Generate actionable "
-                        "recommendations with realistic ROI estimates. Categorize by "
-                        "timeframe (immediate, short-term, long-term). Identify dependencies "
-                        "and risks. Provide success metrics. Base estimates on industry "
-                        "benchmarks and historical data."
-                    )
-                },
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a strategic business consultant. Generate actionable recommendations with realistic ROI estimates. Categorize by timeframe (immediate, short-term, long-term). Identify dependencies and risks. Provide success metrics. Base estimates on industry benchmarks and historical data."},
+                {"role": "user", "content": f"{prompt}\n\nProvide your response in JSON format."}
             ],
-            response_format={"type": "json_object"},
-            temperature=0.4
+            temperature=0.4,
+            response_format={"type": "json_object"}
         )
         
         import json
-        rec_data = json.loads(response.choices[0].message.content)
+        text = response.choices[0].message.content or '{"recommendations": []}'
+        rec_data = json.loads(text)
         
         # Parse into ActionRecommendation objects
         recommendations = []
@@ -419,25 +392,19 @@ class ExecutiveDecisionAgent(BaseAgent):
             correlated_findings, root_causes, business_risks, recommendations
         )
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+        response = await self.client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are writing for C-suite executives. Be concise, strategic, "
-                        "and action-oriented. Focus on business impact and ROI. "
-                        "Use executive language. Limit to 3-5 key findings."
-                    )
-                },
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are writing for C-suite executives. Be concise, strategic, and action-oriented. Focus on business impact and ROI. Use executive language. Limit to 3-5 key findings."},
+                {"role": "user", "content": f"{prompt}\n\nProvide your response in JSON format."}
             ],
-            response_format={"type": "json_object"},
-            temperature=0.4
+            temperature=0.4,
+            response_format={"type": "json_object"}
         )
         
         import json
-        summary_data = json.loads(response.choices[0].message.content)
+        text = response.choices[0].message.content or '{}'
+        summary_data = json.loads(text)
         
         return ExecutiveSummary(**summary_data)
     

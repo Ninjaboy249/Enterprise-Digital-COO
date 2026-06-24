@@ -16,7 +16,7 @@ from sqlalchemy.pool import NullPool, QueuePool
 from sqlalchemy import event, text
 import logging
 
-from backend.config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,12 +78,18 @@ def create_engine(
         pool_recycle=pool_recycle,
         # Connection arguments
         connect_args={
+            "host": settings.POSTGRES_HOST,  # Pass host directly to avoid DNS issues
+            "port": settings.POSTGRES_PORT,
+            "user": settings.POSTGRES_USER,
+            "password": settings.POSTGRES_PASSWORD,
+            "database": settings.POSTGRES_DB,
             "server_settings": {
                 "application_name": "enterprise_coo",
                 "jit": "off",  # Disable JIT for faster simple queries
             },
             "command_timeout": 60,
             "timeout": 10,
+            "ssl": False,  # Disable SSL to avoid DNS resolution issues on Windows
         },
     )
     
@@ -128,6 +134,11 @@ async def init_db() -> None:
     global _engine, _async_session_factory
     
     logger.info("Initializing database connection pool...")
+    
+    # Log database connection details for debugging
+    db_url = get_database_url()
+    logger.info(f"Database URL: {db_url.replace(settings.POSTGRES_PASSWORD, '***')}")
+    logger.info(f"Host: {settings.POSTGRES_HOST}, Port: {settings.POSTGRES_PORT}")
     
     # Create engine
     _engine = create_engine()

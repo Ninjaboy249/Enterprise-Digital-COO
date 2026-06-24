@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     ]
     
     # Database - PostgreSQL
-    POSTGRES_USER: str = "coo_user"
-    POSTGRES_PASSWORD: str = "coo_password"
-    POSTGRES_HOST: str = "localhost"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "Anamika@109"
+    POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "enterprise_coo"
     
@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     @property
     def SYNC_DATABASE_URL(self) -> str:
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    
+    # ChromaDB - Vector Database
+    CHROMADB_HOST: str = "localhost"
+    CHROMADB_PORT: int = 8000
+    CHROMADB_PERSIST_DIR: str = "./chroma_data"
     
     # Redis
     REDIS_HOST: str = "localhost"
@@ -114,9 +119,8 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
-@lru_cache()
 def get_settings() -> Settings:
-    """Get cached settings instance"""
+    """Get settings instance (cache removed for hot reload)"""
     return Settings()
 
 

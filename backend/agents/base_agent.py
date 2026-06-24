@@ -28,7 +28,8 @@ class BaseAgent(ABC):
     def __init__(self, agent_name: str, domain: str):
         self.agent_name = agent_name
         self.domain = domain
-        self.openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        # Initialize OpenAI client
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.logger = logging.getLogger(f"{__name__}.{agent_name}")
         
     async def analyze(
@@ -183,22 +184,16 @@ class BaseAgent(ABC):
         anomalies: List[Dict[str, Any]]
     ) -> List[str]:
         """
-        Generate natural language insights using GPT-4
+        Generate natural language insights using OpenAI
         """
         try:
             prompt = self._create_insight_prompt(metrics, analysis, anomalies)
             
-            response = await self.openai_client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=settings.OPENAI_MODEL,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": f"You are an expert {self.domain} analyst. Provide concise, actionable insights."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "system", "content": f"You are an expert {self.domain} analyst. Provide concise, actionable insights."},
+                    {"role": "user", "content": prompt}
                 ],
                 temperature=settings.OPENAI_TEMPERATURE,
                 max_tokens=settings.OPENAI_MAX_TOKENS

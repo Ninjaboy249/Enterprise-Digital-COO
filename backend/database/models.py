@@ -22,7 +22,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
 
-from backend.database.session import Base
+from .session import Base
 
 
 class TimestampMixin:

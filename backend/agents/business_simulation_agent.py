@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field
 from enum import Enum
 import logging
 
-from backend.agents.base_agent import BaseAgent
-from backend.memory.chromadb_client import get_chromadb_client
+from .base_agent import BaseAgent
+from memory.chromadb_client import get_chromadb_client
 
 logger = logging.getLogger(__name__)
 
@@ -863,18 +863,18 @@ Identify:
 Output JSON with appropriate keys.
 """
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "You are a business analyst."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.3
+        full_prompt = f"You are a business analyst.\n\n{prompt}"
+        
+        import asyncio
+        response = await asyncio.to_thread(
+            self.model.generate_text,
+            prompt=full_prompt
         )
         
         import json
-        return json.loads(response.choices[0].message.content)
+        import re
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        return json.loads(json_match.group() if json_match else '{}')
     
     async def _analyze_risk_factors(
         self,
@@ -896,18 +896,18 @@ Identify:
 Output JSON with 'factors' and 'mitigations' arrays.
 """
         
-        response = await self.llm_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": "You are a risk management expert."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.3
+        full_prompt = f"You are a risk management expert.\n\n{prompt}"
+        
+        import asyncio
+        response = await asyncio.to_thread(
+            self.model.generate_text,
+            prompt=full_prompt
         )
         
         import json
-        return json.loads(response.choices[0].message.content)
+        import re
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        return json.loads(json_match.group() if json_match else '{"factors": [], "mitigations": []}')
     
     async def _store_simulation_in_memory(self, result: SimulationResult) -> None:
         """Store simulation result in ChromaDB for future learning"""

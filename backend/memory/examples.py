@@ -7,7 +7,7 @@ import asyncio
 from datetime import datetime
 from typing import List, Dict, Any
 
-from backend.memory.chromadb_client import get_chromadb_client
+from memory.chromadb_client import get_chromadb_client
 
 
 # ============================================================================

@@ -3,7 +3,7 @@ Database Module
 Provides database session management, ORM models, and utilities
 """
 
-from backend.database.session import (
+from .session import (
     Base,
     init_db,
     close_db,
@@ -17,7 +17,7 @@ from backend.database.session import (
     transactional,
 )
 
-from backend.database.models import (
+from .models import (
     SalesMetrics,
     FinancialMetrics,
     InventoryMetrics,

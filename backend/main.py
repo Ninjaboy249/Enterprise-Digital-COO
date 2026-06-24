@@ -4,9 +4,12 @@ Main FastAPI application entry point
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 from typing import AsyncGenerator
+from pathlib import Path
 
 from config import settings
 from api.v1.router import api_router
@@ -33,8 +36,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     logger.info("Database initialized")
     
     # Initialize ChromaDB
-    await init_chromadb()
-    logger.info("ChromaDB initialized")
+    try:
+        await init_chromadb()
+        logger.info("ChromaDB initialized")
+    except Exception as e:
+        logger.warning(f"ChromaDB initialization failed: {e}. Continuing without ChromaDB.")
     
     logger.info("Application startup complete")
     
@@ -75,6 +81,20 @@ app.add_middleware(
 
 # Add GZip compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Mount static files
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# Serve index.html at root
+@app.get("/")
+async def read_root():
+    """Serve the main dashboard"""
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(str(index_file))
+    return {"message": "Welcome to Enterprise Digital COO API", "docs": "/docs"}
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
