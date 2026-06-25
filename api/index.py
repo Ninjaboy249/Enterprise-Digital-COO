@@ -14,11 +14,11 @@ import os
 # Make the backend package importable from this file's location
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import HTTPException, RequestValidationError
 from pathlib import Path
 
 from config import settings
@@ -34,6 +34,8 @@ app = FastAPI(
 )
 
 # ── Middleware ───────────────────────────────────────────────────────
+# NOTE: GZipMiddleware is intentionally omitted — it can swallow HTTP exceptions
+# and return plain-text "Internal Server Error" instead of JSON on Vercel.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,7 +43,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# ── Global exception handlers — always return JSON ───────────────────
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {type(exc).__name__}: {exc}"},
+    )
 
 # ── Static files ─────────────────────────────────────────────────────
 static_dir = Path(__file__).parent.parent / "backend" / "static"

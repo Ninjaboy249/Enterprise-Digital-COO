@@ -1,7 +1,7 @@
 """
 Configuration management for Enterprise Digital COO
 """
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, DotEnvSettingsSource, EnvSettingsSource
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 from typing import Optional, Tuple, Type
 
 
