@@ -1,39 +1,38 @@
 """
 Configuration management for Enterprise Digital COO
 """
-from pydantic_settings import BaseSettings
-from functools import lru_cache
-from typing import Optional
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, DotEnvSettingsSource, EnvSettingsSource
+from typing import Optional, Tuple, Type
 
 
 class Settings(BaseSettings):
     """Application settings"""
-    
+
     # Application
     APP_NAME: str = "Enterprise Digital COO"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
-    
+
     # API
     API_V1_PREFIX: str = "/api/v1"
     HOST: str = "0.0.0.0"
     PORT: int = 8001
-    
+
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
     ]
-    
+
     # Database - PostgreSQL
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "Anamika@109"
+    POSTGRES_PASSWORD: str = ""          # Set via POSTGRES_PASSWORD env var or .env
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "enterprise_coo"
@@ -114,9 +113,31 @@ class Settings(BaseSettings):
     ENABLE_METRICS: bool = True
     METRICS_PORT: int = 9090
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True,
+        # Ignore env vars whose values cannot be coerced to the field type
+        # (e.g. Windows system var DEBUG=release).  The .env file value wins.
+        "env_ignore_empty": False,
+        "extra": "ignore",
+    }
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        **kwargs,
+    ) -> Tuple[PydanticBaseSettingsSource, ...]:
+        """Prioritise .env file over OS environment variables.
+
+        Order: init > dotenv (.env file) > OS env vars
+        This ensures DEBUG=true in .env wins over DEBUG=release in the Windows
+        system environment.
+        """
+        return init_settings, dotenv_settings, env_settings
 
 
 def get_settings() -> Settings:
