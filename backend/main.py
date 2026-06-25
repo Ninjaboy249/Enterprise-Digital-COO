@@ -87,6 +87,9 @@ static_dir = Path(__file__).parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
 # Serve index.html at root
 @app.get("/")
 async def read_root():
@@ -94,20 +97,13 @@ async def read_root():
     index_file = static_dir / "index.html"
     if index_file.exists():
         return FileResponse(str(index_file))
-    return {"message": "Welcome to Enterprise Digital COO API", "docs": "/docs"}
-
-# Include API router
-app.include_router(api_router, prefix=settings.API_V1_PREFIX)
-
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "operational",
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "message": "Welcome to Enterprise Digital COO API",
+        "docs": "/docs"
     }
 
 

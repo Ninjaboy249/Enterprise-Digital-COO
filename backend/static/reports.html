@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports Portal — Enterprise Digital COO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- marked.js for rendering markdown summaries -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+  <style>
+    .gradient-bg { background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
+
+    /* Upload drop-zone */
+    #drop-zone { border: 2.5px dashed #93c5fd; transition: background .2s, border-color .2s; }
+    #drop-zone.drag-over { background: #eff6ff; border-color: #3b82f6; }
+
+    /* Chat bubbles */
+    .msg-user { background:#dbeafe; border-radius:16px 16px 4px 16px; }
+    .msg-bot  { background:#f1f5f9; border-radius:16px 16px 16px 4px; }
+    .msg-bot.error { background:#fee2e2; }
+
+    /* Markdown rendered output */
+    .prose h1,.prose h2,.prose h3 { font-weight:700; margin:.8em 0 .3em; }
+    .prose h1 { font-size:1.25rem; }
+    .prose h2 { font-size:1.1rem; color:#1e40af; }
+    .prose h3 { font-size:1rem; color:#1e3a5f; }
+    .prose p  { margin:.4em 0; line-height:1.65; }
+    .prose ul,.prose ol { padding-left:1.4em; margin:.4em 0; }
+    .prose li { margin:.2em 0; }
+    .prose strong { color:#1e293b; }
+    .prose code { background:#e2e8f0; padding:0 4px; border-radius:3px; font-size:.85em; }
+    .prose pre  { background:#0f172a; color:#e2e8f0; padding:1em; border-radius:6px; overflow-x:auto; font-size:.82em; }
+
+    /* Report row hover */
+    .report-row:hover { background:#f0f9ff; }
+
+    /* Spinner */
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Section fade-in */
+    .section { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    /* Tab active */
+    .tab-btn.active { border-bottom: 3px solid #2563eb; color:#2563eb; font-weight:600; }
+
+    /* Scrollable panels */
+    #chat-log, #parsed-viewer { max-height: 480px; overflow-y: auto; }
+    #summary-box { max-height: 520px; overflow-y: auto; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- ════════════════════ HEADER ════════════════════ -->
+<header class="gradient-bg text-white shadow-xl">
+  <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">📂 Reports Portal</h1>
+      <p class="text-sm opacity-75 mt-0.5">Upload Power BI (.pbix) or JSON reports — AI reads, summarises &amp; answers questions</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="openai-badge" class="text-xs bg-white/20 px-3 py-1 rounded-full">⚙ Checking AI…</span>
+      <a href="/" class="bg-white/20 hover:bg-white/30 text-white text-sm px-4 py-2 rounded-lg transition-colors">← Dashboard</a>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════ MAIN ════════════════════ -->
+<div class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+  <!-- ── Upload Zone ── -->
+  <div class="bg-white rounded-2xl shadow-md p-6">
+    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Report</h2>
+    <div id="drop-zone" class="rounded-xl p-10 text-center cursor-pointer bg-slate-50 select-none"
+         onclick="document.getElementById('file-input').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <svg class="w-12 h-12 text-blue-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+      </svg>
+      <p class="text-slate-600 font-medium">Drag &amp; drop here, or <span class="text-blue-600 underline">browse</span></p>
+      <p class="text-sm text-slate-400 mt-1">Supports <strong>.pbix</strong> (Power BI) and <strong>.json</strong> report files</p>
+      <input id="file-input" type="file" class="hidden" accept=".pbix,.json" onchange="onFileSelect(event)" />
+    </div>
+
+    <!-- Upload progress / status -->
+    <div id="upload-status" class="hidden mt-4"></div>
+  </div>
+
+  <!-- ── Uploaded Reports List ── -->
+  <div class="bg-white rounded-2xl shadow-md p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-slate-800">Uploaded Reports</h2>
+      <button onclick="loadReportList()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+        ↻ Refresh
+      </button>
+    </div>
+    <div id="report-list">
+      <p class="text-sm text-slate-400 text-center py-6">No reports uploaded yet. Upload a file above to get started.</p>
+    </div>
+  </div>
+
+  <!-- ── Report Detail Panel (shown after selecting a report) ── -->
+  <div id="detail-panel" class="hidden section">
+
+    <!-- Report title bar -->
+    <div class="bg-gradient-to-r from-blue-700 to-blue-900 text-white rounded-2xl shadow-md px-6 py-4 flex justify-between items-center mb-6">
+      <div>
+        <p class="text-xs opacity-70 uppercase tracking-wide mb-0.5">Viewing Report</p>
+        <h2 id="detail-filename" class="text-xl font-bold"></h2>
+        <p id="detail-meta" class="text-xs opacity-60 mt-0.5"></p>
+      </div>
+      <button onclick="closeDetail()" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm transition-colors">✕ Close</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-0 border-b border-slate-200 mb-6 bg-white rounded-t-xl px-4 shadow-sm">
+      <button class="tab-btn active px-5 py-3 text-sm text-slate-600" onclick="switchTab('summary', this)">📋 AI Summary</button>
+      <button class="tab-btn px-5 py-3 text-sm text-slate-600" onclick="switchTab('data', this)">🗄 Parsed Data</button>
+      <button class="tab-btn px-5 py-3 text-sm text-slate-600" onclick="switchTab('chat', this)">💬 Ask AI</button>
+    </div>
+
+    <!-- Tab: AI Summary -->
+    <div id="tab-summary" class="tab-content section">
+      <div class="bg-white rounded-2xl shadow-md p-6">
+        <div class="flex justify-between items-start mb-4">
+          <h3 class="font-semibold text-slate-700 text-base">Executive Summary</h3>
+          <button onclick="copyToClipboard('summary-raw')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-lg">⧉ Copy</button>
+        </div>
+        <div id="summary-box" class="prose text-sm text-slate-700"></div>
+        <textarea id="summary-raw" class="hidden"></textarea>
+      </div>
+    </div>
+
+    <!-- Tab: Parsed Data -->
+    <div id="tab-data" class="tab-content hidden section">
+      <div class="bg-white rounded-2xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-slate-700 text-base">Parsed Report Structure</h3>
+          <button onclick="downloadParsed()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors">⬇ Download JSON</button>
+        </div>
+        <div id="parsed-viewer" class="text-xs font-mono bg-slate-900 text-green-400 p-4 rounded-xl overflow-auto"></div>
+      </div>
+    </div>
+
+    <!-- Tab: Chat -->
+    <div id="tab-chat" class="tab-content hidden section">
+      <div class="bg-white rounded-2xl shadow-md flex flex-col" style="height:600px;">
+        <!-- Chat header -->
+        <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+          <span class="text-sm font-semibold text-slate-700">💬 Chat with this Report</span>
+          <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-slate-600">Clear</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-log" class="flex-1 overflow-y-auto p-5 space-y-3"></div>
+
+        <!-- Quick prompts -->
+        <div class="px-5 py-2 border-t border-slate-100 flex flex-wrap gap-2">
+          <span class="text-xs text-slate-400 self-center">Quick:</span>
+          <button onclick="quickAsk('Summarise this report in 3 bullet points')"
+                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">3-bullet summary</button>
+          <button onclick="quickAsk('What are the key KPIs or metrics in this report?')"
+                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Key KPIs</button>
+          <button onclick="quickAsk('What risks or anomalies are visible in the data?')"
+                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Risks &amp; anomalies</button>
+          <button onclick="quickAsk('What are your top 3 recommendations based on this report?')"
+                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Recommendations</button>
+          <button onclick="quickAsk('List all the data tables and their columns found in this report')"
+                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Tables &amp; columns</button>
+        </div>
+
+        <!-- Input -->
+        <div class="p-4 border-t border-slate-100 flex gap-2">
+          <input id="chat-input" type="text" placeholder="Ask anything about this report…"
+                 class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}" />
+          <button onclick="sendChat()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
+            <span>Send</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /detail-panel -->
+</div><!-- /main -->
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<footer class="mt-16 border-t border-slate-200 bg-white text-center py-5">
+  <p class="text-xs text-slate-400">Enterprise Digital COO · Reports Portal · Powered by OpenAI</p>
+</footer>
+
+
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+let currentReportId   = null;
+let currentReportData = null;
+let chatHistory       = [];   // [{role, content}, ...]
+
+// ─── Boot ─────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkOpenAI();
+  loadReportList();
+});
+
+async function checkOpenAI() {
+  const badge = document.getElementById('openai-badge');
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    badge.textContent = d.status === 'healthy' ? '✓ Backend Online' : '⚠ Backend Issue';
+    badge.className   = d.status === 'healthy'
+      ? 'text-xs bg-green-500/30 text-green-200 px-3 py-1 rounded-full'
+      : 'text-xs bg-red-500/30 text-red-200 px-3 py-1 rounded-full';
+  } catch {
+    badge.textContent = '✕ Backend Offline';
+    badge.className   = 'text-xs bg-red-500/30 text-red-200 px-3 py-1 rounded-full';
+  }
+}
+
+// ─── Drag & Drop ──────────────────────────────────────────────────────────
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function onDragLeave() {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+}
+function onFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) uploadFile(file);
+  e.target.value = '';
+}
+
+// ─── Upload ───────────────────────────────────────────────────────────────
+async function uploadFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['pbix','json'].includes(ext)) {
+    showUploadStatus('error', 'Unsupported file type. Please upload a .pbix or .json file.');
+    return;
+  }
+
+  showUploadStatus('loading',
+    `<span class="inline-block spin mr-2">⏳</span> Uploading <strong>${escHtml(file.name)}</strong> and generating AI summary…`);
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const r = await fetch('/api/v1/reports/upload', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Upload failed');
+
+    showUploadStatus('success',
+      `✅ <strong>${escHtml(file.name)}</strong> uploaded and analysed successfully!
+       <button onclick="openReport('${escHtml(d.report_id)}')"
+               class="ml-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-700">
+         Open Report →
+       </button>`);
+
+    await loadReportList();
+    openReport(d.report_id, d);   // open immediately
+  } catch(e) {
+    showUploadStatus('error', `❌ Upload failed: ${escHtml(e.message)}`);
+  }
+}
+
+function showUploadStatus(type, html) {
+  const el  = document.getElementById('upload-status');
+  const cls = {
+    loading: 'bg-blue-50 border border-blue-200 text-blue-800',
+    success: 'bg-green-50 border border-green-200 text-green-800',
+    error:   'bg-red-50 border border-red-200 text-red-800',
+  };
+  el.className = `${cls[type]} rounded-xl px-4 py-3 text-sm`;
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+// ─── Report List ──────────────────────────────────────────────────────────
+async function loadReportList() {
+  try {
+    const r = await fetch('/api/v1/reports/list');
+    const d = await r.json();
+    renderReportList(d.reports || []);
+  } catch {
+    document.getElementById('report-list').innerHTML =
+      '<p class="text-sm text-red-500 text-center py-4">Could not load reports.</p>';
+  }
+}
+
+function renderReportList(reports) {
+  const el = document.getElementById('report-list');
+  if (!reports.length) {
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No reports uploaded yet.</p>';
+    return;
+  }
+  const iconMap = { pbix: '📊', json: '📄' };
+  el.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left bg-slate-50 text-slate-500 uppercase text-xs">
+          <th class="py-2.5 px-4 rounded-tl-lg">File</th>
+          <th class="py-2.5 px-4">Type</th>
+          <th class="py-2.5 px-4">Uploaded</th>
+          <th class="py-2.5 px-4 rounded-tr-lg text-right">Actions</th>
+        </tr></thead>
+        <tbody>
+          ${reports.map(rpt => `
+            <tr class="report-row border-b border-slate-50 cursor-pointer" onclick="openReportById('${rpt.report_id}')">
+              <td class="py-3 px-4 font-medium text-slate-800">
+                <span class="mr-2">${iconMap[rpt.type] || '📄'}</span>${escHtml(rpt.filename)}
+              </td>
+              <td class="py-3 px-4">
+                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full uppercase">${rpt.type}</span>
+              </td>
+              <td class="py-3 px-4 text-slate-500">${fmtDate(rpt.uploaded_at)}</td>
+              <td class="py-3 px-4 text-right">
+                <button onclick="event.stopPropagation();openReportById('${rpt.report_id}')"
+                        class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 mr-2">Open</button>
+                <button onclick="event.stopPropagation();deleteReport('${rpt.report_id}', '${escHtml(rpt.filename)}')"
+                        class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-100">Delete</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ─── Open / Close Report Detail ───────────────────────────────────────────
+async function openReportById(reportId) {
+  try {
+    const r = await fetch(`/api/v1/reports/${reportId}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail);
+    openReport(reportId, d);
+  } catch(e) {
+    alert('Could not load report: ' + e.message);
+  }
+}
+
+function openReport(reportId, data) {
+  currentReportId   = reportId;
+  currentReportData = data;
+  chatHistory       = [];
+
+  // Title bar
+  document.getElementById('detail-filename').textContent = data.filename;
+  document.getElementById('detail-meta').textContent =
+    `${data.type.toUpperCase()} · Uploaded ${fmtDate(data.uploaded_at)}`;
+
+  // Summary tab
+  const rawSummary = data.summary || '_No summary available._';
+  document.getElementById('summary-raw').value = rawSummary;
+  document.getElementById('summary-box').innerHTML = marked.parse(rawSummary);
+
+  // Parsed data tab
+  document.getElementById('parsed-viewer').textContent = JSON.stringify(data.parsed, null, 2);
+
+  // Chat tab — clear and seed
+  clearChat();
+  appendBotMsg(
+    `Report **${escHtml(data.filename)}** is loaded. Ask me anything — data tables, KPIs, trends, recommendations, or anomalies.`,
+    true
+  );
+
+  // Show panel, default to summary tab
+  document.getElementById('detail-panel').classList.remove('hidden');
+  switchTab('summary', document.querySelector('.tab-btn'));
+
+  // Scroll into view
+  document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.add('hidden');
+  currentReportId = null;
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  if (btn) btn.classList.add('active');
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────
+function appendUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg-user self-end ml-10 px-4 py-2.5 text-slate-800 text-sm max-w-prose';
+  el.textContent = text;
+  document.getElementById('chat-log').appendChild(el);
+  scrollChatLog();
+}
+
+function appendBotMsg(text, isMarkdown = false) {
+  const el = document.createElement('div');
+  el.className = 'msg-bot mr-10 px-4 py-2.5 text-slate-700 text-sm max-w-prose prose';
+  el.innerHTML  = isMarkdown ? marked.parse(text) : escHtml(text).replace(/\n/g,'<br>');
+  document.getElementById('chat-log').appendChild(el);
+  scrollChatLog();
+  return el;
+}
+
+function appendErrorMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg-bot error mr-10 px-4 py-2.5 text-red-700 text-sm max-w-prose';
+  el.textContent = '⚠ ' + text;
+  document.getElementById('chat-log').appendChild(el);
+  scrollChatLog();
+}
+
+function appendTyping() {
+  const el = document.createElement('div');
+  el.id = 'typing';
+  el.className = 'msg-bot mr-10 px-4 py-2.5 text-slate-400 text-xs italic';
+  el.textContent = 'Thinking…';
+  document.getElementById('chat-log').appendChild(el);
+  scrollChatLog();
+  return el;
+}
+
+function scrollChatLog() {
+  const log = document.getElementById('chat-log');
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearChat() {
+  document.getElementById('chat-log').innerHTML = '';
+  chatHistory = [];
+}
+
+async function sendChat() {
+  if (!currentReportId) return;
+  const input = document.getElementById('chat-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendUserMsg(msg);
+  chatHistory.push({ role: 'user', content: msg });
+
+  const typing = appendTyping();
+
+  try {
+    const r = await fetch('/api/v1/reports/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        report_id: currentReportId,
+        message:   msg,
+        history:   chatHistory.slice(-6),
+      }),
+    });
+    const d = await r.json();
+    typing.remove();
+
+    if (!r.ok) {
+      appendErrorMsg(d.detail || 'Server error');
+      return;
+    }
+
+    chatHistory.push({ role: 'assistant', content: d.answer });
+    appendBotMsg(d.answer, true);
+  } catch(e) {
+    typing.remove();
+    appendErrorMsg('Network error — is the backend running?');
+  }
+}
+
+function quickAsk(msg) {
+  document.getElementById('chat-input').value = msg;
+  sendChat();
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────
+async function deleteReport(reportId, filename) {
+  if (!confirm(`Delete "${filename}"?\nThis cannot be undone.`)) return;
+  try {
+    await fetch(`/api/v1/reports/${reportId}`, { method: 'DELETE' });
+    if (currentReportId === reportId) closeDetail();
+    await loadReportList();
+  } catch {
+    alert('Delete failed.');
+  }
+}
+
+// ─── Download parsed JSON ─────────────────────────────────────────────────
+function downloadParsed() {
+  if (!currentReportData) return;
+  const blob = new Blob([JSON.stringify(currentReportData.parsed, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `parsed-${currentReportData.filename}-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+// ─── Copy to clipboard ────────────────────────────────────────────────────
+function copyToClipboard(elemId) {
+  const text = document.getElementById(elemId).value || document.getElementById(elemId).textContent;
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
+}
+</script>
+</body>
+</html>

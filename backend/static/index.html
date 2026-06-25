@@ -1,169 +1,361 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Digital COO - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise Digital COO - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
+    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
+    .fy-tab.active { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+    .change-pos { color:#059669; } .change-neg { color:#dc2626; }
+  </style>
 </head>
 <body class="bg-gray-100">
-    <div class="min-h-screen">
-        <!-- Header -->
-        <header class="gradient-bg text-white shadow-lg">
-            <div class="container mx-auto px-4 py-6">
-                <h1 class="text-3xl font-bold">🎯 Enterprise Digital COO</h1>
-                <p class="text-sm opacity-90">AI-Powered Business Transformation System</p>
-            </div>
-        </header>
+<div class="min-h-screen">
 
-        <!-- Main Content -->
-        <main class="container mx-auto px-4 py-8">
-            <!-- Status Card -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 class="text-xl font-semibold mb-4">System Status</h2>
-                <div id="status" class="flex items-center">
-                    <div class="animate-pulse">Checking...</div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                <!-- Sales Monitoring -->
-                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-4">
-                        <div class="bg-blue-100 p-3 rounded-full">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="ml-3 text-lg font-semibold">Sales Monitoring</h3>
-                    </div>
-                    <p class="text-gray-600 text-sm mb-4">Track sales performance and detect anomalies</p>
-                    <button onclick="alert('Sales monitoring endpoint not yet implemented')" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
-                        View Dashboard
-                    </button>
-                </div>
-
-                <!-- Finance Analysis -->
-                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-4">
-                        <div class="bg-green-100 p-3 rounded-full">
-                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="ml-3 text-lg font-semibold">Finance Analysis</h3>
-                    </div>
-                    <p class="text-gray-600 text-sm mb-4">Monitor financial metrics and cash flow</p>
-                    <button onclick="alert('Finance analysis endpoint not yet implemented')" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors">
-                        View Dashboard
-                    </button>
-                </div>
-
-                <!-- Supply Chain -->
-                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                    <div class="flex items-center mb-4">
-                        <div class="bg-purple-100 p-3 rounded-full">
-                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                            </svg>
-                        </div>
-                        <h3 class="ml-3 text-lg font-semibold">Supply Chain</h3>
-                    </div>
-                    <p class="text-gray-600 text-sm mb-4">Track inventory and logistics</p>
-                    <button onclick="alert('Supply chain endpoint not yet implemented')" class="w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors">
-                        View Dashboard
-                    </button>
-                </div>
-            </div>
-
-            <!-- API Documentation -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold mb-4">API Documentation</h2>
-                <p class="text-gray-600 mb-4">
-                    The backend API is running. You can interact with it using the interactive API documentation.
-                </p>
-                <div class="flex gap-4">
-                    <a href="/docs" target="_blank" class="bg-indigo-600 text-white py-2 px-6 rounded hover:bg-indigo-700 transition-colors inline-block">
-                        Open Swagger UI
-                    </a>
-                    <a href="/redoc" target="_blank" class="bg-gray-600 text-white py-2 px-6 rounded hover:bg-gray-700 transition-colors inline-block">
-                        Open ReDoc
-                    </a>
-                </div>
-            </div>
-
-            <!-- Info Box -->
-            <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-yellow-700">
-                            <strong>Note:</strong> This is a development interface. The full API endpoints are currently being implemented. 
-                            Use the Swagger UI to test available endpoints.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="bg-gray-800 text-white mt-12">
-            <div class="container mx-auto px-4 py-6 text-center">
-                <p class="text-sm">Enterprise Digital COO - Built for Business Transformation Hackathon 2026</p>
-            </div>
-        </footer>
+  <!-- Header -->
+  <header class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold">🎯 Enterprise Digital COO</h1>
+        <p class="text-sm opacity-90">AI-Powered Business Transformation System</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="status-indicator" class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+          <div class="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
+          <span class="text-sm">Connecting…</span>
+        </div>
+        <button id="chat-toggle" class="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg shadow hover:bg-purple-50 transition-colors">
+          💬 COO Assistant
+        </button>
+      </div>
     </div>
+  </header>
 
-    <script>
-        // Check system status
-        async function checkStatus() {
-            try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                const statusDiv = document.getElementById('status');
-                
-                if (data.status === 'healthy') {
-                    statusDiv.innerHTML = `
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                            <span class="text-green-700 font-semibold">System Online</span>
-                            <span class="ml-4 text-gray-600 text-sm">Version: ${data.version}</span>
-                        </div>
-                    `;
-                } else {
-                    statusDiv.innerHTML = `
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                            <span class="text-red-700 font-semibold">System Error</span>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                const statusDiv = document.getElementById('status');
-                statusDiv.innerHTML = `
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                        <span class="text-red-700 font-semibold">Cannot connect to backend</span>
-                    </div>
-                `;
-            }
-        }
+  <div class="flex">
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto px-4 py-8 min-w-0">
 
-        // Check status on load
-        checkStatus();
-        
-        // Refresh status every 30 seconds
-        setInterval(checkStatus, 30000);
-    </script>
+      <!-- FY Selector Bar -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-wrap items-center gap-3">
+        <span class="font-semibold text-gray-700 text-sm">Overview for:</span>
+        <div id="fy-tabs" class="flex gap-2"></div>
+        <span class="ml-auto text-xs text-gray-400" id="last-updated"></span>
+      </div>
+
+      <!-- Cross-Domain KPI Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="kpi-row">
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Revenue</p>
+          <p id="kpi-revenue" class="text-2xl font-bold text-gray-800">–</p>
+          <p id="kpi-revenue-chg" class="text-xs mt-1"></p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Cash Balance</p>
+          <p id="kpi-cash" class="text-2xl font-bold text-gray-800">–</p>
+          <p id="kpi-cash-chg" class="text-xs mt-1 text-gray-500"></p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">CSAT</p>
+          <p id="kpi-csat" class="text-2xl font-bold text-gray-800">–</p>
+          <p class="text-xs mt-1 text-yellow-500">★ out of 5.0</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Active Users</p>
+          <p id="kpi-users" class="text-2xl font-bold text-gray-800">–</p>
+          <p class="text-xs mt-1 text-gray-500">Platform-wide</p>
+        </div>
+      </div>
+
+      <!-- FY Comparison Mini-Table -->
+      <div class="bg-white rounded-lg shadow-md p-5 mb-6">
+        <h2 class="font-semibold text-gray-700 mb-4">3-Year FY Snapshot</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="fy-snapshot-table">
+            <thead>
+              <tr class="bg-gray-50 text-gray-500 uppercase text-xs">
+                <th class="py-2 px-3 text-left">Metric</th>
+                <th class="py-2 px-3 text-center" id="th-fy0"></th>
+                <th class="py-2 px-3 text-center" id="th-fy1"></th>
+                <th class="py-2 px-3 text-center" id="th-fy2"></th>
+              </tr>
+            </thead>
+            <tbody id="fy-snapshot-body">
+              <tr><td colspan="4" class="py-4 text-center text-gray-400 text-xs">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Navigation Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Sales -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-blue-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold">Sales Monitoring</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Track revenue, deals, pipeline &amp; FY performance</p>
+          <p class="text-xs text-gray-500 mb-4">FY selector · Regional breakdown · Comparison tables · AI chat</p>
+          <a href="/static/sales.html" class="block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors text-center text-sm font-medium">View Sales Dashboard →</a>
+        </div>
+
+        <!-- Finance -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-green-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold">Finance Analysis</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Monitor cash, margins, EBITDA &amp; runway</p>
+          <p class="text-xs text-gray-500 mb-4">Revenue vs Expenses chart · Margin trends · FY comparison · AI chat</p>
+          <a href="/static/finance.html" class="block w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors text-center text-sm font-medium">View Finance Dashboard →</a>
+        </div>
+
+        <!-- Operations -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold">Operations</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Track uptime, CSAT, NPS &amp; support tickets</p>
+          <p class="text-xs text-gray-500 mb-4">3-year trend charts · System status · FY comparison · AI chat</p>
+          <a href="/static/operations.html" class="block w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors text-center text-sm font-medium">View Operations Dashboard →</a>
+        </div>
+
+        <!-- Reports Portal -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-sky-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold">Reports Portal</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Upload Power BI &amp; JSON reports for AI analysis</p>
+          <p class="text-xs text-gray-500 mb-4">Drag &amp; drop .pbix / .json · AI executive summary · Ask questions · Download parsed data</p>
+          <a href="/static/reports.html" class="block w-full bg-sky-600 text-white py-2 px-4 rounded hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports Portal →</a>
+        </div>
+      </div>
+
+      <!-- Alerts + API Docs -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <h2 class="font-semibold text-gray-700 mb-3">Active Alerts</h2>
+          <div id="alerts-list" class="space-y-2 text-sm">
+            <p class="text-gray-400 text-xs">Loading alerts…</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-5">
+          <h2 class="font-semibold text-gray-700 mb-3">API Documentation</h2>
+          <p class="text-gray-600 text-sm mb-4">Interact with all endpoints via Swagger UI or ReDoc.</p>
+          <div class="flex gap-3 mb-4">
+            <a href="/docs" target="_blank" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 text-sm">Swagger UI</a>
+            <a href="/redoc" target="_blank" class="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 text-sm">ReDoc</a>
+          </div>
+          <p class="text-xs text-gray-400">New endpoints: <code class="bg-gray-100 px-1 rounded">/metrics/sales/fy</code>, <code class="bg-gray-100 px-1 rounded">/metrics/finance/compare</code>, <code class="bg-gray-100 px-1 rounded">/metrics/chat</code></p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Global Chat Panel -->
+    <aside id="chat-panel" class="hidden w-80 bg-white border-l border-gray-200 flex flex-col" style="height:calc(100vh - 88px); position:sticky; top:88px;">
+      <div class="gradient-bg text-white px-4 py-3 flex justify-between items-center">
+        <span class="font-semibold">💬 COO AI Assistant</span>
+        <button onclick="toggleChat()" class="text-white opacity-70 hover:opacity-100 text-xl leading-none">&times;</button>
+      </div>
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
+      <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
+        <button onclick="quickAsk('Give me an overall summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
+        <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
+        <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
+        <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
+      </div>
+      <div class="p-3 border-t border-gray-200 flex gap-2">
+        <input id="chat-input" type="text" placeholder="Ask about any domain…"
+               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+               onkeydown="if(event.key==='Enter') sendChat()" />
+        <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+      </div>
+    </aside>
+  </div><!-- /flex -->
+</div>
+
+<script>
+const CY = new Date().getFullYear();
+const FYS = [CY, CY-1, CY-2];
+let selectedFY = CY;
+let allFYData = { sales: null, finance: null, operations: null };
+
+// ── Init ─────────────────────────────────────────────────────────────────
+async function init() {
+  buildFYTabs();
+  checkStatus();
+  await loadAllFYData();
+}
+
+function buildFYTabs() {
+  const c = document.getElementById('fy-tabs');
+  FYS.forEach(fy => {
+    const b = document.createElement('button');
+    b.textContent = `FY ${fy}`; b.dataset.fy = fy;
+    b.className = 'fy-tab px-4 py-1 rounded-full border border-purple-300 text-sm font-medium hover:bg-purple-100 transition-colors' + (fy===CY?' active':'');
+    b.onclick = () => selectFY(fy); c.appendChild(b);
+  });
+}
+
+function selectFY(fy) {
+  selectedFY = fy;
+  document.querySelectorAll('.fy-tab').forEach(b => b.classList.toggle('active', +b.dataset.fy === fy));
+  renderKPIs();
+}
+
+async function loadAllFYData() {
+  try {
+    const [s, f, o] = await Promise.all([
+      fetch('/api/v1/metrics/sales/fy').then(r=>r.json()),
+      fetch('/api/v1/metrics/finance/fy').then(r=>r.json()),
+      fetch('/api/v1/metrics/operations/fy').then(r=>r.json()),
+    ]);
+    allFYData = { sales: s, finance: f, operations: o };
+    renderKPIs();
+    renderFYSnapshot();
+    loadAlerts();
+    document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) { console.error('Overview data load failed', e); }
+}
+
+function renderKPIs() {
+  const fy = String(selectedFY);
+  const prevFY = String(selectedFY - 1);
+
+  if (allFYData.sales?.data?.[fy]) {
+    const m = allFYData.sales.data[fy].metrics;
+    const prev = allFYData.sales.data[prevFY]?.metrics;
+    document.getElementById('kpi-revenue').textContent = '$' + (m.total_revenue/1e6).toFixed(2) + 'M';
+    if (prev) {
+      const chg = ((m.total_revenue - prev.total_revenue)/prev.total_revenue*100).toFixed(1);
+      document.getElementById('kpi-revenue-chg').innerHTML = `<span class="${chg>=0?'change-pos':'change-neg'}">${chg>=0?'↑':'↓'} ${Math.abs(chg)}% vs FY ${selectedFY-1}</span>`;
+    }
+  }
+  if (allFYData.finance?.data?.[fy]) {
+    const m = allFYData.finance.data[fy].metrics;
+    document.getElementById('kpi-cash').textContent = '$' + (m.cash_balance/1e6).toFixed(1) + 'M';
+    document.getElementById('kpi-cash-chg').textContent = `Runway: ${m.runway_months.toFixed(1)} mo`;
+  }
+  if (allFYData.operations?.data?.[fy]) {
+    const m = allFYData.operations.data[fy].metrics;
+    document.getElementById('kpi-csat').textContent = m.customer_satisfaction.toFixed(1) + '/5.0';
+    document.getElementById('kpi-users').textContent = m.active_users.toLocaleString();
+  }
+}
+
+function renderFYSnapshot() {
+  const years = FYS.slice().reverse(); // oldest → newest
+  years.forEach((y, i) => {
+    document.getElementById(`th-fy${i}`).textContent = `FY ${y}`;
+  });
+
+  const rows = [
+    { label: 'Revenue', get: (y,d) => d.sales?.data?.[y] ? '$'+(d.sales.data[y].metrics.total_revenue/1e6).toFixed(2)+'M' : '–' },
+    { label: 'Expected Revenue', get: (y,d) => d.sales?.data?.[y] ? '$'+(d.sales.data[y].metrics.expected_revenue/1e6).toFixed(2)+'M' : '–' },
+    { label: 'Cash Balance', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.cash_balance/1e6).toFixed(1)+'M' : '–' },
+    { label: 'Gross Margin', get: (y,d) => d.finance?.data?.[y] ? (d.finance.data[y].metrics.gross_margin*100).toFixed(1)+'%' : '–' },
+    { label: 'EBITDA', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.ebitda/1e6).toFixed(2)+'M' : '–' },
+    { label: 'Net Income', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.net_income/1e6).toFixed(2)+'M' : '–' },
+    { label: 'Profit After Tax (PAT)', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.profit_after_tax/1e6).toFixed(2)+'M' : '–' },
+    { label: 'Earnings After Tax (EAT)', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.earnings_after_tax/1e6).toFixed(2)+'M' : '–' },
+    { label: 'CSAT', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.customer_satisfaction.toFixed(1)+'/5' : '–' },
+    { label: 'NPS Score', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.nps_score : '–' },
+    { label: 'Active Users', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.active_users.toLocaleString() : '–' },
+    { label: 'System Uptime', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.system_uptime+'%' : '–' },
+  ];
+
+  document.getElementById('fy-snapshot-body').innerHTML = rows.map(row => `
+    <tr class="border-b border-gray-50 hover:bg-gray-50">
+      <td class="py-2 px-3 font-medium text-gray-700">${row.label}</td>
+      ${years.map(y => `<td class="py-2 px-3 text-center text-gray-800">${row.get(String(y), allFYData)}</td>`).join('')}
+    </tr>`).join('');
+}
+
+async function loadAlerts() {
+  try {
+    const r = await fetch('/api/v1/metrics/summary');
+    const data = await r.json();
+    const sevColor = {high:'bg-red-50 border-red-400 text-red-700', medium:'bg-yellow-50 border-yellow-400 text-yellow-700', low:'bg-green-50 border-green-400 text-green-700'};
+    document.getElementById('alerts-list').innerHTML = data.alerts.map(a => `
+      <div class="border-l-4 p-3 rounded text-xs ${sevColor[a.severity]||sevColor.low}">
+        <span class="font-semibold uppercase">${a.severity}</span> · ${a.category}: ${a.message}
+      </div>`).join('');
+  } catch(e) { document.getElementById('alerts-list').innerHTML = '<p class="text-xs text-gray-400">Could not load alerts.</p>'; }
+}
+
+async function checkStatus() {
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    document.getElementById('status-indicator').innerHTML = d.status === 'healthy'
+      ? '<div class="w-2 h-2 bg-green-400 rounded-full"></div><span class="text-sm">Online · v' + d.version + '</span>'
+      : '<div class="w-2 h-2 bg-red-400 rounded-full"></div><span class="text-sm">Degraded</span>';
+  } catch {
+    document.getElementById('status-indicator').innerHTML = '<div class="w-2 h-2 bg-red-400 rounded-full"></div><span class="text-sm">Offline</span>';
+  }
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
+  const hidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !hidden);
+  if (hidden && document.getElementById('chat-messages').children.length === 0) {
+    appendBotMsg("Hello! I'm your COO AI assistant. I can summarise Sales, Finance, or Operations data. What would you like to know?");
+  }
+}
+document.getElementById('chat-toggle').addEventListener('click', toggleChat);
+
+function appendUserMsg(t){const d=document.createElement('div');d.className='chat-msg-user self-end ml-6 p-3 text-gray-800 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
+function appendBotMsg(t){const d=document.createElement('div');d.className='chat-msg-bot mr-6 p-3 text-gray-700 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
+function scrollChat(){const el=document.getElementById('chat-messages');el.scrollTop=el.scrollHeight;}
+
+async function sendChat() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim(); if(!msg) return; inp.value='';
+  appendUserMsg(msg);
+  const t=document.createElement('div');t.className='chat-msg-bot mr-6 p-3 text-gray-400 text-sm italic';t.textContent='Analysing…';document.getElementById('chat-messages').appendChild(t);scrollChat();
+
+  // Detect context from message
+  const ctx = msg.toLowerCase().includes('sales') ? 'sales'
+    : msg.toLowerCase().includes('financ') || msg.toLowerCase().includes('cash') ? 'finance'
+    : msg.toLowerCase().includes('operat') || msg.toLowerCase().includes('uptime') || msg.toLowerCase().includes('ticket') ? 'operations'
+    : 'general';
+
+  try {
+    const r = await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});
+    const d = await r.json(); t.remove(); appendBotMsg(d.answer);
+  } catch(e){t.remove();appendBotMsg('Server error. Try again.');}
+}
+function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
+
+// Boot
+init();
+setInterval(()=>{checkStatus();loadAllFYData();},60000);
+</script>
 </body>
 </html>

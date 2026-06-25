@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # API
     API_V1_PREFIX: str = "/api/v1"
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8001
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"

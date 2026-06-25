@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales Dashboard - Enterprise Digital COO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
+    #chat-panel { transition: transform .3s ease; }
+    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
+    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
+    .fy-btn.active { background:#7c3aed; color:#fff; }
+  </style>
+</head>
+<body class="bg-gray-100">
+<div class="min-h-screen">
+
+  <!-- Header -->
+  <header class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-4 py-5 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold">📊 Sales Dashboard</h1>
+        <p class="text-sm opacity-90">Real-time Sales Performance &amp; FY Comparison</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="chat-toggle" class="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg shadow hover:bg-purple-50 transition-colors">
+          💬 AI Insights
+        </button>
+        <a href="/" class="bg-white text-purple-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors">← Back</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex">
+    <!-- Main Dashboard -->
+    <main class="flex-1 container mx-auto px-4 py-8 min-w-0">
+
+      <!-- FY Selector -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-wrap items-center gap-3">
+        <span class="font-semibold text-gray-700">Fiscal Year:</span>
+        <div id="fy-buttons" class="flex gap-2"></div>
+        <span class="ml-auto text-sm text-gray-500">Compare:</span>
+        <select id="compare-fy1" class="border rounded px-2 py-1 text-sm"></select>
+        <span class="text-gray-400">vs</span>
+        <select id="compare-fy2" class="border rounded px-2 py-1 text-sm"></select>
+        <button onclick="loadComparison()" class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">Compare</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+        <p class="mt-4 text-gray-600">Loading sales data…</p>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div id="dashboard" class="hidden">
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Total Revenue</p>
+            <p id="total-revenue" class="text-2xl font-bold text-gray-800">$0</p>
+            <p id="revenue-change" class="text-sm mt-1 text-red-500"></p>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Conversion Rate</p>
+            <p id="conversion-rate" class="text-2xl font-bold text-gray-800">0%</p>
+            <p class="text-sm text-gray-500 mt-1">Win rate: <span id="win-rate" class="font-semibold">0%</span></p>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Active Deals</p>
+            <p id="active-deals" class="text-2xl font-bold text-gray-800">0</p>
+            <p class="text-sm text-gray-500 mt-1">Closed: <span id="closed-deals" class="font-semibold">0</span></p>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Pipeline Value</p>
+            <p id="pipeline-value" class="text-2xl font-bold text-gray-800">$0</p>
+            <p class="text-sm text-gray-500 mt-1">Avg deal: <span id="avg-deal" class="font-semibold">$0</span></p>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Revenue 3-Year Bar -->
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Revenue — 3-Year FY Comparison</h2>
+            <canvas id="fy-revenue-chart" height="200"></canvas>
+          </div>
+          <!-- Regional Performance -->
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <h2 class="font-semibold text-gray-700 mb-4">Regional Revenue Split (Current FY)</h2>
+            <canvas id="regional-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Comparison Table (hidden by default) -->
+        <div id="comparison-section" class="hidden bg-white rounded-lg shadow-md p-5 mb-6">
+          <h2 class="font-semibold text-gray-700 mb-4">FY Comparison Table</h2>
+          <div id="comparison-table"></div>
+        </div>
+
+        <!-- Regional Performance + Products + Trends -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <h2 class="font-semibold text-gray-700 mb-3">Regional Performance</h2>
+            <div id="regional-list" class="space-y-3"></div>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <h2 class="font-semibold text-gray-700 mb-3">Top Products</h2>
+            <div id="top-products" class="space-y-3"></div>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-5">
+            <h2 class="font-semibold text-gray-700 mb-3">Key Trends &amp; Status</h2>
+            <div id="status-alert" class="mb-3"></div>
+            <ul id="trends-list" class="space-y-2 text-sm"></ul>
+            <div class="mt-4 space-y-2">
+              <button onclick="refreshData()" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 text-sm">🔄 Refresh</button>
+              <button onclick="exportData()" class="w-full bg-gray-600 text-white py-2 rounded hover:bg-gray-700 text-sm">📥 Export JSON</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /dashboard -->
+    </main>
+
+    <!-- Chat Panel -->
+    <aside id="chat-panel" class="hidden w-80 bg-white border-l border-gray-200 flex flex-col" style="height:calc(100vh - 73px); position:sticky; top:73px;">
+      <div class="gradient-bg text-white px-4 py-3 flex justify-between items-center">
+        <span class="font-semibold">💬 AI Insights — Sales</span>
+        <button onclick="toggleChat()" class="text-white opacity-70 hover:opacity-100 text-xl leading-none">&times;</button>
+      </div>
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
+      <!-- Quick prompts -->
+      <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
+        <button onclick="quickAsk('Show me a summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
+        <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
+        <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
+        <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
+      </div>
+      <div class="p-3 border-t border-gray-200 flex gap-2">
+        <input id="chat-input" type="text" placeholder="Ask about sales data…"
+               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+               onkeydown="if(event.key==='Enter') sendChat()" />
+        <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+      </div>
+    </aside>
+  </div><!-- /flex -->
+</div>
+
+<script>
+const PAGE_CONTEXT = 'sales';
+let salesData = null;
+let fyData    = null;
+let currentFY = new Date().getFullYear();
+let availableFYs = [currentFY, currentFY-1, currentFY-2];
+
+let revenueChart = null;
+let regionalChart = null;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  buildFYButtons();
+  populateCompareSelects();
+  await Promise.all([loadFYData(), loadSalesData(currentFY)]);
+}
+
+function buildFYButtons() {
+  const container = document.getElementById('fy-buttons');
+  availableFYs.forEach(fy => {
+    const btn = document.createElement('button');
+    btn.textContent = `FY ${fy}`;
+    btn.dataset.fy = fy;
+    btn.className = 'fy-btn px-4 py-1 rounded-full border border-purple-300 text-sm font-medium hover:bg-purple-100 transition-colors' + (fy === currentFY ? ' active' : '');
+    btn.onclick = () => selectFY(fy);
+    container.appendChild(btn);
+  });
+}
+
+function populateCompareSelects() {
+  ['compare-fy1','compare-fy2'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    availableFYs.forEach((fy, j) => {
+      const opt = document.createElement('option');
+      opt.value = fy; opt.textContent = `FY ${fy}`;
+      if (j === i) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function selectFY(fy) {
+  currentFY = fy;
+  document.querySelectorAll('.fy-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.fy === fy);
+  });
+  loadSalesData(fy);
+}
+
+// ── Data Loading ──────────────────────────────────────────────────────────
+async function loadFYData() {
+  try {
+    const r = await fetch('/api/v1/metrics/sales/fy');
+    fyData = await r.json();
+    renderFYChart();
+  } catch(e) { console.error('FY load failed', e); }
+}
+
+async function loadSalesData(fy) {
+  try {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    const r = await fetch(`/api/v1/metrics/sales?fy=${fy}`);
+    salesData = await r.json();
+    renderDashboard();
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<div class="text-red-600"><p class="font-semibold">Error loading data</p><p class="text-sm mt-1">${e.message}</p><button onclick="loadSalesData(${fy})" class="mt-3 bg-purple-600 text-white px-4 py-1 rounded text-sm">Retry</button></div>`;
+  }
+}
+
+async function loadComparison() {
+  const fy1 = +document.getElementById('compare-fy1').value;
+  const fy2 = +document.getElementById('compare-fy2').value;
+  if (fy1 === fy2) return alert('Please select two different fiscal years.');
+  try {
+    const r = await fetch(`/api/v1/metrics/sales/compare?fy1=${fy1}&fy2=${fy2}`);
+    const data = await r.json();
+    renderComparisonTable(data, fy1, fy2);
+    document.getElementById('comparison-section').classList.remove('hidden');
+  } catch(e) { alert('Comparison failed: ' + e.message); }
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const m = salesData.metrics;
+  document.getElementById('total-revenue').textContent   = '$' + m.total_revenue.toLocaleString();
+  document.getElementById('revenue-change').innerHTML    = `<span class="text-red-500">↓ ${m.revenue_drop_percentage}% vs target</span>`;
+  document.getElementById('conversion-rate').textContent = (m.conversion_rate*100).toFixed(1)+'%';
+  document.getElementById('win-rate').textContent        = (m.win_rate*100).toFixed(1)+'%';
+  document.getElementById('active-deals').textContent    = m.active_deals;
+  document.getElementById('closed-deals').textContent    = m.closed_deals;
+  document.getElementById('pipeline-value').textContent  = '$'+m.pipeline_value.toLocaleString();
+  document.getElementById('avg-deal').textContent        = '$'+m.average_deal_size.toLocaleString();
+
+  // Regional list
+  const reg = salesData.regional_performance;
+  document.getElementById('regional-list').innerHTML = Object.entries(reg).map(([name, d]) => `
+    <div class="flex justify-between items-center text-sm">
+      <span class="text-gray-700 font-medium">${name}</span>
+      <div class="text-right">
+        <p class="font-bold text-gray-800">$${d.revenue.toLocaleString()}</p>
+        <p class="${d.growth<0?'text-red-500':'text-green-600'} text-xs">${d.growth>0?'+':''}${d.growth}% · ${d.deals} deals</p>
+      </div>
+    </div>`).join('<hr class="border-gray-100 my-1"/>');
+
+  // Top products
+  document.getElementById('top-products').innerHTML = salesData.top_products.map((p,i)=>`
+    <div class="flex items-center justify-between text-sm">
+      <div class="flex items-center gap-2">
+        <span>${['🥇','🥈','🥉'][i]}</span>
+        <div><p class="font-medium text-gray-800">${p.name}</p><p class="text-xs text-gray-500">${p.units} units</p></div>
+      </div>
+      <span class="font-bold text-gray-800">$${p.revenue.toLocaleString()}</span>
+    </div>`).join('<hr class="border-gray-100 my-1"/>');
+
+  // Trends
+  document.getElementById('trends-list').innerHTML = salesData.trends.map(t=>`
+    <li class="flex items-start gap-2"><span class="text-yellow-500 mt-0.5">⚠️</span><span class="text-gray-700">${t}</span></li>`).join('');
+
+  // Status badge
+  const sc = {warning:'bg-yellow-50 border-yellow-400 text-yellow-800',healthy:'bg-green-50 border-green-400 text-green-800',critical:'bg-red-50 border-red-400 text-red-800'};
+  document.getElementById('status-alert').innerHTML = `<div class="border-l-4 p-3 rounded ${sc[salesData.status]||sc.warning}"><p class="font-semibold text-sm">FY ${salesData.fiscal_year} · ${salesData.status.toUpperCase()}</p><p class="text-xs mt-1">Alert: ${salesData.alert_level}</p></div>`;
+
+  renderRegionalChart(reg);
+}
+
+function renderFYChart() {
+  if (!fyData) return;
+  const years  = fyData.fiscal_years.slice().reverse();
+  const labels = years.map(y => `FY ${y}`);
+  const revs   = years.map(y => fyData.data[y].metrics.total_revenue);
+  const exps   = years.map(y => fyData.data[y].metrics.expected_revenue);
+
+  const ctx = document.getElementById('fy-revenue-chart').getContext('2d');
+  if (revenueChart) revenueChart.destroy();
+  revenueChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {label:'Actual Revenue',   data:revs, backgroundColor:'rgba(124,58,237,0.75)', borderRadius:6},
+        {label:'Expected Revenue', data:exps, backgroundColor:'rgba(167,139,250,0.4)', borderRadius:6},
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{legend:{position:'bottom'}},
+      scales:{y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'},beginAtZero:true}}
+    }
+  });
+}
+
+function renderRegionalChart(reg) {
+  const ctx = document.getElementById('regional-chart').getContext('2d');
+  if (regionalChart) regionalChart.destroy();
+  regionalChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(reg),
+      datasets:[{data:Object.values(reg).map(r=>r.revenue),backgroundColor:['#7c3aed','#10b981','#f59e0b'],borderWidth:2}]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+  });
+}
+
+function renderComparisonTable(data, fy1, fy2) {
+  const rows = Object.entries(data.comparison).map(([key, v]) => {
+    const chg = v.change_pct;
+    const badge = chg === null ? '–' : chg > 0
+      ? `<span class="text-green-600 font-semibold">+${chg}%</span>`
+      : `<span class="text-red-500 font-semibold">${chg}%</span>`;
+    const label = key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+      <td class="py-2 px-3 text-gray-700 text-sm">${label}</td>
+      <td class="py-2 px-3 text-center text-sm font-medium">${fmtVal(key, v.fy1)}</td>
+      <td class="py-2 px-3 text-center text-sm font-medium">${fmtVal(key, v.fy2)}</td>
+      <td class="py-2 px-3 text-center text-sm">${badge}</td></tr>`;
+  }).join('');
+
+  document.getElementById('comparison-table').innerHTML = `
+    <table class="w-full text-sm">
+      <thead><tr class="bg-gray-50 text-gray-500 uppercase text-xs">
+        <th class="py-2 px-3 text-left">Metric</th>
+        <th class="py-2 px-3">FY ${fy1}</th>
+        <th class="py-2 px-3">FY ${fy2}</th>
+        <th class="py-2 px-3">Change</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function fmtVal(key, v) {
+  if (key.includes('revenue') || key.includes('pipeline') || key.includes('deal_size')) return '$'+v.toLocaleString();
+  if (key.includes('rate') || key.includes('margin') || key.includes('win')) return (v*100).toFixed(1)+'%';
+  if (key.includes('drop')) return v.toFixed(1)+'%';
+  return typeof v === 'number' ? v.toLocaleString() : v;
+}
+
+function refreshData() { loadFYData(); loadSalesData(currentFY); }
+function exportData() {
+  const blob = new Blob([JSON.stringify(salesData,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`sales-fy${currentFY}-${new Date().toISOString().split('T')[0]}.json`; a.click();
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
+  const hidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !hidden);
+  if (hidden && document.getElementById('chat-messages').children.length === 0) {
+    appendBotMsg("Hi! I'm your Sales AI assistant. Ask me about revenue, deals, trends, or regional performance for the loaded fiscal year data.");
+  }
+}
+
+document.getElementById('chat-toggle').addEventListener('click', toggleChat);
+
+function appendUserMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg-user self-end ml-6 p-3 text-gray-800 text-sm';
+  div.textContent = text;
+  document.getElementById('chat-messages').appendChild(div);
+  scrollChat();
+}
+
+function appendBotMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg-bot mr-6 p-3 text-gray-700 text-sm';
+  div.textContent = text;
+  document.getElementById('chat-messages').appendChild(div);
+  scrollChat();
+}
+
+function appendTyping() {
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'chat-msg-bot mr-6 p-3 text-gray-400 text-sm italic';
+  div.textContent = 'Analysing…';
+  document.getElementById('chat-messages').appendChild(div);
+  scrollChat();
+  return div;
+}
+
+function scrollChat() {
+  const el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendUserMsg(msg);
+  const typing = appendTyping();
+  try {
+    const resp = await fetch('/api/v1/metrics/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg, context:PAGE_CONTEXT, data_snapshot: salesData})
+    });
+    const data = await resp.json();
+    typing.remove();
+    appendBotMsg(data.answer);
+  } catch(e) {
+    typing.remove();
+    appendBotMsg('Sorry, I could not reach the server. Please try again.');
+  }
+}
+
+function quickAsk(msg) {
+  document.getElementById('chat-input').value = msg;
+  sendChat();
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────
+init();
+setInterval(() => { loadFYData(); loadSalesData(currentFY); }, 60000);
+</script>
+</body>
+</html>
