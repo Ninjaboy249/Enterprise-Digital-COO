@@ -1,2 +1,13 @@
-[tool.vercel]
-entrypoint = "api/index.py"
+[project]
+name = "enterprise-digital-coo"
+version = "1.0.0"
+description = "AI-Powered Enterprise Digital COO"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.109.0",
+    "uvicorn[standard]==0.27.0",
+    "pydantic==2.5.3",
+    "pydantic-settings==2.1.0",
+    "openai==1.3.7",
+    "python-multipart==0.0.6",
+]
