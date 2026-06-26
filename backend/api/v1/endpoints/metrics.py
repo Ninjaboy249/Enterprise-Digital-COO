@@ -332,11 +332,82 @@ CANNED_INSIGHTS = {
     ],
 }
 
+# ── Greeting / small-talk patterns ──────────────────────────────────────────
+_GREETINGS = {
+    # hello-type
+    frozenset(["hi","hello","hey","hiya","howdy","sup","yo","greetings","salut","bonjour","hola","namaste","ciao","ahoy"]): None,
+    # how-are-you type
+    frozenset(["how are you","how r u","how are u","how do you do","how's it going","how you doing",
+               "what's up","whats up","wazzup","you ok","are you ok","you good","you alright"]): None,
+    # thanks
+    frozenset(["thank","thanks","thx","ty","cheers","appreciate","grateful","gracias","merci","danke"]): None,
+    # bye
+    frozenset(["bye","goodbye","see you","cya","later","take care","farewell","night","good night","good bye"]): None,
+    # who-are-you
+    frozenset(["who are you","what are you","tell me about yourself","introduce yourself",
+               "what can you do","what do you do","your name","who made you","are you ai",
+               "are you a bot","are you human","are you real"]): None,
+}
+
+_GREETING_REPLIES: Dict[str, List[str]] = {
+    "hello": [
+        "Hello! 👋 I'm your Enterprise COO AI Assistant. Ask me about Sales, Finance, Operations, trends, risks, or recommendations.",
+        "Hi there! Great to see you. I can help with business insights — revenue, cash flow, uptime, KPIs and more. What would you like to know?",
+        "Hey! I'm here to help with your business data. Try asking: 'Show me a summary', 'What are the key risks?', or 'What do you recommend?'",
+    ],
+    "how_are_you": [
+        "I'm doing great, thank you for asking! 😊 Ready to help you with business insights. What would you like to know?",
+        "All systems operational! 🚀 I'm here and ready to assist. Ask me anything about Sales, Finance, or Operations.",
+        "Feeling sharp and data-ready! What business question can I help you with today?",
+    ],
+    "thanks": [
+        "You're welcome! 😊 Let me know if you have any other questions.",
+        "Happy to help! Feel free to ask anything else about your business data.",
+        "Anytime! I'm always here if you need more insights.",
+    ],
+    "bye": [
+        "Goodbye! 👋 Come back anytime — your data is always here.",
+        "See you later! Don't hesitate to return for more business insights.",
+        "Take care! 🚀 Your dashboards will keep running smoothly.",
+    ],
+    "who": [
+        "I'm the Enterprise Digital COO AI Assistant — built to help you understand your business data across Sales, Finance, and Operations. Ask me about KPIs, trends, risks, or recommendations.",
+        "I'm an AI assistant specialised in enterprise business intelligence. I can analyse Sales performance, Financial health, and Operational metrics. How can I help?",
+    ],
+}
+
+def _detect_greeting(msg: str) -> Optional[str]:
+    """Return greeting category if the message is a greeting/small-talk, else None."""
+    m = msg.lower().strip().rstrip("!?.,'\"")
+    # Check multi-word phrases first
+    for category, replies in [
+        ("how_are_you", _GREETING_REPLIES["how_are_you"]),
+        ("who",         _GREETING_REPLIES["who"]),
+    ]:
+        patterns = {
+            "how_are_you": ["how are you","how r u","how are u","how do you do","how's it going",
+                            "how you doing","what's up","whats up","wazzup","you ok","you good"],
+            "who":         ["who are you","what are you","tell me about yourself","introduce yourself",
+                            "what can you do","your name","who made you","are you ai","are you a bot"],
+        }
+        if any(p in m for p in patterns[category]):
+            return category
+    # Single-word / short checks
+    tokens = set(m.split())
+    if tokens & {"hi","hello","hey","hiya","howdy","sup","yo","greetings","hola","namaste","ciao","ahoy","bonjour"}:
+        return "hello"
+    if tokens & {"thank","thanks","thx","ty","cheers","appreciate","grateful","gracias","merci","danke"}:
+        return "thanks"
+    if tokens & {"bye","goodbye","cya","later","farewell","night"} or "see you" in m or "good bye" in m or "good night" in m:
+        return "bye"
+    return None
+
+
 @router.post("/chat")
 async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     """
-    Rule-based chat endpoint that answers questions about extracted dashboard data.
-    Returns contextual insights based on the current page context and user question.
+    Chat endpoint: handles greetings/small-talk first, then routes to
+    contextual business insights based on the current page context.
     """
     ctx = (req.context or "general").lower()
     if ctx not in CANNED_INSIGHTS:
@@ -344,7 +415,25 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
 
     msg_lower = req.message.lower()
 
-    # Pick the most relevant canned answer
+    # ── 1. Greeting / small-talk detection (highest priority) ──────────────
+    greeting_cat = _detect_greeting(req.message)
+    if greeting_cat:
+        replies = _GREETING_REPLIES[greeting_cat]
+        # Rotate through replies deterministically based on message length
+        answer = replies[len(req.message) % len(replies)]
+        return {
+            "answer": answer,
+            "context": "greeting",
+            "timestamp": datetime.now().isoformat(),
+            "suggestions": [
+                "Show me a summary",
+                "What are the key risks?",
+                "What do you recommend?",
+                "How are trends looking?",
+            ],
+        }
+
+    # ── 2. Business insight matching ───────────────────────────────────────
     if any(w in msg_lower for w in ["summar", "overview", "tldr", "brief"]):
         answer = CANNED_INSIGHTS[ctx][0]
     elif any(w in msg_lower for w in ["risk", "concern", "problem", "issue", "warn", "alert"]):
@@ -354,11 +443,10 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     elif any(w in msg_lower for w in ["trend", "trajectory", "growth", "decline"]):
         answer = CANNED_INSIGHTS[ctx][2] if len(CANNED_INSIGHTS[ctx]) > 2 else CANNED_INSIGHTS[ctx][0]
     else:
-        # Rotate through insights deterministically
         idx = len(req.message) % len(CANNED_INSIGHTS[ctx])
         answer = CANNED_INSIGHTS[ctx][idx]
 
-    # Optionally weave in live snapshot numbers
+    # ── 3. Weave in live snapshot numbers if available ─────────────────────
     snapshot_note = ""
     if req.data_snapshot:
         m = req.data_snapshot.get("metrics", {})
