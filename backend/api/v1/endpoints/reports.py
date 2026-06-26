@@ -1,6 +1,7 @@
 """
 Reports API Endpoints
 - Upload Power BI (.pbix metadata JSON export) or raw JSON reports
+- Upload Excel (.xlsx / .xls) — parsed, converted to Power BI-style structure, AI summarised
 - Parse and extract structured data
 - Summarise with OpenAI GPT
 - Chat Q&A against uploaded report data
@@ -13,6 +14,12 @@ import json
 import zipfile
 import io
 import re
+
+try:
+    import openpyxl
+    _OPENPYXL_AVAILABLE = True
+except ImportError:
+    _OPENPYXL_AVAILABLE = False
 
 from openai import OpenAI
 from config import settings
@@ -199,6 +206,104 @@ def _safe_visual_type(vc: dict) -> str:
         return "unknown"
 
 
+def _parse_excel(raw: bytes, filename: str) -> Dict[str, Any]:
+    """
+    Parse an Excel workbook (.xlsx / .xls) into a Power BI-style structure.
+    Extracts every sheet as a named table with columns, row count, sample rows,
+    numeric summaries (min/max/mean), and detected KPI columns.
+    """
+    if not _OPENPYXL_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Excel support requires openpyxl. Add 'openpyxl' to your dependencies."
+        )
+
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Cannot read Excel file: {e}")
+
+    sheets_info = []
+    all_tables  = []
+
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            continue
+
+        # First non-empty row = headers
+        headers = [str(c) if c is not None else f"Col{i}" for i, c in enumerate(rows[0])]
+        data_rows = rows[1:]
+
+        # Cap at 500 rows for processing
+        data_rows = data_rows[:500]
+
+        # Build column-wise data
+        col_data: Dict[str, list] = {h: [] for h in headers}
+        for row in data_rows:
+            for i, h in enumerate(headers):
+                val = row[i] if i < len(row) else None
+                col_data[h].append(val)
+
+        # Numeric summary per column
+        col_summaries = {}
+        kpi_cols = []
+        for h, vals in col_data.items():
+            nums = [v for v in vals if isinstance(v, (int, float)) and v is not None]
+            if nums:
+                col_summaries[h] = {
+                    "type":  "numeric",
+                    "count": len(nums),
+                    "min":   round(min(nums), 4),
+                    "max":   round(max(nums), 4),
+                    "mean":  round(sum(nums) / len(nums), 4),
+                    "sum":   round(sum(nums), 4),
+                }
+                kpi_cols.append(h)
+            else:
+                unique = list({str(v) for v in vals if v is not None})[:10]
+                col_summaries[h] = {
+                    "type":    "categorical",
+                    "count":   len([v for v in vals if v is not None]),
+                    "samples": unique,
+                }
+
+        # Sample rows (first 5, serialised as dicts)
+        sample_rows = [
+            {h: (str(row[i]) if i < len(row) else None) for i, h in enumerate(headers)}
+            for row in data_rows[:5]
+        ]
+
+        sheet_info = {
+            "sheet_name":    sheet_name,
+            "row_count":     len(data_rows),
+            "column_count":  len(headers),
+            "columns":       headers,
+            "kpi_columns":   kpi_cols,
+            "column_stats":  col_summaries,
+            "sample_rows":   sample_rows,
+        }
+        sheets_info.append(sheet_info)
+        all_tables.append({"name": sheet_name, "columns": headers,
+                           "measures": kpi_cols})
+
+    wb.close()
+
+    return {
+        "type":     "excel",
+        "filename": filename,
+        # Power BI-compatible structure so existing chat/summary code works
+        "sections": {
+            "data_model": {"tables": all_tables},
+            "sheets":     {s["sheet_name"]: s for s in sheets_info},
+        },
+        "sheets":       sheets_info,
+        "sheet_count":  len(sheets_info),
+        "files_found":  wb.sheetnames,
+    }
+
+
 def _report_to_text(parsed: Dict[str, Any], max_chars: int = 8000) -> str:
     """Serialise a parsed report to a compact text string for GPT context."""
     if parsed["type"] == "json":
@@ -206,6 +311,23 @@ def _report_to_text(parsed: Dict[str, Any], max_chars: int = 8000) -> str:
         txt += "Data preview (flattened):\n"
         for k, v in list(parsed["flat_preview"].items())[:80]:
             txt += f"  {k}: {v}\n"
+    elif parsed["type"] == "excel":
+        txt = f"Report type: Excel Workbook\nSheets: {len(parsed['sheets'])}\n\n"
+        for sheet in parsed["sheets"]:
+            txt += f"=== Sheet: {sheet['sheet_name']} ===\n"
+            txt += f"Rows: {sheet['row_count']}  |  Columns: {sheet['column_count']}\n"
+            txt += f"Columns: {', '.join(sheet['columns'])}\n"
+            if sheet["kpi_columns"]:
+                txt += f"Numeric KPI columns: {', '.join(sheet['kpi_columns'])}\n"
+                for col in sheet["kpi_columns"]:
+                    s = sheet["column_stats"].get(col, {})
+                    txt += (f"  {col}: min={s.get('min')}, max={s.get('max')}, "
+                            f"mean={s.get('mean')}, sum={s.get('sum')}\n")
+            if sheet["sample_rows"]:
+                txt += "Sample rows:\n"
+                for row in sheet["sample_rows"]:
+                    txt += "  " + ", ".join(f"{k}={v}" for k, v in row.items()) + "\n"
+            txt += "\n"
     else:
         txt = f"Report type: Power BI (.pbix)\n"
         txt += f"Files inside archive: {', '.join(parsed['files_found'][:20])}\n\n"
@@ -236,31 +358,50 @@ async def upload_report(file: UploadFile = File(...)) -> Dict[str, Any]:
     raw       = await file.read()
     ext       = filename.rsplit(".", 1)[-1].lower()
 
-    if ext not in ("pbix", "json"):
-        raise HTTPException(status_code=400, detail="Only .pbix and .json files are supported.")
+    if ext not in ("pbix", "json", "xlsx", "xls"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only .pbix, .json, .xlsx, and .xls files are supported."
+        )
 
     # Parse
     if ext == "pbix":
         parsed = _parse_pbix(raw, filename)
+    elif ext in ("xlsx", "xls"):
+        parsed = _parse_excel(raw, filename)
     else:
         parsed = _parse_json_report(raw)
 
     # Build text context for GPT
     report_text = _report_to_text(parsed)
 
-    # Summarise with OpenAI
+    # Summarise with OpenAI — tailored prompt for Excel files
     client = _openai_client()
-    system_prompt = (
-        "You are an expert business analyst. "
-        "The user has uploaded a report file. "
-        "Analyse the content and produce a concise executive summary covering: "
-        "1) What the report is about, 2) Key metrics or KPIs found, "
-        "3) Notable trends, patterns, or anomalies, "
-        "4) Top 3 actionable recommendations. "
-        "Be specific and quantitative where data is available. "
-        "Format with clear sections using markdown headers."
-    )
-    summary = _chat(client, system_prompt, f"Report content:\n\n{report_text}", max_tokens=1400)
+    if ext in ("xlsx", "xls"):
+        system_prompt = (
+            "You are an expert business intelligence analyst. "
+            "The user has uploaded an Excel workbook. Your job is to: "
+            "1) Identify what business domain this data covers (sales, finance, HR, operations, etc.), "
+            "2) List the key KPIs and metrics found with their values (min, max, mean, total), "
+            "3) Highlight notable trends, outliers, or anomalies visible in the numbers, "
+            "4) Describe what a Power BI dashboard built from this data should contain "
+            "   (suggested charts, slicers, and report pages), "
+            "5) Give the top 3 specific, data-driven recommendations for the business. "
+            "Be quantitative — cite actual numbers from the data. "
+            "Format your response with clear markdown headers."
+        )
+    else:
+        system_prompt = (
+            "You are an expert business analyst. "
+            "The user has uploaded a report file. "
+            "Analyse the content and produce a concise executive summary covering: "
+            "1) What the report is about, 2) Key metrics or KPIs found, "
+            "3) Notable trends, patterns, or anomalies, "
+            "4) Top 3 actionable recommendations. "
+            "Be specific and quantitative where data is available. "
+            "Format with clear sections using markdown headers."
+        )
+    summary = _chat(client, system_prompt, f"Report content:\n\n{report_text}", max_tokens=1600)
 
     # Store for follow-up chat
     report_id = f"{ext}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"

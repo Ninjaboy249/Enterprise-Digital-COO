@@ -80,8 +80,8 @@
               d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
       </svg>
       <p class="text-slate-600 font-medium">Drag &amp; drop here, or <span class="text-blue-600 underline">browse</span></p>
-      <p class="text-sm text-slate-400 mt-1">Supports <strong>.pbix</strong> (Power BI) and <strong>.json</strong> report files</p>
-      <input id="file-input" type="file" class="hidden" accept=".pbix,.json" onchange="onFileSelect(event)" />
+      <p class="text-sm text-slate-400 mt-1">Supports <strong>.pbix</strong> (Power BI), <strong>.xlsx / .xls</strong> (Excel), and <strong>.json</strong> report files</p>
+      <input id="file-input" type="file" class="hidden" accept=".pbix,.json,.xlsx,.xls" onchange="onFileSelect(event)" />
     </div>
 
     <!-- Upload progress / status -->
@@ -247,13 +247,17 @@ function onFileSelect(e) {
 // ─── Upload ───────────────────────────────────────────────────────────────
 async function uploadFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pbix','json'].includes(ext)) {
-    showUploadStatus('error', 'Unsupported file type. Please upload a .pbix or .json file.');
+  if (!['pbix','json','xlsx','xls'].includes(ext)) {
+    showUploadStatus('error', 'Unsupported file type. Please upload a .pbix, .xlsx, .xls, or .json file.');
     return;
   }
 
+  const label = ['xlsx','xls'].includes(ext)
+    ? 'Reading Excel workbook and generating Power BI-style AI summary…'
+    : 'Uploading and generating AI summary…';
+
   showUploadStatus('loading',
-    `<span class="inline-block spin mr-2">⏳</span> Uploading <strong>${escHtml(file.name)}</strong> and generating AI summary…`);
+    `<span class="inline-block spin mr-2">⏳</span> <strong>${escHtml(file.name)}</strong> — ${label}`);
 
   const fd = new FormData();
   fd.append('file', file);
@@ -307,7 +311,7 @@ function renderReportList(reports) {
     el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No reports uploaded yet.</p>';
     return;
   }
-  const iconMap = { pbix: '📊', json: '📄' };
+  const iconMap = { pbix: '📊', json: '📄', xlsx: '📗', xls: '📗', excel: '📗' };
   el.innerHTML = `
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
