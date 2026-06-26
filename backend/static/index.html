@@ -3,390 +3,506 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enterprise Digital COO - Dashboard</title>
+  <title>Enterprise Digital COO — AI Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
-    .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
-    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
-    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; color:#374151; }
-    .fy-tab { transition: background .15s, color .15s, border-color .15s; }
-    .fy-tab.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
-    .change-pos { color:#059669; } .change-neg { color:#dc2626; }
+    .gradient-bg { background: linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%); }
+    .card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+    .fy-tab { transition:background .15s,color .15s,border-color .15s; }
+    .fy-tab.active { background:#7c3aed!important; color:#fff!important; border-color:#7c3aed!important; }
+    .change-pos{color:#059669;} .change-neg{color:#dc2626;}
+    /* typing cursor */
+    .typing::after { content:'▋'; animation:blink .7s step-end infinite; }
+    @keyframes blink { 50%{opacity:0;} }
+    /* investigation steps */
+    .inv-step { opacity:0; transform:translateY(6px); transition:opacity .35s,transform .35s; }
+    .inv-step.show { opacity:1; transform:none; }
+    /* agent dot pulse */
+    .agent-online { animation:pulse-green 2s infinite; }
+    @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5);} 70%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
+    /* action badge */
+    .badge-wait   { background:#fef3c7; color:#92400e; }
+    .badge-done   { background:#d1fae5; color:#065f46; }
+    .badge-appr   { background:#dbeafe; color:#1e40af; }
+    /* toast */
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
-             background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
-             font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
+             background:#1f2937; color:#fff; padding:10px 22px; border-radius:10px;
+             font-size:13px; opacity:0; transition:opacity .25s,transform .25s;
              pointer-events:none; z-index:9999; white-space:nowrap; }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    /* ── Company data import modal ── */
+    /* import modal */
     #import-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
                     z-index:10000; align-items:center; justify-content:center; }
     #import-modal.open { display:flex; }
     #import-box { background:#fff; border-radius:16px; padding:28px; width:min(480px,92vw);
                   box-shadow:0 20px 60px rgba(0,0,0,.3); }
-    /* ── Full dark / high-contrast theme ── */
-    @media (prefers-color-scheme: dark) {
-      body, .bg-gray-100 { background-color: #0f172a !important; color: #e2e8f0; }
-      .bg-white { background-color: #1e2535 !important; }
-      .bg-gray-50, .bg-gray-100 { background-color: #252d3d !important; }
-      /* All text shades */
-      .text-gray-800, .text-gray-700 { color: #e2e8f0 !important; }
-      .text-gray-600, .text-gray-500 { color: #94a3b8 !important; }
-      .text-gray-400 { color: #64748b !important; }
-      /* Table cells inherit dark body text */
-      td, th { color: #e2e8f0 !important; }
-      td.text-gray-700, td.text-gray-800 { color: #e2e8f0 !important; }
-      /* Borders */
-      .border-gray-100, .border-gray-200, .border-gray-300 { border-color: #334155 !important; }
-      /* FY pill border */
-      .border-purple-300 { border-color: #6d28d9 !important; }
-      .hover\:bg-purple-100:hover { background-color: #3b1a6b !important; }
-      /* Cards & shadows */
-      .shadow-md, .shadow-lg { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
-      /* Chat bubbles */
-      .chat-msg-user { background: #2d1f5e !important; color: #e2e8f0 !important; }
-      .chat-msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
-      /* Status / alert colours */
-      .bg-green-50  { background-color: #052e16 !important; color:#86efac !important; }
-      .bg-yellow-50 { background-color: #1c1007 !important; color:#fcd34d !important; }
-      .bg-red-50    { background-color: #1c0707 !important; color:#fca5a5 !important; }
-      .bg-blue-100, .bg-sky-100 { background-color: #1e3a5f !important; }
-      .bg-green-100  { background-color: #052e16 !important; }
-      .bg-purple-100 { background-color: #2e1065 !important; }
-      /* Inputs and selects */
-      input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important;
-                                border-color: #475569 !important; }
-      /* Import modal */
-      #import-box { background: #1e2535 !important; color: #e2e8f0 !important; }
-      code { background: #252d3d !important; color: #93c5fd !important; }
-    }
-    @media (forced-colors: active) {
-      .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
-      .border-b, .border-t { border-color: ButtonText !important; }
+    /* chat panel */
+    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
+    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; color:#374151; }
+    /* workflow arrow */
+    .wf-arrow { width:2px; height:22px; background:linear-gradient(#7c3aed,#a78bfa); margin:0 auto; }
+    /* dark mode */
+    @media (prefers-color-scheme:dark){
+      body { background:#0f172a!important; color:#e2e8f0; }
+      .card { background:#1e2535!important; }
+      .bg-gray-100,.bg-gray-50 { background:#252d3d!important; }
+      .text-gray-800,.text-gray-700 { color:#e2e8f0!important; }
+      .text-gray-600,.text-gray-500 { color:#94a3b8!important; }
+      .text-gray-400 { color:#64748b!important; }
+      td,th { color:#e2e8f0!important; }
+      .border-gray-100,.border-gray-200 { border-color:#334155!important; }
+      .shadow-md,.shadow-lg { box-shadow:0 2px 8px rgba(0,0,0,.6)!important; }
+      input,select,textarea { background:#1e293b!important; color:#e2e8f0!important; border-color:#475569!important; }
+      #import-box { background:#1e2535!important; color:#e2e8f0!important; }
+      .chat-msg-user { background:#2d1f5e!important; color:#e2e8f0!important; }
+      .chat-msg-bot  { background:#1e293b!important; color:#cbd5e1!important; }
+      .badge-wait { background:#422006!important; color:#fcd34d!important; }
+      .badge-done { background:#052e16!important; color:#86efac!important; }
+      .badge-appr { background:#1e3a5f!important; color:#93c5fd!important; }
     }
   </style>
 </head>
-<body class="bg-gray-100">
-<div class="min-h-screen">
+<body class="bg-gray-100 min-h-screen">
 
-  <!-- Header -->
-  <header class="gradient-bg text-white shadow-lg">
-    <div class="container mx-auto px-4 py-6 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold">🎯 Enterprise Digital COO</h1>
-        <p class="text-sm opacity-90">AI-Powered Business Transformation System</p>
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header class="gradient-bg text-white shadow-xl">
+  <div class="max-w-screen-xl mx-auto px-5 py-5 flex flex-wrap justify-between items-center gap-3">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">🎯 Enterprise Digital COO</h1>
+      <p class="text-xs opacity-75 mt-0.5">AI Command Center · Multi-Agent Business Intelligence</p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- FY selector inline in header -->
+      <div id="fy-tabs" class="flex gap-1.5"></div>
+      <div id="status-indicator" class="flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-lg text-sm">
+        <div class="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
+        <span>Connecting…</span>
       </div>
-      <div class="flex items-center gap-3">
-        <div id="status-indicator" class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
-          <div class="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
-          <span class="text-sm">Connecting…</span>
+      <span id="last-updated" class="text-xs opacity-60 hidden md:block"></span>
+      <button id="chat-toggle" class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        💬 Ask COO
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Hidden KPI stores — written by renderKPIs() & applyCompanyData() -->
+<span id="kpi-revenue" class="hidden"></span>
+<span id="kpi-revenue-chg" class="hidden"></span>
+<span id="kpi-cash" class="hidden"></span>
+<span id="kpi-cash-chg" class="hidden"></span>
+<span id="kpi-csat" class="hidden"></span>
+<span id="kpi-users" class="hidden"></span>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- ── 1. ASK COO BAR ──────────────────────────────────────── -->
+  <div class="card p-5" style="background:linear-gradient(135deg,#1e1b4b,#312e81);">
+    <p class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-2">✨ Ask Enterprise COO</p>
+    <div class="flex gap-3">
+      <input id="hero-ask-input" type="text" placeholder="What happened to revenue this quarter?"
+             class="flex-1 rounded-xl px-4 py-3 text-sm bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+             onkeydown="if(event.key==='Enter') heroAsk()" />
+      <button onclick="heroAsk()"
+              class="bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors whitespace-nowrap">
+        Ask AI
+      </button>
+    </div>
+    <div id="hero-answer" class="hidden mt-4 text-sm text-purple-100 bg-white/10 rounded-xl px-4 py-3 leading-relaxed"></div>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button onclick="heroQuick('What happened to revenue?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Revenue drop?</button>
+      <button onclick="heroQuick('What are the top risks right now?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Top risks</button>
+      <button onclick="heroQuick('Give me a full executive summary')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Executive summary</button>
+      <button onclick="heroQuick('What should we do about cash flow?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Cash flow</button>
+      <button onclick="heroQuick('Which customers are at churn risk?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Churn risk</button>
+    </div>
+  </div>
+
+  <!-- ── 2. EXECUTIVE BRIEF (large) ────────────────────────────── -->
+  <div id="exec-brief" class="card overflow-hidden" style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 55%,#1e3a5f 100%);">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🧠</span>
+        <span class="text-white font-bold text-base tracking-tight">Executive Brief</span>
+        <span id="eb-fy-badge" class="text-xs bg-white/15 text-purple-200 px-2.5 py-0.5 rounded-full font-medium ml-1"></span>
+      </div>
+      <span id="eb-confidence" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">AI Confidence –</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+      <div class="px-6 py-5">
+        <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-2">Signal</p>
+        <p id="eb-signal" class="text-white font-bold text-lg leading-snug">Loading…</p>
+        <p id="eb-cause" class="text-purple-200 text-xs mt-2 leading-relaxed"></p>
+      </div>
+      <div class="px-6 py-5">
+        <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-2">Predicted FY Impact</p>
+        <p id="eb-impact" class="font-bold text-2xl text-emerald-300">–</p>
+        <p id="eb-impact-sub" class="text-purple-200 text-xs mt-2"></p>
+        <div class="mt-3 space-y-1.5">
+          <div class="flex justify-between text-xs"><span class="text-purple-300">AI Opportunity</span><span id="eb-opp" class="text-emerald-300 font-semibold">–</span></div>
+          <div class="flex justify-between text-xs"><span class="text-purple-300">Potential Savings</span><span id="eb-save" class="text-blue-300 font-semibold">–</span></div>
         </div>
-        <button id="chat-toggle" class="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg shadow hover:bg-purple-50 transition-colors">
-          💬 COO Assistant
-        </button>
+      </div>
+      <div class="px-6 py-5">
+        <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-2">KPI Snapshot</p>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs"><span class="text-purple-300">Revenue</span><span id="eb-rev" class="text-white font-semibold">–</span></div>
+          <div class="flex justify-between text-xs"><span class="text-purple-300">Cash</span><span id="eb-cash" class="text-white font-semibold">–</span></div>
+          <div class="flex justify-between text-xs"><span class="text-purple-300">CSAT</span><span id="eb-csat" class="text-white font-semibold">–</span></div>
+          <div class="flex justify-between text-xs"><span class="text-purple-300">Users</span><span id="eb-users" class="text-white font-semibold">–</span></div>
+        </div>
+      </div>
+      <div class="px-6 py-5 flex flex-col justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-2">Recommended Action</p>
+          <p id="eb-action" class="text-white text-sm font-medium leading-snug">–</p>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="ebApprove()" id="eb-approve-btn"
+                  class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-colors">
+            ✓ Approve
+          </button>
+          <button onclick="ebSimulate()"
+                  class="flex-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold py-2.5 px-3 rounded-xl border border-white/20 transition-colors">
+            ⚡ Simulate
+          </button>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
-  <div class="flex">
-    <!-- Main Content -->
-    <main class="flex-1 container mx-auto px-4 py-8 min-w-0">
+  <!-- ── 3. AI INVESTIGATION + AI WORKFORCE ────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      <!-- FY Selector Bar -->
-      <div class="bg-white rounded-lg shadow-md p-4 mb-6 flex flex-wrap items-center gap-3">
-        <span class="font-semibold text-gray-700 text-sm">Overview for:</span>
-        <div id="fy-tabs" class="flex gap-2"></div>
-        <span class="ml-auto text-xs text-gray-400" id="last-updated"></span>
+    <!-- AI Investigation panel -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-gray-800 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 bg-purple-500 rounded-full animate-pulse inline-block"></span>
+          AI Investigation
+        </h2>
+        <button onclick="replayInvestigation()" class="text-xs text-purple-600 hover:text-purple-800 font-medium">↺ Replay</button>
+      </div>
+      <div id="investigation-steps" class="space-y-3 text-sm"></div>
+    </div>
+
+    <!-- AI Workforce -->
+    <div class="card p-6">
+      <h2 class="font-bold text-gray-800 mb-4">🤖 AI Workforce</h2>
+      <div class="grid grid-cols-2 gap-3" id="agent-grid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. TODAY'S ACTIONS + BUSINESS IMPACT ──────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Today's AI Actions -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-gray-800">⚡ Today's AI Actions</h2>
+        <span id="actions-count" class="text-xs bg-purple-100 text-purple-700 font-bold px-2.5 py-0.5 rounded-full">0 completed</span>
+      </div>
+      <div id="actions-list" class="space-y-2.5 text-sm"></div>
+    </div>
+
+    <!-- Business Impact -->
+    <div class="card p-6">
+      <h2 class="font-bold text-gray-800 mb-4">📈 Business Impact</h2>
+      <div class="grid grid-cols-2 gap-4" id="impact-grid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. TOP AI FINDINGS ─────────────────────────────────────── -->
+  <div class="card p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-gray-800">🔍 Top AI Findings</h2>
+      <span class="text-xs text-gray-400" id="findings-ts"></span>
+    </div>
+    <div id="findings-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm"></div>
+  </div>
+
+  <!-- ── 6. DEMO SCENARIOS ──────────────────────────────────────── -->
+  <div class="card p-6">
+    <h2 class="font-bold text-gray-800 mb-1">🎬 Demo Scenarios</h2>
+    <p class="text-xs text-gray-500 mb-4">Click a scenario to simulate a real business event across all dashboards</p>
+    <div class="flex flex-wrap gap-3" id="scenario-btns">
+      <!-- filled by JS -->
+    </div>
+    <div id="scenario-status" class="hidden mt-4 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3"></div>
+  </div>
+
+  <!-- ── 7. WORKFLOW VISUALISATION ─────────────────────────────── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card p-6 lg:col-span-1">
+      <h2 class="font-bold text-gray-800 mb-5">🔄 Agent Workflow</h2>
+      <div id="workflow-steps" class="flex flex-col items-center gap-0"></div>
+    </div>
+
+    <!-- 3-Year FY Snapshot -->
+    <div class="card p-6 lg:col-span-2">
+      <h2 class="font-bold text-gray-700 mb-4">📊 3-Year FY Snapshot</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="fy-snapshot-table">
+          <thead>
+            <tr class="bg-gray-50 text-gray-500 uppercase text-xs">
+              <th class="py-2 px-3 text-left">Metric</th>
+              <th class="py-2 px-3 text-center" id="th-fy0"></th>
+              <th class="py-2 px-3 text-center" id="th-fy1"></th>
+              <th class="py-2 px-3 text-center" id="th-fy2"></th>
+            </tr>
+          </thead>
+          <tbody id="fy-snapshot-body">
+            <tr><td colspan="4" class="py-4 text-center text-gray-400 text-xs">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 8. DASHBOARD NAVIGATION CARDS ────────────────────────── -->
+  <div>
+    <h2 class="font-bold text-gray-700 mb-4">🧭 Explore Dashboards</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      <!-- AI Executive — largest / accent -->
+      <div class="card p-6 flex flex-col border-2 border-purple-300 sm:col-span-2 lg:col-span-1"
+           style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">
+        <div class="flex items-center mb-4">
+          <div class="bg-purple-600 p-3 rounded-xl">
+            <span class="text-white text-xl">🧠</span>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-bold text-purple-800">AI Executive</h3>
+            <p class="text-xs text-purple-500">Command Center</p>
+          </div>
+        </div>
+        <p class="text-purple-700 text-sm mb-3">Full AI investigation, agent workforce status, executive brief &amp; action center</p>
+        <button onclick="window.scrollTo({top:0,behavior:'smooth'})"
+                class="mt-auto w-full bg-purple-600 text-white py-2.5 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-bold">
+          ↑ Back to Top
+        </button>
       </div>
 
-      <!-- Hidden KPI data stores — written by renderKPIs() & applyCompanyData() -->
-      <span id="kpi-revenue" class="hidden"></span>
-      <span id="kpi-revenue-chg" class="hidden"></span>
-      <span id="kpi-cash" class="hidden"></span>
-      <span id="kpi-cash-chg" class="hidden"></span>
-      <span id="kpi-csat" class="hidden"></span>
-      <span id="kpi-users" class="hidden"></span>
-
-      <!-- 🧠 Executive Brief -->
-      <div id="exec-brief" class="mb-6 rounded-2xl overflow-hidden shadow-lg border border-purple-100" style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 60%,#1e3a5f 100%);">
-
-        <!-- Header bar -->
-        <div class="flex items-center justify-between px-6 pt-5 pb-3">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🧠</span>
-            <span class="text-white font-bold text-lg tracking-tight">Executive Brief</span>
-            <span id="eb-fy-badge" class="ml-2 text-xs bg-white/15 text-purple-200 px-2.5 py-0.5 rounded-full font-medium"></span>
+      <!-- Sales -->
+      <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-blue-100 p-3 rounded-xl">
+            <span class="text-blue-600 text-xl">📊</span>
           </div>
-          <span id="eb-confidence" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">AI Confidence –</span>
+          <h3 class="ml-3 text-base font-semibold text-gray-800">Sales</h3>
         </div>
-
-        <!-- Main content grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10 px-2 pb-2">
-
-          <!-- Signal -->
-          <div class="px-5 py-4">
-            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Signal</p>
-            <p id="eb-signal" class="text-white font-bold text-base leading-snug">Loading…</p>
-            <p id="eb-cause" class="text-purple-200 text-xs mt-1.5 leading-relaxed"></p>
-          </div>
-
-          <!-- Predicted FY Impact -->
-          <div class="px-5 py-4">
-            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Predicted FY Impact</p>
-            <p id="eb-impact" class="text-white font-bold text-2xl">–</p>
-            <p id="eb-impact-sub" class="text-purple-200 text-xs mt-1.5"></p>
-          </div>
-
-          <!-- KPI Snapshot -->
-          <div class="px-5 py-4">
-            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">KPI Snapshot</p>
-            <div class="space-y-1.5">
-              <div class="flex justify-between text-xs">
-                <span class="text-purple-300">Revenue</span>
-                <span id="eb-rev" class="text-white font-semibold">–</span>
-              </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-purple-300">Cash</span>
-                <span id="eb-cash" class="text-white font-semibold">–</span>
-              </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-purple-300">CSAT</span>
-                <span id="eb-csat" class="text-white font-semibold">–</span>
-              </div>
-              <div class="flex justify-between text-xs">
-                <span class="text-purple-300">Users</span>
-                <span id="eb-users" class="text-white font-semibold">–</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recommended Action -->
-          <div class="px-5 py-4 flex flex-col justify-between">
-            <div>
-              <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Recommended Action</p>
-              <p id="eb-action" class="text-white text-sm font-medium leading-snug">–</p>
-            </div>
-            <div class="flex gap-2 mt-4">
-              <button onclick="ebApprove()" id="eb-approve-btn"
-                      class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
-                Approve
-              </button>
-              <button onclick="ebSimulate()" id="eb-simulate-btn"
-                      class="flex-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold py-2 px-3 rounded-lg border border-white/20 transition-colors">
-                Simulate
-              </button>
-            </div>
-          </div>
-
-        </div><!-- /grid -->
-      </div><!-- /exec-brief -->
-
-      <!-- FY Comparison Mini-Table -->
-      <div class="bg-white rounded-lg shadow-md p-5 mb-6">
-        <h2 class="font-semibold text-gray-700 mb-4">3-Year FY Snapshot</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm" id="fy-snapshot-table">
-            <thead>
-              <tr class="bg-gray-50 text-gray-500 uppercase text-xs">
-                <th class="py-2 px-3 text-left">Metric</th>
-                <th class="py-2 px-3 text-center" id="th-fy0"></th>
-                <th class="py-2 px-3 text-center" id="th-fy1"></th>
-                <th class="py-2 px-3 text-center" id="th-fy2"></th>
-              </tr>
-            </thead>
-            <tbody id="fy-snapshot-body">
-              <tr><td colspan="4" class="py-4 text-center text-gray-400 text-xs">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <p class="text-gray-500 text-xs mb-4">Revenue · Pipeline · Regional breakdown · FY comparison · AI chat</p>
+        <a href="/static/sales.html" class="mt-auto block w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors text-center text-sm font-medium">View Sales →</a>
       </div>
 
-      <!-- Navigation Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <!-- Sales -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col">
-          <div class="flex items-center mb-4">
-            <div class="bg-blue-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold">Sales Monitoring</h3>
+      <!-- Finance -->
+      <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-green-100 p-3 rounded-xl">
+            <span class="text-green-600 text-xl">💰</span>
           </div>
-          <p class="text-gray-600 text-sm mb-3">Track revenue, deals, pipeline &amp; FY performance</p>
-          <p class="text-xs text-gray-500 mb-4">FY selector · Regional breakdown · Comparison tables · AI chat</p>
-          <a href="/static/sales.html" class="mt-auto block w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors text-center text-sm font-medium">View Sales Dashboard →</a>
+          <h3 class="ml-3 text-base font-semibold text-gray-800">Finance</h3>
         </div>
-
-        <!-- Finance -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col">
-          <div class="flex items-center mb-4">
-            <div class="bg-green-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold">Finance Analysis</h3>
-          </div>
-          <p class="text-gray-600 text-sm mb-3">Monitor cash, margins, EBITDA &amp; runway</p>
-          <p class="text-xs text-gray-500 mb-4">Revenue vs Expenses chart · Margin trends · FY comparison · AI chat</p>
-          <a href="/static/finance.html" class="mt-auto block w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors text-center text-sm font-medium">View Finance Dashboard →</a>
-        </div>
-
-        <!-- Operations -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col">
-          <div class="flex items-center mb-4">
-            <div class="bg-purple-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold">Operations</h3>
-          </div>
-          <p class="text-gray-600 text-sm mb-3">Track uptime, CSAT, NPS &amp; support tickets</p>
-          <p class="text-xs text-gray-500 mb-4">3-year trend charts · System status · FY comparison · AI chat</p>
-          <a href="/static/operations.html" class="mt-auto block w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors text-center text-sm font-medium">View Operations Dashboard →</a>
-        </div>
-
-        <!-- Reports Portal — Power BI / JSON -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col">
-          <div class="flex items-center mb-4">
-            <div class="bg-sky-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold">Reports Portal</h3>
-          </div>
-          <p class="text-gray-600 text-sm mb-3">Upload Power BI &amp; JSON reports for AI analysis</p>
-          <p class="text-xs text-gray-500 mb-4">.pbix / .json · AI executive summary · Ask questions · Download parsed data</p>
-          <a href="/static/reports.html" class="mt-auto block w-full bg-sky-600 text-white py-2 px-4 rounded hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports Portal →</a>
-        </div>
-
-        <!-- Excel AI Analysis — separate card -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col">
-          <div class="flex items-center mb-4">
-            <div class="bg-emerald-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M3 10h18M3 14h18M10 3v18M6 3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold">Excel AI Analysis</h3>
-          </div>
-          <p class="text-gray-600 text-sm mb-3">Upload any Excel workbook — AI converts it to a Power BI-style report</p>
-          <p class="text-xs text-gray-500 mb-4">.xlsx / .xls · KPI stats (min/max/mean/sum) · Suggested dashboard layout · AI recommendations</p>
-          <a href="/static/excel-analysis.html" class="mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Excel Analyser →</a>
-        </div>
-
-        <!-- Import Company Data -->
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow flex flex-col border-2 border-dashed border-purple-200">
-          <div class="flex items-center mb-4">
-            <div class="bg-purple-100 p-3 rounded-full">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-              </svg>
-            </div>
-            <h3 class="ml-3 text-lg font-semibold text-purple-700">Import Company Data</h3>
-          </div>
-          <p class="text-gray-600 text-sm mb-3">Replace all dashboard KPIs with your own company's real data</p>
-          <p class="text-xs text-gray-500 mb-4">Upload .xlsx or .pbix — Revenue, Cash, CSAT, Users replace demo data across all dashboards</p>
-          <button onclick="openImportModal()" class="mt-auto block w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors text-center text-sm font-medium">Import My Data →</button>
-        </div>
+        <p class="text-gray-500 text-xs mb-4">Cash · Margins · EBITDA · Runway · FY trends · AI chat</p>
+        <a href="/static/finance.html" class="mt-auto block w-full bg-green-600 text-white py-2 px-4 rounded-xl hover:bg-green-700 transition-colors text-center text-sm font-medium">View Finance →</a>
       </div>
 
-      <!-- Alerts + API Docs -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <h2 class="font-semibold text-gray-700 mb-3">Active Alerts</h2>
-          <div id="alerts-list" class="space-y-2 text-sm">
-            <p class="text-gray-400 text-xs">Loading alerts…</p>
+      <!-- Operations -->
+      <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-purple-100 p-3 rounded-xl">
+            <span class="text-purple-600 text-xl">⚙️</span>
           </div>
+          <h3 class="ml-3 text-base font-semibold text-gray-800">Operations</h3>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <h2 class="font-semibold text-gray-700 mb-3">API Documentation</h2>
-          <p class="text-gray-600 text-sm mb-4">Interact with all endpoints via Swagger UI or ReDoc.</p>
-          <div class="flex gap-3 mb-4">
-            <a href="/docs" target="_blank" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 text-sm">Swagger UI</a>
-            <a href="/redoc" target="_blank" class="bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 text-sm">ReDoc</a>
-          </div>
-          <p class="text-xs text-gray-400">New endpoints: <code class="bg-gray-100 px-1 rounded">/metrics/sales/fy</code>, <code class="bg-gray-100 px-1 rounded">/metrics/finance/compare</code>, <code class="bg-gray-100 px-1 rounded">/metrics/chat</code></p>
-        </div>
+        <p class="text-gray-500 text-xs mb-4">Uptime · CSAT · NPS · Support tickets · 3-year trends</p>
+        <a href="/static/operations.html" class="mt-auto block w-full bg-purple-600 text-white py-2 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-medium">View Operations →</a>
       </div>
 
-    </main>
+      <!-- Reports -->
+      <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-sky-100 p-3 rounded-xl">
+            <span class="text-sky-600 text-xl">📁</span>
+          </div>
+          <h3 class="ml-3 text-base font-semibold text-gray-800">Reports Portal</h3>
+        </div>
+        <p class="text-gray-500 text-xs mb-4">.pbix / .json · AI executive summary · Ask questions</p>
+        <a href="/static/reports.html" class="mt-auto block w-full bg-sky-600 text-white py-2 px-4 rounded-xl hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports →</a>
+      </div>
 
-    <!-- Global Chat Panel -->
-    <aside id="chat-panel" class="hidden w-80 bg-white border-l border-gray-200 flex flex-col" style="height:calc(100vh - 88px); position:sticky; top:88px;">
-      <div class="gradient-bg text-white px-4 py-3 flex justify-between items-center">
-        <span class="font-semibold">💬 COO AI Assistant</span>
-        <button onclick="toggleChat()" class="text-white opacity-70 hover:opacity-100 text-xl leading-none">&times;</button>
+      <!-- Excel AI -->
+      <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-emerald-100 p-3 rounded-xl">
+            <span class="text-emerald-600 text-xl">📗</span>
+          </div>
+          <h3 class="ml-3 text-base font-semibold text-gray-800">Excel AI Analysis</h3>
+        </div>
+        <p class="text-gray-500 text-xs mb-4">.xlsx / .xls · Power BI-style AI report · KPI stats</p>
+        <a href="/static/excel-analysis.html" class="mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Analyser →</a>
       </div>
-      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
-      <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
-        <button onclick="quickAsk('Give me an overall summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
-        <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
-        <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
-        <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
+
+      <!-- Import Company Data -->
+      <div class="card p-6 flex flex-col border-2 border-dashed border-purple-300 hover:shadow-lg transition-shadow">
+        <div class="flex items-center mb-3">
+          <div class="bg-purple-100 p-3 rounded-xl">
+            <span class="text-purple-600 text-xl">📥</span>
+          </div>
+          <h3 class="ml-3 text-base font-semibold text-purple-700">Company Data</h3>
+        </div>
+        <p class="text-gray-500 text-xs mb-4">Upload Excel / .pbix or describe data via AI to replace all demo KPIs</p>
+        <button onclick="openImportModal()" class="mt-auto w-full bg-purple-600 text-white py-2 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-medium">Import My Data →</button>
       </div>
-      <div class="p-3 border-t border-gray-200 flex gap-2">
-        <input id="chat-input" type="text" placeholder="Ask about any domain…"
-               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
-               onkeydown="if(event.key==='Enter') sendChat()" />
-        <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+
+    </div>
+  </div>
+
+  <!-- ── 9. ACTIVE ALERTS ────────────────────────────────────────── -->
+  <div class="card p-6">
+    <h2 class="font-bold text-gray-700 mb-3">🚨 Active Alerts</h2>
+    <div id="alerts-list" class="space-y-2 text-sm">
+      <p class="text-gray-400 text-xs">Loading alerts…</p>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ═══════════════════════════ CHAT PANEL ═══════════════════════════ -->
+<aside id="chat-panel" class="hidden fixed right-0 top-0 w-80 bg-white border-l border-gray-200 flex flex-col shadow-2xl z-50" style="height:100vh;">
+  <div class="gradient-bg text-white px-4 py-3 flex justify-between items-center">
+    <span class="font-semibold text-sm">💬 COO AI Assistant</span>
+    <button onclick="toggleChat()" class="text-white opacity-70 hover:opacity-100 text-xl leading-none">&times;</button>
+  </div>
+  <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
+  <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
+    <button onclick="quickAsk('Give me an overall summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
+    <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
+    <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
+    <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
+  </div>
+  <div class="p-3 border-t border-gray-200 flex gap-2">
+    <input id="chat-input" type="text" placeholder="Ask about any domain…"
+           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+           onkeydown="if(event.key==='Enter') sendChat()" />
+    <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════ IMPORT MODAL ═══════════════════════════ -->
+<div id="import-modal">
+  <div id="import-box">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">Import Your Company Data</h2>
+      <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="flex border border-gray-200 rounded-lg overflow-hidden mb-4 text-sm font-medium">
+      <button id="import-tab-file" onclick="switchImportTab('file')" class="flex-1 py-2 bg-purple-600 text-white transition-colors">📁 Upload File</button>
+      <button id="import-tab-ai"   onclick="switchImportTab('ai')"   class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">✨ Ask AI</button>
+    </div>
+
+    <!-- Import progress steps (shown during upload) -->
+    <div id="import-progress" class="hidden mb-4">
+      <div class="flex items-center justify-between text-xs mb-2">
+        <span class="font-semibold text-gray-600">Processing…</span>
       </div>
-    </aside>
-  </div><!-- /flex -->
+      <div class="flex gap-1 items-center overflow-x-auto pb-1">
+        <span id="ip-1" class="ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">Upload Excel</span>
+        <span class="text-gray-300 flex-shrink-0">→</span>
+        <span id="ip-2" class="ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">Detecting KPIs</span>
+        <span class="text-gray-300 flex-shrink-0">→</span>
+        <span id="ip-3" class="ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">AI Analysis</span>
+        <span class="text-gray-300 flex-shrink-0">→</span>
+        <span id="ip-4" class="ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">Building Dashboards</span>
+        <span class="text-gray-300 flex-shrink-0">→</span>
+        <span id="ip-5" class="ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400">Done ✓</span>
+      </div>
+    </div>
+
+    <div id="import-section-file">
+      <p class="text-sm text-gray-600 mb-3">Upload your company's Excel or Power BI file to replace all demo KPIs.</p>
+      <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500 space-y-1">
+        <p>📊 <strong>Detected columns:</strong> Revenue / Cash / Users / CSAT</p>
+        <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
+      </div>
+      <button onclick="downloadSampleExcel()" class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
+        ⬇ Download Sample Excel
+      </button>
+      <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
+    </div>
+
+    <div id="import-section-ai" class="hidden">
+      <p class="text-sm text-gray-600 mb-3">Describe your financials in plain English — AI extracts & applies KPIs automatically.</p>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3 text-xs text-purple-700">
+        <strong>Example:</strong> "Acme Corp: Revenue $12.4M, Cash $3.2M, 8,500 active users, CSAT 4.3/5."
+      </div>
+      <textarea id="ai-import-prompt" rows="4"
+                placeholder="Describe your company data here…"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
+      <button onclick="submitAIImport()" class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
+        <span id="ai-import-btn-text">✨ Import with AI</span>
+      </button>
+    </div>
+
+    <div id="import-status"></div>
+    <div class="flex gap-3 mt-4">
+      <button id="import-submit-btn" onclick="submitImport()" class="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">Import Data</button>
+      <button onclick="closeImportModal()" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-200">Cancel</button>
+    </div>
+  </div>
 </div>
 
+<div id="toast"></div>
+
+<!-- ═══════════════════════════ SCRIPT ═══════════════════════════ -->
 <script>
+// ── State ─────────────────────────────────────────────────────────
 const CY = new Date().getFullYear();
 const FYS = [CY, CY-1, CY-2];
 let selectedFY = CY;
-let allFYData = { sales: null, finance: null, operations: null };
+let allFYData  = { sales: null, finance: null, operations: null };
 
-// ── Init ─────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────
 async function init() {
   buildFYTabs();
   checkStatus();
+  renderAgentGrid();
+  renderWorkflow();
+  renderActions();
+  renderScenarioBtns();
   await loadAllFYData();
+  setTimeout(replayInvestigation, 800);
 }
 
+// ── FY Tabs ───────────────────────────────────────────────────────
 function buildFYTabs() {
   const c = document.getElementById('fy-tabs');
   FYS.forEach(fy => {
     const b = document.createElement('button');
     b.textContent = `FY ${fy}`; b.dataset.fy = fy;
-    b.className = 'fy-tab px-4 py-1 rounded-full border border-purple-300 text-sm font-medium hover:bg-purple-100 transition-colors' + (fy===CY?' active':'');
+    b.className = 'fy-tab px-3 py-1 rounded-full border border-white/30 text-xs font-semibold text-white/80 hover:bg-white/20 transition-colors' + (fy===CY?' active':'');
     b.onclick = () => selectFY(fy); c.appendChild(b);
   });
 }
-
 function setActiveFYTab(fy) {
   document.querySelectorAll('.fy-tab').forEach(b => {
-    const isActive = +b.dataset.fy === fy;
-    b.classList.toggle('active', isActive);
-    // Force inline styles as a belt-and-braces fallback for Tailwind CDN
-    if (isActive) {
-      b.style.background = '#7c3aed';
-      b.style.color      = '#fff';
-      b.style.borderColor= '#7c3aed';
-    } else {
-      b.style.background = '';
-      b.style.color      = '';
-      b.style.borderColor= '';
-    }
+    const on = +b.dataset.fy === fy;
+    b.classList.toggle('active', on);
+    b.style.background   = on ? '#7c3aed' : '';
+    b.style.color        = on ? '#fff' : '';
+    b.style.borderColor  = on ? '#7c3aed' : '';
   });
 }
+function selectFY(fy) { selectedFY = fy; setActiveFYTab(fy); renderKPIs(); }
 
-function selectFY(fy) {
-  selectedFY = fy;
-  setActiveFYTab(fy);
-  renderKPIs();
-}
-
+// ── Data Load ─────────────────────────────────────────────────────
 async function loadAllFYData() {
   try {
     const [s, f, o] = await Promise.all([
@@ -398,23 +514,24 @@ async function loadAllFYData() {
     renderKPIs();
     renderFYSnapshot();
     loadAlerts();
+    renderImpactGrid();
+    renderFindings();
     document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-    // Re-assert active tab after every data reload — data render must not lose the selection
     setActiveFYTab(selectedFY);
   } catch(e) { console.error('Overview data load failed', e); }
 }
 
+// ── KPIs (hidden stores) ──────────────────────────────────────────
 function renderKPIs() {
-  const fy = String(selectedFY);
-  const prevFY = String(selectedFY - 1);
-
+  const fy = String(selectedFY), prevFY = String(selectedFY - 1);
   if (allFYData.sales?.data?.[fy]) {
     const m = allFYData.sales.data[fy].metrics;
     const prev = allFYData.sales.data[prevFY]?.metrics;
     document.getElementById('kpi-revenue').textContent = '$' + (m.total_revenue/1e6).toFixed(2) + 'M';
     if (prev) {
       const chg = ((m.total_revenue - prev.total_revenue)/prev.total_revenue*100).toFixed(1);
-      document.getElementById('kpi-revenue-chg').innerHTML = `<span class="${chg>=0?'change-pos':'change-neg'}">${chg>=0?'↑':'↓'} ${Math.abs(chg)}% vs FY ${selectedFY-1}</span>`;
+      document.getElementById('kpi-revenue-chg').innerHTML =
+        `<span class="${chg>=0?'change-pos':'change-neg'}">${chg>=0?'↑':'↓'} ${Math.abs(chg)}% vs FY ${selectedFY-1}</span>`;
     }
   }
   if (allFYData.finance?.data?.[fy]) {
@@ -427,460 +544,520 @@ function renderKPIs() {
     document.getElementById('kpi-csat').textContent = m.customer_satisfaction.toFixed(1) + '/5.0';
     document.getElementById('kpi-users').textContent = m.active_users.toLocaleString();
   }
-
   renderExecutiveBrief();
 }
 
-// ── Executive Brief ───────────────────────────────────────────────────────
+// ── Executive Brief ───────────────────────────────────────────────
 function renderExecutiveBrief() {
-  const fy = String(selectedFY);
-  const prevFY = String(selectedFY - 1);
-
-  // ── FY badge ──
+  const fy = String(selectedFY), prevFY = String(selectedFY - 1);
   document.getElementById('eb-fy-badge').textContent = `FY ${selectedFY}`;
-
-  // ── KPI snapshot column ──
   document.getElementById('eb-rev').textContent   = document.getElementById('kpi-revenue').textContent || '–';
   document.getElementById('eb-cash').textContent  = document.getElementById('kpi-cash').textContent   || '–';
   document.getElementById('eb-csat').textContent  = document.getElementById('kpi-csat').textContent   || '–';
   document.getElementById('eb-users').textContent = document.getElementById('kpi-users').textContent  || '–';
 
-  // ── Derive signal, impact & action from live data ──
+  const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
+  const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
+  const finCur    = allFYData.finance?.data?.[fy]?.metrics;
+  const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
+  if (!salesCur) return;
+
+  const revChgPct = salesPrev
+    ? ((salesCur.total_revenue - salesPrev.total_revenue) / salesPrev.total_revenue * 100) : null;
+
+  let signal, cause, impactVal, impactSub, action, confidence, opp, save;
+
+  if (revChgPct !== null && revChgPct < -3) {
+    const a = Math.abs(revChgPct).toFixed(1);
+    const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
+    signal = `Revenue dropped ${a}%`; cause = `Cause: Revenue declined vs FY ${selectedFY-1}. Enterprise renewals and regional mix are primary drivers.`;
+    impactVal = `$${m}M`; impactSub = 'Projected full-FY variance';
+    action = `Increase Enterprise pricing by 3% and accelerate pipeline conversion in top regions.`;
+    confidence = Math.min(99, 91 + Math.round(Math.abs(revChgPct)));
+    opp = `+$${(Math.abs(parseFloat(m))*0.17).toFixed(1)}M`; save = `$${(Math.abs(parseFloat(m))*0.05).toFixed(1)}M`;
+  } else if (revChgPct !== null && revChgPct >= 5) {
+    const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
+    signal = `Revenue up ${revChgPct.toFixed(1)}%`; cause = `Strong growth vs FY ${selectedFY-1}. Sustain momentum across top-performing segments.`;
+    impactVal = `+$${m}M`; impactSub = 'Projected full-FY upside';
+    action = `Accelerate expansion in high-growth regions and protect gross margin.`;
+    confidence = Math.min(99, 93 + Math.round(revChgPct/2));
+    opp = `+$${(parseFloat(m)*0.12).toFixed(1)}M`; save = `$${(parseFloat(m)*0.04).toFixed(1)}M`;
+  } else if (finCur && finCur.runway_months < 9) {
+    signal = `Cash runway ${finCur.runway_months.toFixed(1)} months`; cause = `Cause: Cash burn rate exceeds safe threshold. Immediate action required.`;
+    impactVal = '–'; impactSub = 'Liquidity attention required';
+    action = `Prioritise receivables and defer non-critical CapEx.`; confidence = 96;
+    opp = '+$0.8M'; save = '$1.2M';
+  } else if (opsCur && opsCur.customer_satisfaction < 4.0) {
+    signal = `CSAT ${opsCur.customer_satisfaction.toFixed(1)}/5.0`; cause = `Cause: Satisfaction below 4.0 threshold — elevated churn risk.`;
+    impactVal = '–'; impactSub = 'Potential NRR impact';
+    action = `Launch customer success outreach and fix top ticket categories.`; confidence = 88;
+    opp = '+$1.1M'; save = '$0.4M';
+  } else {
+    signal = `Business on track for FY ${selectedFY}`; cause = 'No critical signals. KPIs within healthy operating ranges.';
+    impactVal = 'On Plan'; impactSub = 'No material variance';
+    action = `Maintain strategy. Monitor lagging indicators weekly.`; confidence = 97;
+    opp = '+$2.1M'; save = '$0.6M';
+  }
+
+  document.getElementById('eb-signal').textContent     = signal;
+  document.getElementById('eb-cause').textContent      = cause;
+  document.getElementById('eb-impact').textContent     = impactVal;
+  document.getElementById('eb-impact-sub').textContent = impactSub;
+  document.getElementById('eb-action').textContent     = action;
+  document.getElementById('eb-opp').textContent        = opp  || '–';
+  document.getElementById('eb-save').textContent       = save || '–';
+  document.getElementById('eb-confidence').textContent = `AI Confidence ${confidence}%`;
+
+  const confEl = document.getElementById('eb-confidence');
+  confEl.className = confidence >= 90
+    ? 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+    : confidence >= 75
+    ? 'text-xs font-bold px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+    : 'text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
+
+  const impEl = document.getElementById('eb-impact');
+  impEl.className = impactVal.startsWith('-') || impactVal === '–'
+    ? 'font-bold text-2xl text-red-300' : 'font-bold text-2xl text-emerald-300';
+
+  window._ebCurrentAction = action; window._ebCurrentSignal = signal;
+}
+
+function ebApprove() {
+  const btn = document.getElementById('eb-approve-btn');
+  btn.textContent = '✓ Approved'; btn.onclick = null;
+  btn.className = 'flex-1 bg-emerald-600 text-white text-xs font-bold py-2.5 px-3 rounded-xl cursor-default';
+  showToast(`✓ Action approved: "${window._ebCurrentAction}"`);
+  // Add to today's actions
+  addTodayAction(window._ebCurrentSignal, 'Approved');
+}
+function ebSimulate() {
+  window.open('/static/finance.html?sim=' + encodeURIComponent(window._ebCurrentAction||'strategy'), '_blank');
+}
+
+// ── AI Investigation ──────────────────────────────────────────────
+const INVESTIGATION_STEPS = [
+  { icon:'🔴', text:'Revenue anomaly detected',        delay:0,    type:'alert' },
+  { icon:'🤖', text:'Sales Agent investigating…',      delay:600,  type:'agent' },
+  { icon:'✓',  text:'Pipeline data checked',           delay:1400, type:'ok'    },
+  { icon:'✓',  text:'Regional breakdown analysed',     delay:2000, type:'ok'    },
+  { icon:'🤖', text:'Finance Agent investigating…',    delay:2600, type:'agent' },
+  { icon:'✓',  text:'Margin impact calculated',        delay:3400, type:'ok'    },
+  { icon:'🤖', text:'Operations Agent investigating…', delay:4000, type:'agent' },
+  { icon:'✓',  text:'Inventory &amp; CSAT verified',   delay:4700, type:'ok'    },
+  { icon:'🧠', text:'Root Cause: Enterprise renewals dropped — Q3 Europe region underperformed by 18%', delay:5400, type:'root' },
+  { icon:'💡', text:'Recommendation: Increase Enterprise discounts 5% and fast-track Q4 pipeline', delay:6200, type:'rec' },
+  { icon:'📊', text:'Confidence: 94%',                 delay:6800, type:'conf'  },
+];
+
+let _invTimers = [];
+function replayInvestigation() {
+  _invTimers.forEach(t => clearTimeout(t));
+  _invTimers = [];
+  const el = document.getElementById('investigation-steps');
+  el.innerHTML = '';
+  INVESTIGATION_STEPS.forEach(step => {
+    const row = document.createElement('div');
+    const bg = step.type==='alert'?'bg-red-50 border-red-200 text-red-700'
+              :step.type==='root' ?'bg-yellow-50 border-yellow-200 text-yellow-800'
+              :step.type==='rec'  ?'bg-purple-50 border-purple-200 text-purple-700'
+              :step.type==='conf' ?'bg-emerald-50 border-emerald-200 text-emerald-700'
+              :step.type==='agent'?'bg-blue-50 border-blue-200 text-blue-700'
+              :'bg-gray-50 border-gray-200 text-gray-700';
+    row.className = `inv-step flex items-start gap-2.5 border rounded-xl px-3.5 py-2.5 ${bg}`;
+    row.innerHTML = `<span class="text-base flex-shrink-0 mt-0.5">${step.icon}</span><span class="text-xs font-medium leading-relaxed">${step.text}</span>`;
+    el.appendChild(row);
+    const t = setTimeout(() => row.classList.add('show'), step.delay);
+    _invTimers.push(t);
+  });
+}
+
+// ── Agent Grid ────────────────────────────────────────────────────
+const AGENTS = [
+  { name:'CEO Agent',        icon:'👔', status:'online' },
+  { name:'Sales Agent',      icon:'📊', status:'online' },
+  { name:'Finance Agent',    icon:'💰', status:'online' },
+  { name:'HR Agent',         icon:'👥', status:'online' },
+  { name:'Operations Agent', icon:'⚙️', status:'online' },
+  { name:'Procurement Agent',icon:'📦', status:'online' },
+  { name:'Risk Agent',       icon:'🛡️', status:'online' },
+  { name:'Executive Agent',  icon:'🧠', status:'online' },
+];
+function renderAgentGrid() {
+  document.getElementById('agent-grid').innerHTML = AGENTS.map(a => `
+    <div class="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2.5">
+      <span class="text-lg">${a.icon}</span>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold text-gray-700 truncate">${a.name}</p>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 agent-online flex-shrink-0"></span>
+          <span class="text-xs text-emerald-600 font-medium">Online</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Today's Actions ───────────────────────────────────────────────
+const DEFAULT_ACTIONS = [
+  { text:'Reduce excess inventory — Q3 Europe',     status:'waiting',   badge:'Awaiting Approval' },
+  { text:'Increase marketing budget +12%',           status:'approved',  badge:'Approved' },
+  { text:'Send cash flow alert to CFO',              status:'done',      badge:'Completed' },
+  { text:'Notify Sales Director — pipeline review',  status:'done',      badge:'Completed' },
+  { text:'Update enterprise pricing proposal',       status:'waiting',   badge:'Awaiting Approval' },
+  { text:'Generate Q3 board summary report',         status:'done',      badge:'Completed' },
+];
+let _actions = [...DEFAULT_ACTIONS];
+
+function renderActions() {
+  const el = document.getElementById('actions-list');
+  const done = _actions.filter(a=>a.status==='done').length;
+  document.getElementById('actions-count').textContent = `${done} completed`;
+  el.innerHTML = _actions.map((a,i) => {
+    const badgeCls = a.status==='waiting'?'badge-wait':a.status==='approved'?'badge-appr':'badge-done';
+    const dotCls   = a.status==='waiting'?'bg-yellow-400':a.status==='approved'?'bg-blue-400':'bg-emerald-500';
+    return `<div class="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="w-2 h-2 rounded-full flex-shrink-0 ${dotCls}"></span>
+        <span class="text-xs text-gray-700 truncate">${a.text}</span>
+      </div>
+      <span class="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${badgeCls}">${a.badge}</span>
+    </div>`;
+  }).join('');
+}
+
+function addTodayAction(text, status) {
+  const badge = status==='Approved'?'Approved':status==='done'?'Completed':'Awaiting Approval';
+  const st    = status==='Approved'?'approved':status==='done'?'done':'waiting';
+  _actions.unshift({ text, status:st, badge });
+  renderActions();
+}
+
+// ── Business Impact Grid ──────────────────────────────────────────
+function renderImpactGrid() {
+  const fy = String(selectedFY);
+  const rev = allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+  const cash= allFYData.finance?.data?.[fy]?.metrics?.cash_balance;
+  const items = [
+    { label:'Revenue',          value: rev  ? '$'+(rev/1e6).toFixed(1)+'M' : '–',  sub:'AI Opportunity +$2.1M',  risk:'Medium', color:'blue'   },
+    { label:'Cash Balance',     value: cash ? '$'+(cash/1e6).toFixed(1)+'M': '–',  sub:'Potential Savings $620K', risk:'Low',    color:'green'  },
+    { label:'Forecast Accuracy',value:'96%',                                         sub:'Actions completed: 12',  risk:'Low',    color:'emerald'},
+    { label:'Churn Risk Index', value:'Medium',                                      sub:'3 at-risk accounts',     risk:'High',   color:'red'    },
+  ];
+  const riskColor = {Low:'text-emerald-600 bg-emerald-50',Medium:'text-yellow-700 bg-yellow-50',High:'text-red-600 bg-red-50'};
+  document.getElementById('impact-grid').innerHTML = items.map(it => `
+    <div class="bg-gray-50 rounded-xl p-4">
+      <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">${it.label}</p>
+      <p class="text-xl font-bold text-gray-800 mb-1">${it.value}</p>
+      <p class="text-xs text-gray-500 mb-2">${it.sub}</p>
+      <span class="text-xs font-bold px-2 py-0.5 rounded-full ${riskColor[it.risk]||riskColor.Low}">${it.risk} Risk</span>
+    </div>`).join('');
+}
+
+// ── Top AI Findings ───────────────────────────────────────────────
+function renderFindings() {
+  const fy = String(selectedFY), prevFY = String(selectedFY-1);
   const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
   const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
   const finCur    = allFYData.finance?.data?.[fy]?.metrics;
   const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
 
-  if (!salesCur) return; // data not loaded yet
-
-  // Revenue change %
-  const revChgPct = salesPrev
-    ? ((salesCur.total_revenue - salesPrev.total_revenue) / salesPrev.total_revenue * 100)
-    : null;
-
-  // Pick the most notable signal
-  let signal, cause, impactVal, impactSub, action, confidence;
-
-  if (revChgPct !== null && revChgPct < -3) {
-    const absChg = Math.abs(revChgPct).toFixed(1);
-    const impactM = ((salesCur.total_revenue - salesPrev.total_revenue) / 1e6).toFixed(1);
-    signal     = `Revenue dropped ${absChg}%`;
-    cause      = `Cause: Total revenue declined vs FY ${selectedFY - 1}. Review regional & segment mix for root cause.`;
-    impactVal  = `${impactM}M`;
-    impactSub  = `Projected full-FY variance`;
-    action     = `Review regional pricing and push enterprise tier upsell to offset decline.`;
-    confidence = 91 + Math.round(Math.abs(revChgPct));
-  } else if (revChgPct !== null && revChgPct >= 5) {
-    const impactM = ((salesCur.total_revenue - salesPrev.total_revenue) / 1e6).toFixed(1);
-    signal     = `Revenue up ${revChgPct.toFixed(1)}%`;
-    cause      = `Strong growth vs FY ${selectedFY - 1}. Sustain momentum across top-performing segments.`;
-    impactVal  = `+$${impactM}M`;
-    impactSub  = `Projected full-FY upside`;
-    action     = `Accelerate expansion in high-growth regions and protect gross margin.`;
-    confidence = 93 + Math.min(5, Math.round(revChgPct / 2));
-  } else if (finCur && finCur.runway_months < 9) {
-    signal     = `Cash runway ${finCur.runway_months.toFixed(1)} months`;
-    cause      = `Cause: Cash balance relative to burn rate is below safe threshold (<12 mo).`;
-    impactVal  = `–`;
-    impactSub  = `Immediate liquidity attention required`;
-    action     = `Prioritise receivables collection and defer non-critical CapEx this quarter.`;
-    confidence = 96;
-  } else if (opsCur && opsCur.customer_satisfaction < 4.0) {
-    signal     = `CSAT at ${opsCur.customer_satisfaction.toFixed(1)}/5.0`;
-    cause      = `Cause: Customer satisfaction below 4.0 threshold — churn risk elevated.`;
-    impactVal  = `–`;
-    impactSub  = `Potential NRR impact`;
-    action     = `Launch targeted customer success outreach and address top support ticket categories.`;
-    confidence = 88;
-  } else {
-    signal     = `Business on track for FY ${selectedFY}`;
-    cause      = `No critical signals detected. KPIs within healthy operating ranges.`;
-    impactVal  = `On Plan`;
-    impactSub  = `No material variance`;
-    action     = `Maintain current strategy. Monitor lagging indicators weekly.`;
-    confidence = 97;
+  const findings = [];
+  if (salesCur && salesPrev) {
+    const chg = ((salesCur.total_revenue - salesPrev.total_revenue)/salesPrev.total_revenue*100);
+    findings.push({ title:'Revenue Anomaly', detail:`${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs prior FY`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
   }
-
-  confidence = Math.min(99, confidence); // cap at 99%
-
-  // ── Write to DOM ──
-  document.getElementById('eb-signal').textContent    = signal;
-  document.getElementById('eb-cause').textContent     = cause;
-  document.getElementById('eb-impact').textContent    = impactVal;
-  document.getElementById('eb-impact-sub').textContent = impactSub;
-  document.getElementById('eb-action').textContent    = action;
-  document.getElementById('eb-confidence').textContent = `AI Confidence ${confidence}%`;
-
-  // Confidence colour — green ≥90, yellow 75-89, red <75
-  const confEl = document.getElementById('eb-confidence');
-  if (confidence >= 90) {
-    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-  } else if (confidence >= 75) {
-    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30';
-  } else {
-    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
+  if (opsCur) {
+    const churn = opsCur.customer_satisfaction < 4.2;
+    findings.push({ title:'Customer Churn Signal', detail:`CSAT ${opsCur.customer_satisfaction.toFixed(1)}/5 · NPS ${opsCur.nps_score}`, sev: churn?'High':'Medium' });
   }
+  if (finCur) {
+    findings.push({ title:'Cash Flow Risk', detail:`Runway ${finCur.runway_months.toFixed(1)} mo · Margin ${(finCur.gross_margin*100).toFixed(1)}%`, sev: finCur.runway_months<9?'High':finCur.runway_months<15?'Medium':'Low' });
+  }
+  findings.push({ title:'Forecast Confidence', detail:'96% accuracy · 12 actions completed today', sev:'Low' });
+  if (salesCur) findings.push({ title:'Pipeline Coverage', detail:`${salesCur.win_rate?((salesCur.win_rate||0.32)*100).toFixed(0)+'% win rate':'Strong pipeline detected'}`, sev:'Low' });
+  findings.push({ title:'AI Recommendation', detail:'Increase Enterprise pricing 3% to recover margin', sev:'Medium' });
 
-  // Impact colour — red for negative, green for positive
-  const impEl = document.getElementById('eb-impact');
-  impEl.className = impactVal.startsWith('-') || impactVal.startsWith('–')
-    ? 'font-bold text-2xl text-red-300'
-    : 'font-bold text-2xl text-emerald-300';
-
-  // Store action for approve/simulate
-  window._ebCurrentAction = action;
-  window._ebCurrentSignal = signal;
+  const sevColor = {High:'border-red-300 bg-red-50',Medium:'border-yellow-300 bg-yellow-50',Low:'border-emerald-300 bg-emerald-50'};
+  const sevText  = {High:'text-red-600',Medium:'text-yellow-700',Low:'text-emerald-600'};
+  document.getElementById('findings-list').innerHTML = findings.map(f => `
+    <div class="border rounded-xl p-4 ${sevColor[f.sev]||sevColor.Low}">
+      <div class="flex justify-between items-start mb-1">
+        <p class="font-semibold text-gray-800 text-sm">${f.title}</p>
+        <span class="text-xs font-bold ${sevText[f.sev]||sevText.Low} ml-2 flex-shrink-0">${f.sev}</span>
+      </div>
+      <p class="text-xs text-gray-600">${f.detail}</p>
+    </div>`).join('');
+  document.getElementById('findings-ts').textContent = 'as of ' + new Date().toLocaleTimeString();
 }
 
-function ebApprove() {
-  const btn = document.getElementById('eb-approve-btn');
-  btn.textContent = '✓ Approved';
-  btn.className = 'flex-1 bg-emerald-600 text-white text-xs font-bold py-2 px-3 rounded-lg cursor-default';
-  btn.onclick = null;
-  showEBToast(`Action approved: "${window._ebCurrentAction}"`);
+// ── Demo Scenarios ────────────────────────────────────────────────
+const SCENARIOS = [
+  { label:'💥 Revenue Crash',     signal:'Revenue dropped 18.4%', action:'Activate emergency pricing and freeze hiring immediately.' },
+  { label:'👥 Customer Churn',    signal:'CSAT fell to 3.1/5.0',  action:'Launch retention campaign and offer renewal incentives.' },
+  { label:'💸 Cash Crisis',       signal:'Cash runway 4.2 months', action:'Initiate bridge financing and cut discretionary spend 30%.' },
+  { label:'📦 Supply Chain Delay',signal:'Inventory gap detected', action:'Switch to secondary suppliers and notify delivery teams.' },
+  { label:'🛡 Cyber Attack',      signal:'Security anomaly found', action:'Isolate affected systems and engage incident response.' },
+  { label:'🚀 Product Launch',    signal:'New revenue stream live',action:'Accelerate marketing spend and onboarding capacity.' },
+];
+function renderScenarioBtns() {
+  document.getElementById('scenario-btns').innerHTML = SCENARIOS.map((s,i) => `
+    <button onclick="runScenario(${i})"
+            class="text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors shadow-sm">
+      ${s.label}
+    </button>`).join('');
+}
+function runScenario(i) {
+  const s = SCENARIOS[i];
+  // Override exec brief fields directly
+  document.getElementById('eb-signal').textContent = s.signal;
+  document.getElementById('eb-action').textContent = s.action;
+  document.getElementById('eb-cause').textContent  = `Scenario simulation active. All agents are analysing the ${s.label.replace(/^.+ /,'')} event.`;
+  const st = document.getElementById('scenario-status');
+  st.classList.remove('hidden');
+  st.innerHTML = `<strong>${s.label}</strong> scenario activated — Executive Brief and AI Investigation updated. <button onclick="loadAllFYData();this.closest('#scenario-status').classList.add('hidden')" class="ml-2 underline text-purple-500">Reset to live data</button>`;
+  replayInvestigation();
+  window._ebCurrentAction = s.action; window._ebCurrentSignal = s.signal;
 }
 
-function ebSimulate() {
-  const action = window._ebCurrentAction || 'strategy';
-  // Navigate to finance page which has scenario tools, passing a hint
-  const url = '/static/finance.html?sim=' + encodeURIComponent(action);
-  window.open(url, '_blank');
+// ── Workflow ──────────────────────────────────────────────────────
+const WORKFLOW = ['Problem Detected','Sales Agent','Finance Agent','Operations Agent','Executive Decision','Approved','Dashboard Updated'];
+function renderWorkflow() {
+  const colors = ['bg-red-100 text-red-700','bg-blue-100 text-blue-700','bg-green-100 text-green-700',
+                  'bg-purple-100 text-purple-700','bg-yellow-100 text-yellow-700',
+                  'bg-emerald-100 text-emerald-700','bg-gray-100 text-gray-700'];
+  document.getElementById('workflow-steps').innerHTML = WORKFLOW.map((w,i) => `
+    <div class="flex flex-col items-center w-full">
+      <div class="w-full text-center text-xs font-semibold px-3 py-2 rounded-xl ${colors[i]}">${w}</div>
+      ${i < WORKFLOW.length-1 ? '<div class="wf-arrow my-1"></div>' : ''}
+    </div>`).join('');
 }
 
-function showEBToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
+// ── FY Snapshot Table ─────────────────────────────────────────────
 function renderFYSnapshot() {
-  const years = FYS.slice().reverse(); // oldest → newest
-  years.forEach((y, i) => {
-    document.getElementById(`th-fy${i}`).textContent = `FY ${y}`;
-  });
-
+  const years = FYS.slice().reverse();
+  years.forEach((y,i) => { document.getElementById(`th-fy${i}`).textContent = `FY ${y}`; });
   const rows = [
-    { label: 'Revenue', get: (y,d) => d.sales?.data?.[y] ? '$'+(d.sales.data[y].metrics.total_revenue/1e6).toFixed(2)+'M' : '–' },
-    { label: 'Expected Revenue', get: (y,d) => d.sales?.data?.[y] ? '$'+(d.sales.data[y].metrics.expected_revenue/1e6).toFixed(2)+'M' : '–' },
-    { label: 'Cash Balance', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.cash_balance/1e6).toFixed(1)+'M' : '–' },
-    { label: 'Gross Margin', get: (y,d) => d.finance?.data?.[y] ? (d.finance.data[y].metrics.gross_margin*100).toFixed(1)+'%' : '–' },
-    { label: 'EBITDA', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.ebitda/1e6).toFixed(2)+'M' : '–' },
-    { label: 'Net Income (= PAT = EAT)', get: (y,d) => d.finance?.data?.[y] ? '$'+(d.finance.data[y].metrics.net_income/1e6).toFixed(2)+'M' : '–' },
-    { label: 'CSAT', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.customer_satisfaction.toFixed(1)+'/5' : '–' },
-    { label: 'NPS Score', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.nps_score : '–' },
-    { label: 'Active Users', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.active_users.toLocaleString() : '–' },
-    { label: 'System Uptime', get: (y,d) => d.operations?.data?.[y] ? d.operations.data[y].metrics.system_uptime+'%' : '–' },
+    { label:'Revenue',        get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.total_revenue/1e6).toFixed(2)+'M':'–' },
+    { label:'Expected Rev.',  get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.expected_revenue/1e6).toFixed(2)+'M':'–' },
+    { label:'Cash Balance',   get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.cash_balance/1e6).toFixed(1)+'M':'–' },
+    { label:'Gross Margin',   get:(y,d)=>d.finance?.data?.[y] ?(d.finance.data[y].metrics.gross_margin*100).toFixed(1)+'%':'–' },
+    { label:'EBITDA',         get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.ebitda/1e6).toFixed(2)+'M':'–' },
+    { label:'Net Income',     get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.net_income/1e6).toFixed(2)+'M':'–' },
+    { label:'CSAT',           get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.customer_satisfaction.toFixed(1)+'/5':'–' },
+    { label:'NPS Score',      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.nps_score:'–' },
+    { label:'Active Users',   get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.active_users.toLocaleString():'–' },
+    { label:'System Uptime',  get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.system_uptime+'%':'–' },
   ];
-
-  document.getElementById('fy-snapshot-body').innerHTML = rows.map(row => `
+  document.getElementById('fy-snapshot-body').innerHTML = rows.map(row=>`
     <tr class="border-b border-gray-50 hover:bg-gray-50">
       <td class="py-2 px-3 font-medium text-gray-700">${row.label}</td>
-      ${years.map(y => `<td class="py-2 px-3 text-center text-gray-800">${row.get(String(y), allFYData)}</td>`).join('')}
+      ${years.map(y=>`<td class="py-2 px-3 text-center text-gray-800">${row.get(String(y),allFYData)}</td>`).join('')}
     </tr>`).join('');
 }
 
+// ── Alerts ────────────────────────────────────────────────────────
 async function loadAlerts() {
   try {
     const r = await fetch('/api/v1/metrics/summary');
     const data = await r.json();
-    const sevColor = {high:'bg-red-50 border-red-400 text-red-700', medium:'bg-yellow-50 border-yellow-400 text-yellow-700', low:'bg-green-50 border-green-400 text-green-700'};
-    document.getElementById('alerts-list').innerHTML = data.alerts.map(a => `
-      <div class="border-l-4 p-3 rounded text-xs ${sevColor[a.severity]||sevColor.low}">
+    const sev = {high:'bg-red-50 border-red-400 text-red-700',medium:'bg-yellow-50 border-yellow-400 text-yellow-700',low:'bg-green-50 border-green-400 text-green-700'};
+    document.getElementById('alerts-list').innerHTML = data.alerts.map(a=>`
+      <div class="border-l-4 p-3 rounded text-xs ${sev[a.severity]||sev.low}">
         <span class="font-semibold uppercase">${a.severity}</span> · ${a.category}: ${a.message}
       </div>`).join('');
-  } catch(e) { document.getElementById('alerts-list').innerHTML = '<p class="text-xs text-gray-400">Could not load alerts.</p>'; }
+  } catch { document.getElementById('alerts-list').innerHTML = '<p class="text-xs text-gray-400">Could not load alerts.</p>'; }
 }
 
+// ── Status ────────────────────────────────────────────────────────
 async function checkStatus() {
   try {
-    const r = await fetch('/health');
-    const d = await r.json();
-    document.getElementById('status-indicator').innerHTML = d.status === 'healthy'
-      ? '<div class="w-2 h-2 bg-green-400 rounded-full"></div><span class="text-sm">Online · v' + d.version + '</span>'
+    const r = await fetch('/health'), d = await r.json();
+    document.getElementById('status-indicator').innerHTML = d.status==='healthy'
+      ? '<div class="w-2 h-2 bg-green-400 rounded-full"></div><span class="text-sm">Online · v'+d.version+'</span>'
       : '<div class="w-2 h-2 bg-red-400 rounded-full"></div><span class="text-sm">Degraded</span>';
   } catch {
     document.getElementById('status-indicator').innerHTML = '<div class="w-2 h-2 bg-red-400 rounded-full"></div><span class="text-sm">Offline</span>';
   }
 }
 
-// ── Chat ─────────────────────────────────────────────────────────────────
+// ── Hero Ask ──────────────────────────────────────────────────────
+async function heroAsk() {
+  const inp = document.getElementById('hero-ask-input');
+  const msg = inp.value.trim(); if(!msg) return;
+  const box = document.getElementById('hero-answer');
+  box.classList.remove('hidden');
+  box.textContent = 'Thinking…';
+  const ctx = msg.toLowerCase().includes('sales')||msg.toLowerCase().includes('revenue') ? 'sales'
+    : msg.toLowerCase().includes('financ')||msg.toLowerCase().includes('cash') ? 'finance'
+    : msg.toLowerCase().includes('operat')||msg.toLowerCase().includes('uptime') ? 'operations' : 'general';
+  try {
+    const r = await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});
+    const d = await r.json();
+    box.textContent = d.answer || 'No response.';
+  } catch { box.textContent = 'Could not reach AI. Is the backend running?'; }
+}
+function heroQuick(msg) { document.getElementById('hero-ask-input').value=msg; heroAsk(); }
+
+// ── Chat Panel ────────────────────────────────────────────────────
 function toggleChat() {
-  const panel = document.getElementById('chat-panel');
-  const hidden = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden', !hidden);
-  if (hidden && document.getElementById('chat-messages').children.length === 0) {
-    appendBotMsg("Hello! I'm your COO AI assistant. I can summarise Sales, Finance, or Operations data. What would you like to know?");
-  }
+  const p = document.getElementById('chat-panel');
+  const hidden = p.classList.contains('hidden');
+  p.classList.toggle('hidden', !hidden);
+  if (hidden && document.getElementById('chat-messages').children.length===0)
+    appendBotMsg("Hello! I'm your COO AI assistant. Ask me about Sales, Finance, or Operations.");
 }
 document.getElementById('chat-toggle').addEventListener('click', toggleChat);
-
 function appendUserMsg(t){const d=document.createElement('div');d.className='chat-msg-user self-end ml-6 p-3 text-gray-800 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
 function appendBotMsg(t){const d=document.createElement('div');d.className='chat-msg-bot mr-6 p-3 text-gray-700 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
 function scrollChat(){const el=document.getElementById('chat-messages');el.scrollTop=el.scrollHeight;}
-
 async function sendChat() {
-  const inp = document.getElementById('chat-input');
-  const msg = inp.value.trim(); if(!msg) return; inp.value='';
+  const inp=document.getElementById('chat-input'), msg=inp.value.trim(); if(!msg) return; inp.value='';
   appendUserMsg(msg);
   const t=document.createElement('div');t.className='chat-msg-bot mr-6 p-3 text-gray-400 text-sm italic';t.textContent='Analysing…';document.getElementById('chat-messages').appendChild(t);scrollChat();
-
-  // Detect context from message
-  const ctx = msg.toLowerCase().includes('sales') ? 'sales'
-    : msg.toLowerCase().includes('financ') || msg.toLowerCase().includes('cash') ? 'finance'
-    : msg.toLowerCase().includes('operat') || msg.toLowerCase().includes('uptime') || msg.toLowerCase().includes('ticket') ? 'operations'
-    : 'general';
-
-  try {
-    const r = await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});
-    const d = await r.json(); t.remove(); appendBotMsg(d.answer);
-  } catch(e){t.remove();appendBotMsg('Server error. Try again.');}
+  const ctx=msg.toLowerCase().includes('sales')?'sales':msg.toLowerCase().includes('financ')||msg.toLowerCase().includes('cash')?'finance':msg.toLowerCase().includes('operat')?'operations':'general';
+  try { const r=await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});const d=await r.json();t.remove();appendBotMsg(d.answer); }
+  catch(e){t.remove();appendBotMsg('Server error. Try again.');}
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
 
-// ── Download Sample Excel ─────────────────────────────────────────────────
-function downloadSampleExcel() {
-  const rows = [
-    { Revenue: 4200000, 'Cash Balance': 1850000, 'Active Users': 12400, 'CSAT Score': 4.3, Region: 'North America', Quarter: 'Q1' },
-    { Revenue: 4750000, 'Cash Balance': 2100000, 'Active Users': 13800, 'CSAT Score': 4.5, Region: 'North America', Quarter: 'Q2' },
-    { Revenue: 5100000, 'Cash Balance': 2450000, 'Active Users': 15200, 'CSAT Score': 4.4, Region: 'Europe',        Quarter: 'Q3' },
-    { Revenue: 5600000, 'Cash Balance': 2700000, 'Active Users': 17000, 'CSAT Score': 4.6, Region: 'Europe',        Quarter: 'Q4' },
-    { Revenue: 3800000, 'Cash Balance': 1600000, 'Active Users': 10900, 'CSAT Score': 4.1, Region: 'Asia Pacific',  Quarter: 'Q1' },
-    { Revenue: 4100000, 'Cash Balance': 1750000, 'Active Users': 11500, 'CSAT Score': 4.2, Region: 'Asia Pacific',  Quarter: 'Q2' },
-  ];
-  const ws = XLSX.utils.json_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Company Data');
-  XLSX.writeFile(wb, 'sample_company_data.xlsx');
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-// ── Company Data Import ───────────────────────────────────────────────────
-function openImportModal() {
-  document.getElementById('import-modal').classList.add('open');
-}
+// ── Import Modal ──────────────────────────────────────────────────
+function openImportModal()  { document.getElementById('import-modal').classList.add('open'); }
 function closeImportModal() {
   document.getElementById('import-modal').classList.remove('open');
-  document.getElementById('import-status').innerHTML = '';
-  document.getElementById('import-file').value = '';
-  document.getElementById('ai-import-prompt').value = '';
-  switchImportTab('file');  // Reset to file upload tab
+  document.getElementById('import-status').innerHTML='';
+  document.getElementById('import-file').value='';
+  document.getElementById('ai-import-prompt').value='';
+  document.getElementById('import-progress').classList.add('hidden');
+  switchImportTab('file');
+}
+function switchImportTab(tab) {
+  const isFile = tab==='file';
+  document.getElementById('import-section-file').classList.toggle('hidden',!isFile);
+  document.getElementById('import-section-ai').classList.toggle('hidden',isFile);
+  document.getElementById('import-submit-btn').classList.toggle('hidden',!isFile);
+  document.getElementById('import-tab-file').className=`flex-1 py-2 transition-colors ${isFile?'bg-purple-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+  document.getElementById('import-tab-ai').className=`flex-1 py-2 transition-colors ${!isFile?'bg-purple-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+  document.getElementById('import-status').innerHTML='';
+}
+
+function setImportStep(n) {
+  document.getElementById('import-progress').classList.remove('hidden');
+  [1,2,3,4,5].forEach(i=>{
+    const el=document.getElementById(`ip-${i}`);
+    el.className = i<n  ? 'ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 font-semibold'
+                 : i===n ? 'ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-purple-600 text-white font-semibold animate-pulse'
+                 :         'ip-step flex-shrink-0 text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-400';
+  });
 }
 
 async function submitImport() {
-  const file = document.getElementById('import-file').files[0];
-  if (!file) return showImportStatus('error', 'Please select a file first.');
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['xlsx','xls','pbix'].includes(ext))
-    return showImportStatus('error', 'Only .xlsx, .xls, or .pbix files are supported.');
+  const file=document.getElementById('import-file').files[0];
+  if(!file) return showImportStatus('error','Please select a file first.');
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','pbix'].includes(ext)) return showImportStatus('error','Only .xlsx, .xls, or .pbix files are supported.');
 
-  showImportStatus('loading', '⏳ Reading your data…');
-  const fd = new FormData();
-  fd.append('file', file);
-
+  setImportStep(1);
+  await delay(300); setImportStep(2);
+  showImportStatus('loading','⏳ Detecting KPIs…');
+  const fd=new FormData(); fd.append('file',file);
   try {
-    const r = await fetch('/api/v1/reports/upload', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (!r.ok) return showImportStatus('error', d.detail || 'Upload failed.');
-
-    // Extract KPI values from parsed Excel data
-    const imported = extractCompanyKPIs(d);
-    if (!imported) return showImportStatus('error', 'Could not find any numeric KPI columns in your file. Make sure your sheet has column headers and numeric data.');
-
-    // Inject into live dashboard
+    await delay(400); setImportStep(3);
+    const r=await fetch('/api/v1/reports/upload',{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok) return showImportStatus('error',d.detail||'Upload failed.');
+    await delay(300); setImportStep(4);
+    const imported=extractCompanyKPIs(d);
+    if(!imported) return showImportStatus('error','Could not find numeric KPI columns. Ensure your sheet has headers and numeric data.');
+    await delay(400); setImportStep(5);
     applyCompanyData(imported);
-    showImportStatus('success',
-      `✅ Company data imported from <strong>${file.name}</strong>.<br>
-       <span class="text-xs">Dashboard KPIs updated. Refresh the page to revert to demo data.</span>`);
-  } catch(e) {
-    showImportStatus('error', 'Import failed: ' + e.message);
-  }
+    showImportStatus('success',`✅ Data imported from <strong>${file.name}</strong>. Dashboard updated.`);
+  } catch(e) { showImportStatus('error','Import failed: '+e.message); }
 }
 
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
 function extractCompanyKPIs(reportData) {
-  const parsed = reportData.parsed;
-  if (!parsed) return null;
-
-  let revenue = null, cash = null, users = null, csat = null;
-
-  // Excel: look through sheets for known column names
-  const sheets = parsed.sheets || [];
-  for (const sheet of sheets) {
-    const stats = sheet.column_stats || {};
-    for (const [col, s] of Object.entries(stats)) {
-      if (s.type !== 'numeric') continue;
-      const c = col.toLowerCase().replace(/[^a-z]/g, '');
-      if (!revenue && (c.includes('revenue') || c.includes('sales') || c.includes('income')))
-        revenue = s.sum || s.mean;
-      if (!cash && (c.includes('cash') || c.includes('balance') || c.includes('liquidity')))
-        cash = s.sum || s.mean;
-      if (!users && (c.includes('user') || c.includes('customer') || c.includes('client')))
-        users = Math.round(s.sum || s.mean);
-      if (!csat && (c.includes('csat') || c.includes('satisfaction') || c.includes('nps') || c.includes('score')))
-        csat = s.mean;
+  const parsed=reportData.parsed; if(!parsed) return null;
+  let revenue=null,cash=null,users=null,csat=null;
+  const sheets=parsed.sheets||[];
+  for(const sheet of sheets){
+    const stats=sheet.column_stats||{};
+    for(const[col,s] of Object.entries(stats)){
+      if(s.type!=='numeric') continue;
+      const c=col.toLowerCase().replace(/[^a-z]/g,'');
+      if(!revenue&&(c.includes('revenue')||c.includes('sales')||c.includes('income'))) revenue=s.sum||s.mean;
+      if(!cash&&(c.includes('cash')||c.includes('balance')||c.includes('liquidity'))) cash=s.sum||s.mean;
+      if(!users&&(c.includes('user')||c.includes('customer')||c.includes('client'))) users=Math.round(s.sum||s.mean);
+      if(!csat&&(c.includes('csat')||c.includes('satisfaction')||c.includes('nps')||c.includes('score'))) csat=s.mean;
     }
   }
-
-  if (revenue === null && cash === null) return null;
-  return { revenue, cash, users, csat, filename: reportData.filename };
+  if(revenue===null&&cash===null) return null;
+  return {revenue,cash,users,csat,filename:reportData.filename};
 }
 
 function applyCompanyData(data) {
-  const fmt = (n, d=2) => n != null ? '$'+(n/1e6).toFixed(d)+'M' : null;
-
-  if (data.revenue != null) {
-    const el = document.getElementById('kpi-revenue');
-    if (el) { el.textContent = fmt(data.revenue); el.title = 'Imported from ' + data.filename; }
-    const chgEl = document.getElementById('kpi-revenue-chg');
-    if (chgEl) chgEl.innerHTML = `<span class="text-purple-600 font-semibold">📥 Company data</span>`;
-  }
-  if (data.cash != null) {
-    const el = document.getElementById('kpi-cash');
-    if (el) { el.textContent = fmt(data.cash, 1); el.title = 'Imported from ' + data.filename; }
-    const sub = document.getElementById('kpi-cash-chg');
-    if (sub) sub.textContent = 'From ' + data.filename;
-  }
-  if (data.users != null) {
-    const el = document.getElementById('kpi-users');
-    if (el) { el.textContent = data.users.toLocaleString(); el.title = 'Imported from ' + data.filename; }
-  }
-  if (data.csat != null) {
-    const el = document.getElementById('kpi-csat');
-    if (el) { el.textContent = data.csat.toFixed(1) + '/5.0'; el.title = 'Imported from ' + data.filename; }
-  }
-
-  // Refresh Executive Brief with the new company values
-  renderExecutiveBrief();
-
-  // Show a persistent banner
-  const banner = document.createElement('div');
-  banner.className = 'bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
-  banner.innerHTML = `📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="this.parentElement.remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
-  const main = document.querySelector('main');
-  if (main) main.prepend(banner);
-}
-
-function showImportStatus(type, html) {
-  const cls = { loading:'text-blue-600', success:'text-green-700', error:'text-red-600' };
-  document.getElementById('import-status').innerHTML =
-    `<p class="${cls[type]} text-sm mt-3">${html}</p>`;
-}
-
-function switchImportTab(tab) {
-  const isFile = tab === 'file';
-  document.getElementById('import-section-file').classList.toggle('hidden', !isFile);
-  document.getElementById('import-section-ai').classList.toggle('hidden', isFile);
-  document.getElementById('import-submit-btn').classList.toggle('hidden', !isFile);
-  document.getElementById('import-tab-file').className =
-    `flex-1 py-2 transition-colors ${isFile ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
-  document.getElementById('import-tab-ai').className =
-    `flex-1 py-2 transition-colors ${!isFile ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
-  document.getElementById('import-status').innerHTML = '';
+  const fmt=(n,d=2)=>n!=null?'$'+(n/1e6).toFixed(d)+'M':null;
+  if(data.revenue!=null){const el=document.getElementById('kpi-revenue');if(el){el.textContent=fmt(data.revenue);}}
+  if(data.cash!=null){const el=document.getElementById('kpi-cash');if(el){el.textContent=fmt(data.cash,1);}}
+  if(data.users!=null){const el=document.getElementById('kpi-users');if(el){el.textContent=data.users.toLocaleString();}}
+  if(data.csat!=null){const el=document.getElementById('kpi-csat');if(el){el.textContent=data.csat.toFixed(1)+'/5.0';}}
+  renderExecutiveBrief(); renderImpactGrid(); renderFindings();
+  const banner=document.createElement('div');
+  banner.className='bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
+  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="this.parentElement.remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
+  const main=document.querySelector('.max-w-screen-xl');
+  if(main) main.prepend(banner);
 }
 
 async function submitAIImport() {
-  const prompt = document.getElementById('ai-import-prompt').value.trim();
-  if (!prompt) return showImportStatus('error', 'Please describe your company data first.');
-
-  const btnText = document.getElementById('ai-import-btn-text');
-  btnText.textContent = '⏳ Analysing with AI…';
-  showImportStatus('loading', '⏳ AI is reading your company data…');
-
+  const prompt=document.getElementById('ai-import-prompt').value.trim();
+  if(!prompt) return showImportStatus('error','Please describe your company data first.');
+  const btnText=document.getElementById('ai-import-btn-text');
+  btnText.textContent='⏳ Analysing with AI…';
+  showImportStatus('loading','⏳ AI is reading your company data…');
   try {
-    const r = await fetch('/api/v1/reports/ai-import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-    const d = await r.json();
-    if (!r.ok) return showImportStatus('error', d.detail || 'AI import failed.');
-
-    const kpis = d.kpis;
-    if (!kpis || (kpis.revenue == null && kpis.cash == null))
-      return showImportStatus('error', 'AI could not extract any KPI values. Try describing your data more specifically (e.g. "Revenue $10M, Cash $2M").');
-
-    applyCompanyData({ ...kpis, filename: 'AI prompt' });
-    showImportStatus('success',
-      `✅ AI extracted your company KPIs and updated the dashboard.<br>
-       <span class="text-xs">${d.extracted_text || ''}</span>`);
-    btnText.textContent = '✨ Import with AI';
-  } catch(e) {
-    btnText.textContent = '✨ Import with AI';
-    showImportStatus('error', 'AI import failed: ' + e.message);
-  }
+    const r=await fetch('/api/v1/reports/ai-import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const d=await r.json();
+    if(!r.ok) return showImportStatus('error',d.detail||'AI import failed.');
+    const kpis=d.kpis;
+    if(!kpis||(kpis.revenue==null&&kpis.cash==null)) return showImportStatus('error','AI could not extract KPI values. Try: "Revenue $10M, Cash $2M, 5000 users, CSAT 4.2"');
+    applyCompanyData({...kpis,filename:'AI prompt'});
+    showImportStatus('success',`✅ AI extracted KPIs and updated the dashboard.<br><span class="text-xs">${d.extracted_text||''}</span>`);
+    btnText.textContent='✨ Import with AI';
+  } catch(e) { btnText.textContent='✨ Import with AI'; showImportStatus('error','AI import failed: '+e.message); }
 }
 
-// Boot
+function showImportStatus(type,html){
+  const cls={loading:'text-blue-600',success:'text-green-700',error:'text-red-600'};
+  document.getElementById('import-status').innerHTML=`<p class="${cls[type]} text-sm mt-3">${html}</p>`;
+}
+
+// ── Sample Excel ──────────────────────────────────────────────────
+function downloadSampleExcel() {
+  const rows=[
+    {Revenue:4200000,'Cash Balance':1850000,'Active Users':12400,'CSAT Score':4.3,Region:'North America',Quarter:'Q1'},
+    {Revenue:4750000,'Cash Balance':2100000,'Active Users':13800,'CSAT Score':4.5,Region:'North America',Quarter:'Q2'},
+    {Revenue:5100000,'Cash Balance':2450000,'Active Users':15200,'CSAT Score':4.4,Region:'Europe',Quarter:'Q3'},
+    {Revenue:5600000,'Cash Balance':2700000,'Active Users':17000,'CSAT Score':4.6,Region:'Europe',Quarter:'Q4'},
+    {Revenue:3800000,'Cash Balance':1600000,'Active Users':10900,'CSAT Score':4.1,Region:'Asia Pacific',Quarter:'Q1'},
+    {Revenue:4100000,'Cash Balance':1750000,'Active Users':11500,'CSAT Score':4.2,Region:'Asia Pacific',Quarter:'Q2'},
+  ];
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Company Data');
+  XLSX.writeFile(wb,'sample_company_data.xlsx');
+}
+
+// ── Exec brief compat stubs ────────────────────────────────────────
+function ebSimulate(){window.open('/static/finance.html?sim='+encodeURIComponent(window._ebCurrentAction||'strategy'),'_blank');}
+
+// ── Boot ──────────────────────────────────────────────────────────
 init();
-setInterval(()=>{checkStatus();loadAllFYData();},60000);
+setInterval(()=>{ checkStatus(); loadAllFYData(); }, 60000);
 </script>
-
-<!-- ── Company Data Import Modal ── -->
-<div id="import-modal">
-  <div id="import-box">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-bold text-gray-800">Import Your Company Data</h2>
-      <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
-    </div>
-
-    <!-- ── Tab switcher ── -->
-    <div class="flex border border-gray-200 rounded-lg overflow-hidden mb-4 text-sm font-medium">
-      <button id="import-tab-file" onclick="switchImportTab('file')"
-              class="flex-1 py-2 bg-purple-600 text-white transition-colors">📁 Upload File</button>
-      <button id="import-tab-ai" onclick="switchImportTab('ai')"
-              class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">✨ Ask AI</button>
-    </div>
-
-    <!-- ── File upload section ── -->
-    <div id="import-section-file">
-      <p class="text-sm text-gray-600 mb-4">
-        Upload your company's Excel (.xlsx) or Power BI (.pbix) file. The dashboard will automatically
-        detect <strong>Revenue</strong>, <strong>Cash</strong>, <strong>Users</strong>, and <strong>CSAT</strong>
-        columns and replace the demo KPIs with your real data.
-      </p>
-      <div class="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500 space-y-1">
-        <p>📊 <strong>Excel columns detected:</strong> Revenue / Sales / Income, Cash / Balance, Users / Customers, CSAT / Satisfaction / Score</p>
-        <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
-      </div>
-      <button onclick="downloadSampleExcel()"
-              class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
-        ⬇ Download Sample Excel
-      </button>
-      <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
-             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
-    </div>
-
-    <!-- ── AI import section ── -->
-    <div id="import-section-ai" class="hidden">
-      <p class="text-sm text-gray-600 mb-3">
-        Describe your company's financials in plain English. AI will extract the key metrics and replace all dashboard KPIs automatically.
-      </p>
-      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3 text-xs text-purple-700">
-        <strong>Example:</strong> "Our company Acme Corp had revenue of $12.4M last year, cash balance of $3.2M,
-        8,500 active users and a CSAT score of 4.3 out of 5."
-      </div>
-      <textarea id="ai-import-prompt" rows="5"
-                placeholder="Describe your company data here…&#10;e.g. Revenue $15M, Cash $4.2M, 12,000 active users, CSAT 4.6/5"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
-      <button onclick="submitAIImport()"
-              class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
-        <span id="ai-import-btn-text">✨ Import with AI</span>
-      </button>
-    </div>
-
-    <div id="import-status"></div>
-    <div class="flex gap-3 mt-4">
-      <button id="import-submit-btn" onclick="submitImport()"
-              class="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
-        Import Data
-      </button>
-      <button onclick="closeImportModal()"
-              class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-200">
-        Cancel
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
 </body>
 </html>
