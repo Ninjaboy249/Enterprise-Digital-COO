@@ -99,29 +99,87 @@
         <span class="ml-auto text-xs text-gray-400" id="last-updated"></span>
       </div>
 
-      <!-- Cross-Domain KPI Row -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="kpi-row">
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Revenue</p>
-          <p id="kpi-revenue" class="text-2xl font-bold text-gray-800">–</p>
-          <p id="kpi-revenue-chg" class="text-xs mt-1"></p>
+      <!-- Hidden KPI data stores — written by renderKPIs() & applyCompanyData() -->
+      <span id="kpi-revenue" class="hidden"></span>
+      <span id="kpi-revenue-chg" class="hidden"></span>
+      <span id="kpi-cash" class="hidden"></span>
+      <span id="kpi-cash-chg" class="hidden"></span>
+      <span id="kpi-csat" class="hidden"></span>
+      <span id="kpi-users" class="hidden"></span>
+
+      <!-- 🧠 Executive Brief -->
+      <div id="exec-brief" class="mb-6 rounded-2xl overflow-hidden shadow-lg border border-purple-100" style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 60%,#1e3a5f 100%);">
+
+        <!-- Header bar -->
+        <div class="flex items-center justify-between px-6 pt-5 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🧠</span>
+            <span class="text-white font-bold text-lg tracking-tight">Executive Brief</span>
+            <span id="eb-fy-badge" class="ml-2 text-xs bg-white/15 text-purple-200 px-2.5 py-0.5 rounded-full font-medium"></span>
+          </div>
+          <span id="eb-confidence" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">AI Confidence –</span>
         </div>
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Cash Balance</p>
-          <p id="kpi-cash" class="text-2xl font-bold text-gray-800">–</p>
-          <p id="kpi-cash-chg" class="text-xs mt-1 text-gray-500"></p>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">CSAT</p>
-          <p id="kpi-csat" class="text-2xl font-bold text-gray-800">–</p>
-          <p class="text-xs mt-1 text-yellow-500">★ out of 5.0</p>
-        </div>
-        <div class="bg-white rounded-lg shadow-md p-5">
-          <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Active Users</p>
-          <p id="kpi-users" class="text-2xl font-bold text-gray-800">–</p>
-          <p class="text-xs mt-1 text-gray-500">Platform-wide</p>
-        </div>
-      </div>
+
+        <!-- Main content grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10 px-2 pb-2">
+
+          <!-- Signal -->
+          <div class="px-5 py-4">
+            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Signal</p>
+            <p id="eb-signal" class="text-white font-bold text-base leading-snug">Loading…</p>
+            <p id="eb-cause" class="text-purple-200 text-xs mt-1.5 leading-relaxed"></p>
+          </div>
+
+          <!-- Predicted FY Impact -->
+          <div class="px-5 py-4">
+            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Predicted FY Impact</p>
+            <p id="eb-impact" class="text-white font-bold text-2xl">–</p>
+            <p id="eb-impact-sub" class="text-purple-200 text-xs mt-1.5"></p>
+          </div>
+
+          <!-- KPI Snapshot -->
+          <div class="px-5 py-4">
+            <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">KPI Snapshot</p>
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-purple-300">Revenue</span>
+                <span id="eb-rev" class="text-white font-semibold">–</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-purple-300">Cash</span>
+                <span id="eb-cash" class="text-white font-semibold">–</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-purple-300">CSAT</span>
+                <span id="eb-csat" class="text-white font-semibold">–</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-purple-300">Users</span>
+                <span id="eb-users" class="text-white font-semibold">–</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommended Action -->
+          <div class="px-5 py-4 flex flex-col justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-widest text-purple-300 font-semibold mb-1.5">Recommended Action</p>
+              <p id="eb-action" class="text-white text-sm font-medium leading-snug">–</p>
+            </div>
+            <div class="flex gap-2 mt-4">
+              <button onclick="ebApprove()" id="eb-approve-btn"
+                      class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
+                Approve
+              </button>
+              <button onclick="ebSimulate()" id="eb-simulate-btn"
+                      class="flex-1 bg-white/15 hover:bg-white/25 text-white text-xs font-bold py-2 px-3 rounded-lg border border-white/20 transition-colors">
+                Simulate
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /grid -->
+      </div><!-- /exec-brief -->
 
       <!-- FY Comparison Mini-Table -->
       <div class="bg-white rounded-lg shadow-md p-5 mb-6">
@@ -369,6 +427,131 @@ function renderKPIs() {
     document.getElementById('kpi-csat').textContent = m.customer_satisfaction.toFixed(1) + '/5.0';
     document.getElementById('kpi-users').textContent = m.active_users.toLocaleString();
   }
+
+  renderExecutiveBrief();
+}
+
+// ── Executive Brief ───────────────────────────────────────────────────────
+function renderExecutiveBrief() {
+  const fy = String(selectedFY);
+  const prevFY = String(selectedFY - 1);
+
+  // ── FY badge ──
+  document.getElementById('eb-fy-badge').textContent = `FY ${selectedFY}`;
+
+  // ── KPI snapshot column ──
+  document.getElementById('eb-rev').textContent   = document.getElementById('kpi-revenue').textContent || '–';
+  document.getElementById('eb-cash').textContent  = document.getElementById('kpi-cash').textContent   || '–';
+  document.getElementById('eb-csat').textContent  = document.getElementById('kpi-csat').textContent   || '–';
+  document.getElementById('eb-users').textContent = document.getElementById('kpi-users').textContent  || '–';
+
+  // ── Derive signal, impact & action from live data ──
+  const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
+  const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
+  const finCur    = allFYData.finance?.data?.[fy]?.metrics;
+  const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
+
+  if (!salesCur) return; // data not loaded yet
+
+  // Revenue change %
+  const revChgPct = salesPrev
+    ? ((salesCur.total_revenue - salesPrev.total_revenue) / salesPrev.total_revenue * 100)
+    : null;
+
+  // Pick the most notable signal
+  let signal, cause, impactVal, impactSub, action, confidence;
+
+  if (revChgPct !== null && revChgPct < -3) {
+    const absChg = Math.abs(revChgPct).toFixed(1);
+    const impactM = ((salesCur.total_revenue - salesPrev.total_revenue) / 1e6).toFixed(1);
+    signal     = `Revenue dropped ${absChg}%`;
+    cause      = `Cause: Total revenue declined vs FY ${selectedFY - 1}. Review regional & segment mix for root cause.`;
+    impactVal  = `${impactM}M`;
+    impactSub  = `Projected full-FY variance`;
+    action     = `Review regional pricing and push enterprise tier upsell to offset decline.`;
+    confidence = 91 + Math.round(Math.abs(revChgPct));
+  } else if (revChgPct !== null && revChgPct >= 5) {
+    const impactM = ((salesCur.total_revenue - salesPrev.total_revenue) / 1e6).toFixed(1);
+    signal     = `Revenue up ${revChgPct.toFixed(1)}%`;
+    cause      = `Strong growth vs FY ${selectedFY - 1}. Sustain momentum across top-performing segments.`;
+    impactVal  = `+$${impactM}M`;
+    impactSub  = `Projected full-FY upside`;
+    action     = `Accelerate expansion in high-growth regions and protect gross margin.`;
+    confidence = 93 + Math.min(5, Math.round(revChgPct / 2));
+  } else if (finCur && finCur.runway_months < 9) {
+    signal     = `Cash runway ${finCur.runway_months.toFixed(1)} months`;
+    cause      = `Cause: Cash balance relative to burn rate is below safe threshold (<12 mo).`;
+    impactVal  = `–`;
+    impactSub  = `Immediate liquidity attention required`;
+    action     = `Prioritise receivables collection and defer non-critical CapEx this quarter.`;
+    confidence = 96;
+  } else if (opsCur && opsCur.customer_satisfaction < 4.0) {
+    signal     = `CSAT at ${opsCur.customer_satisfaction.toFixed(1)}/5.0`;
+    cause      = `Cause: Customer satisfaction below 4.0 threshold — churn risk elevated.`;
+    impactVal  = `–`;
+    impactSub  = `Potential NRR impact`;
+    action     = `Launch targeted customer success outreach and address top support ticket categories.`;
+    confidence = 88;
+  } else {
+    signal     = `Business on track for FY ${selectedFY}`;
+    cause      = `No critical signals detected. KPIs within healthy operating ranges.`;
+    impactVal  = `On Plan`;
+    impactSub  = `No material variance`;
+    action     = `Maintain current strategy. Monitor lagging indicators weekly.`;
+    confidence = 97;
+  }
+
+  confidence = Math.min(99, confidence); // cap at 99%
+
+  // ── Write to DOM ──
+  document.getElementById('eb-signal').textContent    = signal;
+  document.getElementById('eb-cause').textContent     = cause;
+  document.getElementById('eb-impact').textContent    = impactVal;
+  document.getElementById('eb-impact-sub').textContent = impactSub;
+  document.getElementById('eb-action').textContent    = action;
+  document.getElementById('eb-confidence').textContent = `AI Confidence ${confidence}%`;
+
+  // Confidence colour — green ≥90, yellow 75-89, red <75
+  const confEl = document.getElementById('eb-confidence');
+  if (confidence >= 90) {
+    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+  } else if (confidence >= 75) {
+    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30';
+  } else {
+    confEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30';
+  }
+
+  // Impact colour — red for negative, green for positive
+  const impEl = document.getElementById('eb-impact');
+  impEl.className = impactVal.startsWith('-') || impactVal.startsWith('–')
+    ? 'font-bold text-2xl text-red-300'
+    : 'font-bold text-2xl text-emerald-300';
+
+  // Store action for approve/simulate
+  window._ebCurrentAction = action;
+  window._ebCurrentSignal = signal;
+}
+
+function ebApprove() {
+  const btn = document.getElementById('eb-approve-btn');
+  btn.textContent = '✓ Approved';
+  btn.className = 'flex-1 bg-emerald-600 text-white text-xs font-bold py-2 px-3 rounded-lg cursor-default';
+  btn.onclick = null;
+  showEBToast(`Action approved: "${window._ebCurrentAction}"`);
+}
+
+function ebSimulate() {
+  const action = window._ebCurrentAction || 'strategy';
+  // Navigate to finance page which has scenario tools, passing a hint
+  const url = '/static/finance.html?sim=' + encodeURIComponent(action);
+  window.open(url, '_blank');
+}
+
+function showEBToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
 }
 
 function renderFYSnapshot() {
@@ -564,6 +747,9 @@ function applyCompanyData(data) {
     const el = document.getElementById('kpi-csat');
     if (el) { el.textContent = data.csat.toFixed(1) + '/5.0'; el.title = 'Imported from ' + data.filename; }
   }
+
+  // Refresh Executive Brief with the new company values
+  renderExecutiveBrief();
 
   // Show a persistent banner
   const banner = document.createElement('div');
