@@ -11,7 +11,8 @@
     #chat-panel { transition: transform .3s ease; }
     .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
     .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
-    .fy-btn.active { background:#7c3aed; color:#fff; }
+    .fy-btn { transition: background .15s, color .15s, border-color .15s; }
+    .fy-btn.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
     /* Toast notification */
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
              background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
@@ -198,18 +199,19 @@ function populateCompareSelects() {
   });
 }
 
+function setActiveFYBtn(fy) {
+  document.querySelectorAll('.fy-btn').forEach(b => {
+    const isActive = +b.dataset.fy === fy;
+    b.classList.toggle('active', isActive);
+    if (isActive) { b.style.background='#7c3aed'; b.style.color='#fff'; b.style.borderColor='#7c3aed'; }
+    else          { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
+  });
+}
+
 function selectFY(fy) {
   currentFY = fy;
-  // Set active immediately so button never fades while data loads
-  document.querySelectorAll('.fy-btn').forEach(b => {
-    b.classList.toggle('active', +b.dataset.fy === fy);
-  });
-  loadSalesData(fy).finally(() => {
-    // Re-assert active state after any DOM resets during render
-    document.querySelectorAll('.fy-btn').forEach(b => {
-      b.classList.toggle('active', +b.dataset.fy === currentFY);
-    });
-  });
+  setActiveFYBtn(fy);
+  loadSalesData(fy).finally(() => setActiveFYBtn(currentFY));
 }
 
 // ── Data Loading ──────────────────────────────────────────────────────────

@@ -10,7 +10,8 @@
     .gradient-bg { background: linear-gradient(135deg,#10b981 0%,#059669 100%); }
     .chat-msg-user { background:#d1fae5; border-radius:12px 12px 2px 12px; }
     .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
-    .fy-btn.active { background:#059669; color:#fff; }
+    .fy-btn { transition: background .15s, color .15s, border-color .15s; }
+    .fy-btn.active { background:#059669 !important; color:#fff !important; border-color:#059669 !important; }
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
              background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
              font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
@@ -223,12 +224,19 @@ function populateCompareSelects() {
   });
 }
 
+function setActiveFYBtn(fy) {
+  document.querySelectorAll('.fy-btn').forEach(b => {
+    const isActive = +b.dataset.fy === fy;
+    b.classList.toggle('active', isActive);
+    if (isActive) { b.style.background='#059669'; b.style.color='#fff'; b.style.borderColor='#059669'; }
+    else          { b.style.background=''; b.style.color=''; b.style.borderColor=''; }
+  });
+}
+
 function selectFY(fy) {
   currentFY = fy;
-  document.querySelectorAll('.fy-btn').forEach(b => b.classList.toggle('active', +b.dataset.fy === fy));
-  loadFinanceData(fy).finally(() => {
-    document.querySelectorAll('.fy-btn').forEach(b => b.classList.toggle('active', +b.dataset.fy === currentFY));
-  });
+  setActiveFYBtn(fy);
+  loadFinanceData(fy).finally(() => setActiveFYBtn(currentFY));
 }
 
 async function loadFYData() {

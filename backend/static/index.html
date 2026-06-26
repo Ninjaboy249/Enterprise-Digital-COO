@@ -9,8 +9,16 @@
     .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
     .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
     .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
-    .fy-tab.active { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+    /* Use !important so Tailwind CDN border/bg classes cannot override the active state */
+    .fy-tab { transition: background .15s, color .15s, border-color .15s; }
+    .fy-tab.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
     .change-pos { color:#059669; } .change-neg { color:#dc2626; }
+    /* Toast */
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+             background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
+             font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
+             pointer-events:none; z-index:9999; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -148,8 +156,8 @@
             </div>
             <h3 class="ml-3 text-lg font-semibold">Reports Portal</h3>
           </div>
-          <p class="text-gray-600 text-sm mb-3">Upload Power BI &amp; JSON reports for AI analysis</p>
-          <p class="text-xs text-gray-500 mb-4">Drag &amp; drop .pbix / .json · AI executive summary · Ask questions · Download parsed data</p>
+          <p class="text-gray-600 text-sm mb-3">Upload Excel, Power BI &amp; JSON reports for AI analysis</p>
+          <p class="text-xs text-gray-500 mb-4">Drag &amp; drop <strong>.xlsx</strong> / .pbix / .json · Power BI-style AI summary · KPI stats · Ask questions</p>
           <a href="/static/reports.html" class="block w-full bg-sky-600 text-white py-2 px-4 rounded hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports Portal →</a>
         </div>
       </div>
@@ -221,9 +229,26 @@ function buildFYTabs() {
   });
 }
 
+function setActiveFYTab(fy) {
+  document.querySelectorAll('.fy-tab').forEach(b => {
+    const isActive = +b.dataset.fy === fy;
+    b.classList.toggle('active', isActive);
+    // Force inline styles as a belt-and-braces fallback for Tailwind CDN
+    if (isActive) {
+      b.style.background = '#7c3aed';
+      b.style.color      = '#fff';
+      b.style.borderColor= '#7c3aed';
+    } else {
+      b.style.background = '';
+      b.style.color      = '';
+      b.style.borderColor= '';
+    }
+  });
+}
+
 function selectFY(fy) {
   selectedFY = fy;
-  document.querySelectorAll('.fy-tab').forEach(b => b.classList.toggle('active', +b.dataset.fy === fy));
+  setActiveFYTab(fy);
   renderKPIs();
 }
 
@@ -239,6 +264,8 @@ async function loadAllFYData() {
     renderFYSnapshot();
     loadAlerts();
     document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    // Re-assert active tab after every data reload — data render must not lose the selection
+    setActiveFYTab(selectedFY);
   } catch(e) { console.error('Overview data load failed', e); }
 }
 
@@ -357,5 +384,6 @@ function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
 init();
 setInterval(()=>{checkStatus();loadAllFYData();},60000);
 </script>
+<div id="toast"></div>
 </body>
 </html>
