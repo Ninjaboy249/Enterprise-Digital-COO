@@ -1020,17 +1020,27 @@ async function checkStatus() {
 }
 
 // ── Hero Ask ──────────────────────────────────────────────────────
+function _detectCtx(msg) {
+  const m = msg.toLowerCase();
+  if (m.includes('sales') || m.includes('revenue') || m.includes('pipeline') || m.includes('deal') || m.includes('win rate')) return 'sales';
+  if (m.includes('financ') || m.includes('cash') || m.includes('margin') || m.includes('ebitda') || m.includes('runway')) return 'finance';
+  if (m.includes('operat') || m.includes('uptime') || m.includes('csat') || m.includes('nps') || m.includes('ticket')) return 'operations';
+  return 'general';
+}
+
 async function heroAsk() {
   const inp = document.getElementById('hero-ask-input');
   const msg = inp.value.trim(); if(!msg) return;
   const box = document.getElementById('hero-answer');
   box.classList.remove('hidden');
   box.textContent = 'Thinking…';
-  const ctx = msg.toLowerCase().includes('sales')||msg.toLowerCase().includes('revenue') ? 'sales'
-    : msg.toLowerCase().includes('financ')||msg.toLowerCase().includes('cash') ? 'finance'
-    : msg.toLowerCase().includes('operat')||msg.toLowerCase().includes('uptime') ? 'operations' : 'general';
+  const ctx = _detectCtx(msg);
   try {
-    const r = await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});
+    const r = await fetch('/api/v1/metrics/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, context: ctx, live_data: allFYData })
+    });
     const d = await r.json();
     box.textContent = d.answer || 'No response.';
   } catch { box.textContent = 'Could not reach AI. Is the backend running?'; }
@@ -1053,9 +1063,17 @@ async function sendChat() {
   const inp=document.getElementById('chat-input'), msg=inp.value.trim(); if(!msg) return; inp.value='';
   appendUserMsg(msg);
   const t=document.createElement('div');t.className='chat-msg-bot mr-6 p-3 text-gray-400 text-sm italic';t.textContent='Analysing…';document.getElementById('chat-messages').appendChild(t);scrollChat();
-  const ctx=msg.toLowerCase().includes('sales')?'sales':msg.toLowerCase().includes('financ')||msg.toLowerCase().includes('cash')?'finance':msg.toLowerCase().includes('operat')?'operations':'general';
-  try { const r=await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,context:ctx})});const d=await r.json();t.remove();appendBotMsg(d.answer); }
-  catch(e){t.remove();appendBotMsg('Server error. Try again.');}
+  const ctx = _detectCtx(msg);
+  try {
+    const r = await fetch('/api/v1/metrics/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, context: ctx, live_data: allFYData })
+    });
+    const d = await r.json();
+    t.remove();
+    appendBotMsg(d.answer);
+  } catch(e){t.remove();appendBotMsg('Server error. Try again.');}
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
 

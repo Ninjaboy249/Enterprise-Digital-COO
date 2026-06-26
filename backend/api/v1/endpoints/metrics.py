@@ -365,8 +365,9 @@ _INVALID_QUERY_RESPONSE = {
 
 class ChatRequest(BaseModel):
     message: str
-    context: Optional[str] = None      # e.g. "sales", "finance", "operations"
-    data_snapshot: Optional[Dict[str, Any]] = None
+    context: Optional[str] = None          # e.g. "sales", "finance", "operations"
+    data_snapshot: Optional[Dict[str, Any]] = None   # single-domain snapshot (sub-pages)
+    live_data: Optional[Dict[str, Any]] = None       # full allFYData from index (all domains)
 
 CANNED_INSIGHTS = {
     "sales": [
@@ -466,26 +467,143 @@ def _detect_greeting(msg: str) -> Optional[str]:
     return None
 
 
-async def _openai_answer(message: str, ctx: str, snapshot_note: str) -> str:
-    """Call OpenAI GPT and return the assistant's reply."""
-    from config import settings as _settings
+def _build_data_brief(req: "ChatRequest") -> str:
+    """
+    Assemble a concise, plain-English data brief from whatever live data
+    is available in the request.  Returns an empty string if no data.
+    """
+    lines: list[str] = []
+    fy_label = ""
 
-    ctx_descriptions = {
-        "sales": "Sales metrics: revenue, pipeline, deals, win rate, regional performance.",
-        "finance": "Finance metrics: cash balance, burn rate, gross margin, EBITDA, net income.",
-        "operations": "Operations metrics: system uptime, CSAT, NPS, active users, support tickets.",
-        "general": "Overall business health: sales, finance, and operations KPIs.",
-    }
+    # ── Full allFYData bundle (sent from index.html) ───────────────────────
+    if req.live_data:
+        ld = req.live_data
+        # Sales
+        s_data = ld.get("sales", {}).get("data", {})
+        if s_data:
+            for fy, fy_obj in sorted(s_data.items(), reverse=True)[:1]:   # current FY only
+                fy_label = f"FY {fy}"
+                m = fy_obj.get("metrics", {})
+                lines.append(f"[Sales — {fy_label}]")
+                if "total_revenue" in m:
+                    lines.append(f"  Revenue: ${m['total_revenue']:,.0f}  (expected: ${m.get('expected_revenue', 0):,.0f})")
+                    drop = m.get("revenue_drop_percentage")
+                    if drop:
+                        lines.append(f"  Revenue vs target: -{drop}%")
+                if "conversion_rate" in m:
+                    lines.append(f"  Conversion rate: {m['conversion_rate']*100:.1f}%  |  Win rate: {m.get('win_rate',0)*100:.0f}%")
+                if "pipeline_value" in m:
+                    lines.append(f"  Pipeline: ${m['pipeline_value']:,.0f}  |  Active deals: {m.get('active_deals',0)}")
+                reg = fy_obj.get("regional_performance", {})
+                if reg:
+                    lines.append("  Regional: " + "  ".join(
+                        f"{r}: ${v['revenue']:,.0f} ({v['growth']:+.1f}%)" for r, v in reg.items()
+                    ))
+        # Finance
+        f_data = ld.get("finance", {}).get("data", {})
+        if f_data:
+            for fy, fy_obj in sorted(f_data.items(), reverse=True)[:1]:
+                m = fy_obj.get("metrics", {})
+                lines.append(f"[Finance — FY {fy}]")
+                if "cash_balance" in m:
+                    lines.append(f"  Cash: ${m['cash_balance']:,.0f}  |  Burn rate: ${m.get('burn_rate',0):,.0f}/mo")
+                    lines.append(f"  Runway: {m.get('runway_months',0):.1f} months")
+                if "gross_margin" in m:
+                    lines.append(f"  Gross margin: {m['gross_margin']*100:.1f}%  |  EBITDA: ${m.get('ebitda',0):,.0f}")
+                if "net_income" in m:
+                    lines.append(f"  Net income: ${m['net_income']:,.0f}  |  Operating margin: {m.get('operating_margin',0)*100:.1f}%")
+        # Operations
+        o_data = ld.get("operations", {}).get("data", {})
+        if o_data:
+            for fy, fy_obj in sorted(o_data.items(), reverse=True)[:1]:
+                m = fy_obj.get("metrics", {})
+                lines.append(f"[Operations — FY {fy}]")
+                if "customer_satisfaction" in m:
+                    lines.append(f"  CSAT: {m['customer_satisfaction']}/5.0  |  NPS: {m.get('nps_score','–')}")
+                if "active_users" in m:
+                    lines.append(f"  Active users: {m['active_users']:,}  |  Uptime: {m.get('system_uptime','–')}%")
+                if "support_tickets" in m:
+                    lines.append(f"  Support tickets: {m['support_tickets']}  |  Avg resolution: {m.get('avg_resolution_time','–')}h")
+
+    # ── Single-domain snapshot (sent from sub-pages) ───────────────────────
+    elif req.data_snapshot:
+        m = req.data_snapshot.get("metrics", {})
+        fy = req.data_snapshot.get("fiscal_year", "")
+        period = req.data_snapshot.get("period", f"FY {fy}" if fy else "")
+        ctx = (req.context or "general").lower()
+        if ctx == "sales":
+            lines.append(f"[Sales — {period}]")
+            for key in ["total_revenue", "expected_revenue", "revenue_drop_percentage",
+                        "conversion_rate", "win_rate", "pipeline_value", "active_deals"]:
+                if key in m:
+                    val = m[key]
+                    if isinstance(val, float) and val < 2:
+                        lines.append(f"  {key}: {val*100:.1f}%")
+                    elif isinstance(val, (int, float)) and val > 1000:
+                        lines.append(f"  {key}: ${val:,.0f}")
+                    else:
+                        lines.append(f"  {key}: {val}")
+        elif ctx == "finance":
+            lines.append(f"[Finance — {period}]")
+            for key in ["cash_balance", "burn_rate", "runway_months", "gross_margin",
+                        "operating_margin", "ebitda", "net_income", "revenue", "expenses"]:
+                if key in m:
+                    val = m[key]
+                    if key in ("gross_margin", "operating_margin"):
+                        lines.append(f"  {key}: {val*100:.1f}%")
+                    elif isinstance(val, (int, float)) and val > 100:
+                        lines.append(f"  {key}: ${val:,.0f}")
+                    else:
+                        lines.append(f"  {key}: {val}")
+        elif ctx == "operations":
+            lines.append(f"[Operations — {period}]")
+            for key in ["customer_satisfaction", "nps_score", "support_tickets",
+                        "avg_resolution_time", "system_uptime", "active_users"]:
+                if key in m:
+                    lines.append(f"  {key}: {m[key]}")
+
+    return "\n".join(lines)
+
+
+async def _openai_answer(message: str, ctx: str, data_brief: str, req: "ChatRequest") -> str:
+    """Call OpenAI GPT with a rich system prompt that includes live data."""
+    from config import settings as _settings
 
     system_prompt = (
         "You are the Enterprise Digital COO AI Assistant — a concise, data-driven executive advisor. "
-        "You help business leaders understand their company's sales, finance, and operations performance. "
-        "Keep answers focused, professional, and actionable. "
-        "If a question is outside the business domain (e.g. coding help, recipes, general knowledge), "
-        "politely redirect the user to ask about business metrics instead. "
-        f"Current context: {ctx_descriptions.get(ctx, ctx_descriptions['general'])}"
-        + (f" Live data note: {snapshot_note}" if snapshot_note else "")
+        "You help business leaders understand their company's Sales, Finance, and Operations performance. "
+        "Always answer using the LIVE DATA provided below — do NOT say you lack real-time data. "
+        "Quote specific numbers from the data. Keep answers focused, professional, and actionable (3–5 sentences). "
+        "If a question is completely outside the business domain (e.g. recipes, coding tutorials), "
+        "politely redirect the user to ask about business metrics instead.\n\n"
     )
+
+    if data_brief:
+        system_prompt += f"=== LIVE DASHBOARD DATA ===\n{data_brief}\n=========================\n\n"
+    else:
+        # No data sent — fetch it live from the metrics functions
+        cy = _current_fy()
+        s = _fy_sales(cy)
+        f = _fy_finance(cy)
+        o = _fy_operations(cy)
+        sm = s["metrics"]
+        fm = f["metrics"]
+        om = o["metrics"]
+        system_prompt += (
+            f"=== LIVE DASHBOARD DATA (FY {cy}) ===\n"
+            f"[Sales] Revenue: ${sm['total_revenue']:,.0f}  Expected: ${sm['expected_revenue']:,.0f}  "
+            f"Gap: -{sm['revenue_drop_percentage']}%  Win rate: {sm['win_rate']*100:.0f}%  "
+            f"Pipeline: ${sm['pipeline_value']:,.0f}  Active deals: {sm['active_deals']}\n"
+            f"[Finance] Cash: ${fm['cash_balance']:,.0f}  Burn: ${fm['burn_rate']:,.0f}/mo  "
+            f"Runway: {fm['runway_months']:.1f}mo  Gross margin: {fm['gross_margin']*100:.1f}%  "
+            f"EBITDA: ${fm['ebitda']:,.0f}  Net income: ${fm['net_income']:,.0f}\n"
+            f"[Operations] CSAT: {om['customer_satisfaction']}/5  NPS: {om['nps_score']}  "
+            f"Active users: {om['active_users']:,}  Uptime: {om['system_uptime']}%  "
+            f"Support tickets: {om['support_tickets']}  Avg resolution: {om['avg_resolution_time']}h\n"
+            f"====================================\n\n"
+        )
+
+    system_prompt += f"Current page context: {ctx}."
 
     resp = await _openai_client.chat.completions.create(  # type: ignore[union-attr]
         model=_settings.OPENAI_MODEL,
@@ -535,21 +653,13 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
             ],
         }
 
-    # ── 2. Build optional snapshot note ────────────────────────────────────
-    snapshot_note = ""
-    if req.data_snapshot:
-        m = req.data_snapshot.get("metrics", {})
-        if ctx == "sales" and "total_revenue" in m:
-            snapshot_note = f"Current FY revenue: ${m['total_revenue']:,}"
-        elif ctx == "finance" and "cash_balance" in m:
-            snapshot_note = f"Current cash balance: ${m['cash_balance']:,}"
-        elif ctx == "operations" and "customer_satisfaction" in m:
-            snapshot_note = f"CSAT: {m['customer_satisfaction']}/5.0"
+    # ── 2. Build data brief from all available live data ───────────────────
+    data_brief = _build_data_brief(req)
 
     # ── 3. OpenAI GPT (when key is configured) ─────────────────────────────
     if _openai_client is not None:
         try:
-            answer = await _openai_answer(req.message, ctx, snapshot_note)
+            answer = await _openai_answer(req.message, ctx, data_brief, req)
             return {
                 "answer": answer,
                 "context": ctx,
@@ -566,6 +676,23 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
             logger.warning("OpenAI call failed (%s) — falling back to canned response.", exc)
 
     # ── 4. Canned fallback (no OpenAI key or API error) ────────────────────
+    # Build a single snapshot note for the canned answer suffix
+    snapshot_note = ""
+    if req.data_snapshot:
+        m = req.data_snapshot.get("metrics", {})
+        if ctx == "sales" and "total_revenue" in m:
+            snapshot_note = f"Current FY revenue: ${m['total_revenue']:,}"
+        elif ctx == "finance" and "cash_balance" in m:
+            snapshot_note = f"Current cash balance: ${m['cash_balance']:,}"
+        elif ctx == "operations" and "customer_satisfaction" in m:
+            snapshot_note = f"CSAT: {m['customer_satisfaction']}/5.0"
+    elif req.live_data:
+        s_data = req.live_data.get("sales", {}).get("data", {})
+        for fy_obj in sorted(s_data.values(), key=lambda x: x.get("fiscal_year", 0), reverse=True)[:1]:
+            rev = fy_obj.get("metrics", {}).get("total_revenue")
+            if rev:
+                snapshot_note = f"Revenue: ${rev:,}"
+
     if any(w in msg_lower for w in ["summar", "overview", "tldr", "brief"]):
         answer = CANNED_INSIGHTS[ctx][0]
     elif any(w in msg_lower for w in ["risk", "concern", "problem", "issue", "warn", "alert"]):
