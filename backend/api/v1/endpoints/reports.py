@@ -516,6 +516,70 @@ async def report_chat(req: ReportChatRequest) -> Dict[str, Any]:
     }
 
 
+class AIImportRequest(BaseModel):
+    prompt: str
+
+
+@router.post("/ai-import")
+async def ai_import(req: AIImportRequest) -> Dict[str, Any]:
+    """
+    Accept a plain-English description of a company's financials.
+    Uses OpenAI to extract Revenue, Cash, Users, and CSAT KPIs,
+    returning structured values that the dashboard applies directly.
+    """
+    if not req.prompt or not req.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+
+    client = _openai_client()
+    system = (
+        "You are a data extraction assistant. "
+        "The user will describe their company's financial data in plain English. "
+        "Extract the following KPIs and return ONLY a valid JSON object with these keys:\n"
+        "  revenue  — annual/total revenue in USD (numeric, no currency symbol)\n"
+        "  cash     — cash balance in USD (numeric)\n"
+        "  users    — number of active users/customers (integer)\n"
+        "  csat     — customer satisfaction score out of 5 (float between 0 and 5)\n"
+        "  summary  — one-sentence plain-text summary of what was extracted\n"
+        "If a value is not mentioned or cannot be determined, use null for that key.\n"
+        "Do NOT include markdown fences, explanations, or any text outside the JSON object."
+    )
+    raw = _chat(client, system, req.prompt, max_tokens=300)
+
+    # Strip any accidental markdown fences
+    cleaned = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+    try:
+        kpis_raw = json.loads(cleaned)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=502,
+            detail=f"AI returned unexpected format. Raw response: {raw[:200]}"
+        )
+
+    # Normalise to float/int/None
+    def _num(v):
+        try:
+            return float(str(v).replace(",", "").replace("$", "").replace("M", "e6").replace("K", "e3"))
+        except Exception:
+            return None
+
+    revenue = _num(kpis_raw.get("revenue"))
+    cash    = _num(kpis_raw.get("cash"))
+    users_raw = kpis_raw.get("users")
+    users   = int(float(str(users_raw).replace(",", ""))) if users_raw not in (None, "null", "") else None
+    csat_raw = kpis_raw.get("csat")
+    csat    = float(csat_raw) if csat_raw not in (None, "null", "") else None
+
+    return {
+        "kpis": {
+            "revenue": revenue,
+            "cash":    cash,
+            "users":   users,
+            "csat":    csat,
+        },
+        "extracted_text": kpis_raw.get("summary", ""),
+    }
+
+
 @router.delete("/{report_id}")
 async def delete_report(report_id: str) -> Dict[str, Any]:
     """Remove a report from the in-memory store."""

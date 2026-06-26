@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reports Portal — Enterprise Digital COO</title>
+  <title>Excel AI Analysis — Enterprise Digital COO</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- marked.js for rendering markdown summaries -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <style>
-    .gradient-bg { background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
+    .gradient-bg { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); }
 
-    #drop-zone { border: 2.5px dashed #93c5fd; transition: background .2s, border-color .2s; }
-    #drop-zone.drag-over { background: #eff6ff; border-color: #3b82f6; }
+    #drop-zone { border: 2.5px dashed #6ee7b7; transition: background .2s, border-color .2s; }
+    #drop-zone.drag-over { background: #ecfdf5; border-color: #10b981; }
 
-    .msg-user { background:#dbeafe; border-radius:16px 16px 4px 16px; color:#1e293b; }
+    .msg-user { background:#d1fae5; border-radius:16px 16px 4px 16px; color:#1e293b; }
     .msg-bot  { background:#f1f5f9; border-radius:16px 16px 16px 4px; color:#334155; }
     .msg-bot.error { background:#fee2e2; color:#991b1b; }
 
     .prose h1,.prose h2,.prose h3 { font-weight:700; margin:.8em 0 .3em; }
     .prose h1 { font-size:1.25rem; }
-    .prose h2 { font-size:1.1rem; color:#1e40af; }
-    .prose h3 { font-size:1rem; color:#1e3a5f; }
+    .prose h2 { font-size:1.1rem; color:#065f46; }
+    .prose h3 { font-size:1rem; color:#047857; }
     .prose p  { margin:.4em 0; line-height:1.65; }
     .prose ul,.prose ol { padding-left:1.4em; margin:.4em 0; }
     .prose li { margin:.2em 0; }
@@ -28,40 +27,34 @@
     .prose code { background:#e2e8f0; padding:0 4px; border-radius:3px; font-size:.85em; }
     .prose pre  { background:#0f172a; color:#e2e8f0; padding:1em; border-radius:6px; overflow-x:auto; font-size:.82em; }
 
-    .report-row:hover { background:#f0f9ff; }
+    .report-row:hover { background:#ecfdf5; }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .section { animation: fadeIn .3s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-    .tab-btn.active { border-bottom: 3px solid #2563eb; color:#2563eb; font-weight:600; }
+    .tab-btn.active { border-bottom: 3px solid #059669; color:#059669; font-weight:600; }
     #chat-log, #parsed-viewer { max-height: 480px; overflow-y: auto; }
     #summary-box { max-height: 520px; overflow-y: auto; }
 
-    /* ── Dark / high-contrast theme ── */
     @media (prefers-color-scheme: dark) {
       body, .bg-slate-100 { background-color: #0f172a !important; color: #e2e8f0; }
       .bg-white, .bg-slate-50 { background-color: #1e2535 !important; }
-      .bg-slate-900 { background-color: #020617 !important; }
       .text-slate-800, .text-slate-700 { color: #e2e8f0 !important; }
       .text-slate-600, .text-slate-500 { color: #94a3b8 !important; }
-      .text-slate-400 { color: #64748b !important; }
       td, th { color: #e2e8f0 !important; }
       .border-slate-100, .border-slate-200 { border-color: #334155 !important; }
       .shadow-md { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
-      .msg-user { background: #1e3a6e !important; color: #e2e8f0 !important; }
+      .msg-user { background: #064e3b !important; color: #e2e8f0 !important; }
       .msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
       .msg-bot.error { background: #1c0707 !important; color: #fca5a5 !important; }
-      .prose h2 { color: #93c5fd !important; }
-      .prose h3 { color: #7dd3fc !important; }
+      .prose h2 { color: #6ee7b7 !important; }
+      .prose h3 { color: #34d399 !important; }
       .prose strong { color: #e2e8f0 !important; }
-      .prose code { background: #252d3d !important; color: #93c5fd !important; }
-      .tab-btn.active { color: #60a5fa !important; border-color: #3b82f6 !important; }
+      .prose code { background: #252d3d !important; color: #6ee7b7 !important; }
+      .tab-btn.active { color: #34d399 !important; border-color: #10b981 !important; }
       input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
-      .report-row:hover { background: #1e2d40 !important; }
-      #drop-zone { border-color: #3b82f6 !important; }
-    }
-    @media (forced-colors: active) {
-      .rounded-lg, .rounded-xl, table, th, td { border: 1px solid ButtonText !important; }
+      .report-row:hover { background: #1a2e20 !important; }
+      #drop-zone { border-color: #10b981 !important; }
     }
   </style>
 </head>
@@ -71,8 +64,8 @@
 <header class="gradient-bg text-white shadow-xl">
   <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">📂 Reports Portal</h1>
-      <p class="text-sm opacity-75 mt-0.5">Upload Power BI (.pbix) or JSON reports — AI reads, summarises &amp; answers questions. For Excel files use the <a href="/static/excel-analysis.html" class="underline opacity-90 hover:opacity-100">Excel AI Analyser →</a></p>
+      <h1 class="text-2xl font-bold tracking-tight">📗 Excel AI Analysis</h1>
+      <p class="text-sm opacity-75 mt-0.5">Upload any Excel workbook — AI converts it to a Power BI-style report with KPIs, trends &amp; recommendations</p>
     </div>
     <div class="flex items-center gap-3">
       <span id="openai-badge" class="text-xs bg-white/20 px-3 py-1 rounded-full">⚙ Checking AI…</span>
@@ -86,43 +79,41 @@
 
   <!-- ── Upload Zone ── -->
   <div class="bg-white rounded-2xl shadow-md p-6">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Report</h2>
+    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Excel Workbook</h2>
     <div id="drop-zone" class="rounded-xl p-10 text-center cursor-pointer bg-slate-50 select-none"
          onclick="document.getElementById('file-input').click()"
          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-      <svg class="w-12 h-12 text-blue-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-12 h-12 text-emerald-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
       </svg>
-      <p class="text-slate-600 font-medium">Drag &amp; drop here, or <span class="text-blue-600 underline">browse</span></p>
-      <p class="text-sm text-slate-400 mt-1">Supports <strong>.pbix</strong> (Power BI) and <strong>.json</strong> report files</p>
-      <input id="file-input" type="file" class="hidden" accept=".pbix,.json" onchange="onFileSelect(event)" />
+      <p class="text-slate-600 font-medium">Drag &amp; drop your Excel file here, or <span class="text-emerald-600 underline">browse</span></p>
+      <p class="text-sm text-slate-400 mt-1">Supports <strong>.xlsx</strong> and <strong>.xls</strong> Excel workbooks</p>
+      <input id="file-input" type="file" class="hidden" accept=".xlsx,.xls" onchange="onFileSelect(event)" />
     </div>
-
-    <!-- Upload progress / status -->
     <div id="upload-status" class="hidden mt-4"></div>
   </div>
 
   <!-- ── Uploaded Reports List ── -->
   <div class="bg-white rounded-2xl shadow-md p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold text-slate-800">Uploaded Reports</h2>
+      <h2 class="text-lg font-semibold text-slate-800">Analysed Workbooks</h2>
       <button onclick="loadReportList()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors">
         ↻ Refresh
       </button>
     </div>
     <div id="report-list">
-      <p class="text-sm text-slate-400 text-center py-6">No reports uploaded yet. Upload a file above to get started.</p>
+      <p class="text-sm text-slate-400 text-center py-6">No workbooks uploaded yet. Upload an Excel file above to get started.</p>
     </div>
   </div>
 
-  <!-- ── Report Detail Panel (shown after selecting a report) ── -->
+  <!-- ── Report Detail Panel ── -->
   <div id="detail-panel" class="hidden section">
 
     <!-- Report title bar -->
-    <div class="bg-gradient-to-r from-blue-700 to-blue-900 text-white rounded-2xl shadow-md px-6 py-4 flex justify-between items-center mb-6">
+    <div class="bg-gradient-to-r from-emerald-700 to-green-900 text-white rounded-2xl shadow-md px-6 py-4 flex justify-between items-center mb-6">
       <div>
-        <p class="text-xs opacity-70 uppercase tracking-wide mb-0.5">Viewing Report</p>
+        <p class="text-xs opacity-70 uppercase tracking-wide mb-0.5">Analysing Workbook</p>
         <h2 id="detail-filename" class="text-xl font-bold"></h2>
         <p id="detail-meta" class="text-xs opacity-60 mt-0.5"></p>
       </div>
@@ -131,8 +122,8 @@
 
     <!-- Tabs -->
     <div class="flex gap-0 border-b border-slate-200 mb-6 bg-white rounded-t-xl px-4 shadow-sm">
-      <button class="tab-btn active px-5 py-3 text-sm text-slate-600" onclick="switchTab('summary', this)">📋 AI Summary</button>
-      <button class="tab-btn px-5 py-3 text-sm text-slate-600" onclick="switchTab('data', this)">🗄 Parsed Data</button>
+      <button class="tab-btn active px-5 py-3 text-sm text-slate-600" onclick="switchTab('summary', this)">📋 AI Report</button>
+      <button class="tab-btn px-5 py-3 text-sm text-slate-600" onclick="switchTab('data', this)">🗄 Sheet Data</button>
       <button class="tab-btn px-5 py-3 text-sm text-slate-600" onclick="switchTab('chat', this)">💬 Ask AI</button>
     </div>
 
@@ -140,7 +131,7 @@
     <div id="tab-summary" class="tab-content section">
       <div class="bg-white rounded-2xl shadow-md p-6">
         <div class="flex justify-between items-start mb-4">
-          <h3 class="font-semibold text-slate-700 text-base">Executive Summary</h3>
+          <h3 class="font-semibold text-slate-700 text-base">Power BI-Style AI Report</h3>
           <button onclick="copyToClipboard('summary-raw')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-lg">⧉ Copy</button>
         </div>
         <div id="summary-box" class="prose text-sm text-slate-700"></div>
@@ -148,12 +139,12 @@
       </div>
     </div>
 
-    <!-- Tab: Parsed Data -->
+    <!-- Tab: Sheet Data -->
     <div id="tab-data" class="tab-content hidden section">
       <div class="bg-white rounded-2xl shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="font-semibold text-slate-700 text-base">Parsed Report Structure</h3>
-          <button onclick="downloadParsed()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors">⬇ Download JSON</button>
+          <h3 class="font-semibold text-slate-700 text-base">Parsed Sheet Structure</h3>
+          <button onclick="downloadParsed()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors">⬇ Download JSON</button>
         </div>
         <div id="parsed-viewer" class="text-xs font-mono bg-slate-900 text-green-400 p-4 rounded-xl overflow-auto"></div>
       </div>
@@ -162,37 +153,30 @@
     <!-- Tab: Chat -->
     <div id="tab-chat" class="tab-content hidden section">
       <div class="bg-white rounded-2xl shadow-md flex flex-col" style="height:600px;">
-        <!-- Chat header -->
         <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-          <span class="text-sm font-semibold text-slate-700">💬 Chat with this Report</span>
+          <span class="text-sm font-semibold text-slate-700">💬 Chat with this Workbook</span>
           <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-slate-600">Clear</button>
         </div>
-
-        <!-- Messages -->
         <div id="chat-log" class="flex-1 overflow-y-auto p-5 space-y-3"></div>
-
-        <!-- Quick prompts -->
         <div class="px-5 py-2 border-t border-slate-100 flex flex-wrap gap-2">
           <span class="text-xs text-slate-400 self-center">Quick:</span>
-          <button onclick="quickAsk('Summarise this report in 3 bullet points')"
-                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">3-bullet summary</button>
-          <button onclick="quickAsk('What are the key KPIs or metrics in this report?')"
-                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Key KPIs</button>
-          <button onclick="quickAsk('What risks or anomalies are visible in the data?')"
-                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Risks &amp; anomalies</button>
-          <button onclick="quickAsk('What are your top 3 recommendations based on this report?')"
-                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Recommendations</button>
-          <button onclick="quickAsk('List all the data tables and their columns found in this report')"
-                  class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full hover:bg-blue-100 transition-colors">Tables &amp; columns</button>
+          <button onclick="quickAsk('Summarise this workbook in 3 bullet points')"
+                  class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full hover:bg-emerald-100 transition-colors">3-bullet summary</button>
+          <button onclick="quickAsk('What are the key KPIs and their values?')"
+                  class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full hover:bg-emerald-100 transition-colors">Key KPIs</button>
+          <button onclick="quickAsk('What trends or anomalies can you see in this data?')"
+                  class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full hover:bg-emerald-100 transition-colors">Trends &amp; anomalies</button>
+          <button onclick="quickAsk('What are your top 3 recommendations based on this data?')"
+                  class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full hover:bg-emerald-100 transition-colors">Recommendations</button>
+          <button onclick="quickAsk('What Power BI dashboard layout would you suggest for this data?')"
+                  class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full hover:bg-emerald-100 transition-colors">Dashboard layout</button>
         </div>
-
-        <!-- Input -->
         <div class="p-4 border-t border-slate-100 flex gap-2">
-          <input id="chat-input" type="text" placeholder="Ask anything about this report…"
-                 class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+          <input id="chat-input" type="text" placeholder="Ask anything about this workbook…"
+                 class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}" />
           <button onclick="sendChat()"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5">
             <span>Send</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -207,7 +191,7 @@
 
 <!-- ════════════════════ FOOTER ════════════════════ -->
 <footer class="mt-16 border-t border-slate-200 bg-white text-center py-5">
-  <p class="text-xs text-slate-400">Enterprise Digital COO · Reports Portal · Powered by OpenAI</p>
+  <p class="text-xs text-slate-400">Enterprise Digital COO · Excel AI Analysis · Powered by OpenAI</p>
 </footer>
 
 
@@ -216,7 +200,7 @@
 // ─── State ────────────────────────────────────────────────────────────────
 let currentReportId   = null;
 let currentReportData = null;
-let chatHistory       = [];   // [{role, content}, ...]
+let chatHistory       = [];
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -262,17 +246,13 @@ function onFileSelect(e) {
 // ─── Upload ───────────────────────────────────────────────────────────────
 async function uploadFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pbix','json','xlsx','xls'].includes(ext)) {
-    showUploadStatus('error', 'Unsupported file type. Please upload a .pbix, .xlsx, .xls, or .json file.');
+  if (!['xlsx','xls'].includes(ext)) {
+    showUploadStatus('error', 'Unsupported file type. Please upload a .xlsx or .xls Excel file.');
     return;
   }
 
-  const label = ['xlsx','xls'].includes(ext)
-    ? 'Reading Excel workbook and generating Power BI-style AI summary…'
-    : 'Uploading and generating AI summary…';
-
   showUploadStatus('loading',
-    `<span class="inline-block spin mr-2">⏳</span> <strong>${escHtml(file.name)}</strong> — ${label}`);
+    `<span class="inline-block spin mr-2">⏳</span> <strong>${escHtml(file.name)}</strong> — Reading Excel workbook and generating Power BI-style AI report…`);
 
   const fd = new FormData();
   fd.append('file', file);
@@ -283,14 +263,14 @@ async function uploadFile(file) {
     if (!r.ok) throw new Error(d.detail || `Upload failed (HTTP ${r.status})`);
 
     showUploadStatus('success',
-      `✅ <strong>${escHtml(file.name)}</strong> uploaded and analysed successfully!
+      `✅ <strong>${escHtml(file.name)}</strong> analysed successfully!
        <button onclick="openReport('${escHtml(d.report_id)}')"
-               class="ml-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-blue-700">
+               class="ml-3 bg-emerald-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-emerald-700">
          Open Report →
        </button>`);
 
     await loadReportList();
-    openReport(d.report_id, d);   // open immediately
+    openReport(d.report_id, d);
   } catch(e) {
     showUploadStatus('error', `❌ Upload failed: ${escHtml(e.message)}`);
   }
@@ -299,7 +279,7 @@ async function uploadFile(file) {
 function showUploadStatus(type, html) {
   const el  = document.getElementById('upload-status');
   const cls = {
-    loading: 'bg-blue-50 border border-blue-200 text-blue-800',
+    loading: 'bg-emerald-50 border border-emerald-200 text-emerald-800',
     success: 'bg-green-50 border border-green-200 text-green-800',
     error:   'bg-red-50 border border-red-200 text-red-800',
   };
@@ -313,7 +293,9 @@ async function loadReportList() {
   try {
     const r = await fetch('/api/v1/reports/list');
     const d = await safeJson(r);
-    renderReportList(d.reports || []);
+    // show only excel reports on this page
+    const reports = (d.reports || []).filter(rpt => ['xlsx','xls','excel'].includes(rpt.type));
+    renderReportList(reports);
   } catch {
     document.getElementById('report-list').innerHTML =
       '<p class="text-sm text-red-500 text-center py-4">Could not load reports.</p>';
@@ -323,10 +305,9 @@ async function loadReportList() {
 function renderReportList(reports) {
   const el = document.getElementById('report-list');
   if (!reports.length) {
-    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No reports uploaded yet.</p>';
+    el.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No Excel workbooks uploaded yet.</p>';
     return;
   }
-  const iconMap = { pbix: '📊', json: '📄', xlsx: '📗', xls: '📗', excel: '📗' };
   el.innerHTML = `
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -340,15 +321,15 @@ function renderReportList(reports) {
           ${reports.map(rpt => `
             <tr class="report-row border-b border-slate-50 cursor-pointer" onclick="openReportById('${rpt.report_id}')">
               <td class="py-3 px-4 font-medium text-slate-800">
-                <span class="mr-2">${iconMap[rpt.type] || '📄'}</span>${escHtml(rpt.filename)}
+                <span class="mr-2">📗</span>${escHtml(rpt.filename)}
               </td>
               <td class="py-3 px-4">
-                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full uppercase">${rpt.type}</span>
+                <span class="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full uppercase">${rpt.type}</span>
               </td>
               <td class="py-3 px-4 text-slate-500">${fmtDate(rpt.uploaded_at)}</td>
               <td class="py-3 px-4 text-right">
                 <button onclick="event.stopPropagation();openReportById('${rpt.report_id}')"
-                        class="text-xs bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 mr-2">Open</button>
+                        class="text-xs bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-700 mr-2">Open</button>
                 <button onclick="event.stopPropagation();deleteReport('${rpt.report_id}', '${escHtml(rpt.filename)}')"
                         class="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-100">Delete</button>
               </td>
@@ -375,31 +356,24 @@ function openReport(reportId, data) {
   currentReportData = data;
   chatHistory       = [];
 
-  // Title bar
   document.getElementById('detail-filename').textContent = data.filename;
   document.getElementById('detail-meta').textContent =
-    `${data.type.toUpperCase()} · Uploaded ${fmtDate(data.uploaded_at)}`;
+    `Excel Workbook · Uploaded ${fmtDate(data.uploaded_at)}`;
 
-  // Summary tab
   const rawSummary = data.summary || '_No summary available._';
   document.getElementById('summary-raw').value = rawSummary;
   document.getElementById('summary-box').innerHTML = marked.parse(rawSummary);
 
-  // Parsed data tab
   document.getElementById('parsed-viewer').textContent = JSON.stringify(data.parsed, null, 2);
 
-  // Chat tab — clear and seed
   clearChat();
   appendBotMsg(
-    `Report **${escHtml(data.filename)}** is loaded. Ask me anything — data tables, KPIs, trends, recommendations, or anomalies.`,
+    `Workbook **${escHtml(data.filename)}** is loaded. Ask me about KPIs, trends, recommendations, or request a specific analysis.`,
     true
   );
 
-  // Show panel, default to summary tab
   document.getElementById('detail-panel').classList.remove('hidden');
   switchTab('summary', document.querySelector('.tab-btn'));
-
-  // Scroll into view
   document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -471,7 +445,6 @@ async function sendChat() {
 
   appendUserMsg(msg);
   chatHistory.push({ role: 'user', content: msg });
-
   const typing = appendTyping();
 
   try {
@@ -534,11 +507,6 @@ function copyToClipboard(elemId) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
-
-/** Safely parse a fetch Response as JSON.
- *  If the server returns a non-JSON body (e.g. "Internal Server Error" plain text
- *  or an HTML error page), this returns { detail: <raw text> } instead of throwing.
- */
 async function safeJson(r) {
   const text = await r.text();
   try { return JSON.parse(text); }

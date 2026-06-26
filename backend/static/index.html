@@ -219,7 +219,7 @@
           </div>
           <p class="text-gray-600 text-sm mb-3">Upload any Excel workbook — AI converts it to a Power BI-style report</p>
           <p class="text-xs text-gray-500 mb-4">.xlsx / .xls · KPI stats (min/max/mean/sum) · Suggested dashboard layout · AI recommendations</p>
-          <a href="/static/reports.html" class="mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Excel Analyser →</a>
+          <a href="/static/excel-analysis.html" class="mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Excel Analyser →</a>
         </div>
 
         <!-- Import Company Data -->
@@ -479,6 +479,8 @@ function closeImportModal() {
   document.getElementById('import-modal').classList.remove('open');
   document.getElementById('import-status').innerHTML = '';
   document.getElementById('import-file').value = '';
+  document.getElementById('ai-import-prompt').value = '';
+  switchImportTab('file');  // Reset to file upload tab
 }
 
 async function submitImport() {
@@ -577,6 +579,50 @@ function showImportStatus(type, html) {
     `<p class="${cls[type]} text-sm mt-3">${html}</p>`;
 }
 
+function switchImportTab(tab) {
+  const isFile = tab === 'file';
+  document.getElementById('import-section-file').classList.toggle('hidden', !isFile);
+  document.getElementById('import-section-ai').classList.toggle('hidden', isFile);
+  document.getElementById('import-submit-btn').classList.toggle('hidden', !isFile);
+  document.getElementById('import-tab-file').className =
+    `flex-1 py-2 transition-colors ${isFile ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+  document.getElementById('import-tab-ai').className =
+    `flex-1 py-2 transition-colors ${!isFile ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+  document.getElementById('import-status').innerHTML = '';
+}
+
+async function submitAIImport() {
+  const prompt = document.getElementById('ai-import-prompt').value.trim();
+  if (!prompt) return showImportStatus('error', 'Please describe your company data first.');
+
+  const btnText = document.getElementById('ai-import-btn-text');
+  btnText.textContent = '⏳ Analysing with AI…';
+  showImportStatus('loading', '⏳ AI is reading your company data…');
+
+  try {
+    const r = await fetch('/api/v1/reports/ai-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const d = await r.json();
+    if (!r.ok) return showImportStatus('error', d.detail || 'AI import failed.');
+
+    const kpis = d.kpis;
+    if (!kpis || (kpis.revenue == null && kpis.cash == null))
+      return showImportStatus('error', 'AI could not extract any KPI values. Try describing your data more specifically (e.g. "Revenue $10M, Cash $2M").');
+
+    applyCompanyData({ ...kpis, filename: 'AI prompt' });
+    showImportStatus('success',
+      `✅ AI extracted your company KPIs and updated the dashboard.<br>
+       <span class="text-xs">${d.extracted_text || ''}</span>`);
+    btnText.textContent = '✨ Import with AI';
+  } catch(e) {
+    btnText.textContent = '✨ Import with AI';
+    showImportStatus('error', 'AI import failed: ' + e.message);
+  }
+}
+
 // Boot
 init();
 setInterval(()=>{checkStatus();loadAllFYData();},60000);
@@ -589,24 +635,55 @@ setInterval(()=>{checkStatus();loadAllFYData();},60000);
       <h2 class="text-lg font-bold text-gray-800">Import Your Company Data</h2>
       <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
     </div>
-    <p class="text-sm text-gray-600 mb-4">
-      Upload your company's Excel (.xlsx) or Power BI (.pbix) file. The dashboard will automatically
-      detect <strong>Revenue</strong>, <strong>Cash</strong>, <strong>Users</strong>, and <strong>CSAT</strong>
-      columns and replace the demo KPIs with your real data.
-    </p>
-    <div class="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500 space-y-1">
-      <p>📊 <strong>Excel columns detected:</strong> Revenue / Sales / Income, Cash / Balance, Users / Customers, CSAT / Satisfaction / Score</p>
-      <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
+
+    <!-- ── Tab switcher ── -->
+    <div class="flex border border-gray-200 rounded-lg overflow-hidden mb-4 text-sm font-medium">
+      <button id="import-tab-file" onclick="switchImportTab('file')"
+              class="flex-1 py-2 bg-purple-600 text-white transition-colors">📁 Upload File</button>
+      <button id="import-tab-ai" onclick="switchImportTab('ai')"
+              class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">✨ Ask AI</button>
     </div>
-    <button onclick="downloadSampleExcel()"
-            class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
-      ⬇ Download Sample Excel
-    </button>
-    <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
-           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
+
+    <!-- ── File upload section ── -->
+    <div id="import-section-file">
+      <p class="text-sm text-gray-600 mb-4">
+        Upload your company's Excel (.xlsx) or Power BI (.pbix) file. The dashboard will automatically
+        detect <strong>Revenue</strong>, <strong>Cash</strong>, <strong>Users</strong>, and <strong>CSAT</strong>
+        columns and replace the demo KPIs with your real data.
+      </p>
+      <div class="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500 space-y-1">
+        <p>📊 <strong>Excel columns detected:</strong> Revenue / Sales / Income, Cash / Balance, Users / Customers, CSAT / Satisfaction / Score</p>
+        <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
+      </div>
+      <button onclick="downloadSampleExcel()"
+              class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
+        ⬇ Download Sample Excel
+      </button>
+      <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
+    </div>
+
+    <!-- ── AI import section ── -->
+    <div id="import-section-ai" class="hidden">
+      <p class="text-sm text-gray-600 mb-3">
+        Describe your company's financials in plain English. AI will extract the key metrics and replace all dashboard KPIs automatically.
+      </p>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3 text-xs text-purple-700">
+        <strong>Example:</strong> "Our company Acme Corp had revenue of $12.4M last year, cash balance of $3.2M,
+        8,500 active users and a CSAT score of 4.3 out of 5."
+      </div>
+      <textarea id="ai-import-prompt" rows="5"
+                placeholder="Describe your company data here…&#10;e.g. Revenue $15M, Cash $4.2M, 12,000 active users, CSAT 4.6/5"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
+      <button onclick="submitAIImport()"
+              class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
+        <span id="ai-import-btn-text">✨ Import with AI</span>
+      </button>
+    </div>
+
     <div id="import-status"></div>
     <div class="flex gap-3 mt-4">
-      <button onclick="submitImport()"
+      <button id="import-submit-btn" onclick="submitImport()"
               class="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
         Import Data
       </button>
