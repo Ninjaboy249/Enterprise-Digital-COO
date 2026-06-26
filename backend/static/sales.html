@@ -12,6 +12,12 @@
     .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
     .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
     .fy-btn.active { background:#7c3aed; color:#fff; }
+    /* Toast notification */
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+             background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
+             font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
+             pointer-events:none; z-index:9999; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -98,7 +104,9 @@
         <!-- Comparison Table (hidden by default) -->
         <div id="comparison-section" class="hidden bg-white rounded-lg shadow-md p-5 mb-6">
           <h2 class="font-semibold text-gray-700 mb-4">FY Comparison Table</h2>
-          <div id="comparison-table"></div>
+          <div class="overflow-x-auto -mx-1">
+            <div id="comparison-table"></div>
+          </div>
         </div>
 
         <!-- Regional Performance + Products + Trends -->
@@ -192,10 +200,16 @@ function populateCompareSelects() {
 
 function selectFY(fy) {
   currentFY = fy;
+  // Set active immediately so button never fades while data loads
   document.querySelectorAll('.fy-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.fy === fy);
   });
-  loadSalesData(fy);
+  loadSalesData(fy).finally(() => {
+    // Re-assert active state after any DOM resets during render
+    document.querySelectorAll('.fy-btn').forEach(b => {
+      b.classList.toggle('active', +b.dataset.fy === currentFY);
+    });
+  });
 }
 
 // ── Data Loading ──────────────────────────────────────────────────────────
@@ -224,13 +238,16 @@ async function loadSalesData(fy) {
 async function loadComparison() {
   const fy1 = +document.getElementById('compare-fy1').value;
   const fy2 = +document.getElementById('compare-fy2').value;
-  if (fy1 === fy2) return alert('Please select two different fiscal years.');
+  if (fy1 === fy2) return showToast('Please select two different fiscal years.');
   try {
     const r = await fetch(`/api/v1/metrics/sales/compare?fy1=${fy1}&fy2=${fy2}`);
     const data = await r.json();
     renderComparisonTable(data, fy1, fy2);
-    document.getElementById('comparison-section').classList.remove('hidden');
-  } catch(e) { alert('Comparison failed: ' + e.message); }
+    const section = document.getElementById('comparison-section');
+    section.classList.remove('hidden');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast(`✓ Comparison ready — FY ${fy1} vs FY ${fy2}`);
+  } catch(e) { showToast('Comparison failed: ' + e.message); }
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────
@@ -331,12 +348,12 @@ function renderComparisonTable(data, fy1, fy2) {
   }).join('');
 
   document.getElementById('comparison-table').innerHTML = `
-    <table class="w-full text-sm">
+    <table class="min-w-full text-sm">
       <thead><tr class="bg-gray-50 text-gray-500 uppercase text-xs">
-        <th class="py-2 px-3 text-left">Metric</th>
-        <th class="py-2 px-3">FY ${fy1}</th>
-        <th class="py-2 px-3">FY ${fy2}</th>
-        <th class="py-2 px-3">Change</th>
+        <th class="py-2 px-3 text-left whitespace-nowrap">Metric</th>
+        <th class="py-2 px-3 whitespace-nowrap">FY ${fy1}</th>
+        <th class="py-2 px-3 whitespace-nowrap">FY ${fy2}</th>
+        <th class="py-2 px-3 whitespace-nowrap">Change</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -347,6 +364,19 @@ function fmtVal(key, v) {
   if (key.includes('rate') || key.includes('margin') || key.includes('win')) return (v*100).toFixed(1)+'%';
   if (key.includes('drop')) return v.toFixed(1)+'%';
   return typeof v === 'number' ? v.toLocaleString() : v;
+}
+
+function showToast(msg, duration = 3000) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 function refreshData() { loadFYData(); loadSalesData(currentFY); }
@@ -429,6 +459,11 @@ function quickAsk(msg) {
 // ── Boot ─────────────────────────────────────────────────────────────────
 init();
 setInterval(() => { loadFYData(); loadSalesData(currentFY); }, 60000);
+</script>
+<!-- Toast element -->
+<div id="toast"></div>
+<script>
+// (toast initialised inline above)
 </script>
 </body>
 </html>
