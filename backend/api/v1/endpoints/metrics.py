@@ -6,6 +6,21 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import math
+import re
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ── OpenAI client (optional — graceful fallback to canned responses) ──────────
+try:
+    from openai import AsyncOpenAI
+    _openai_key = os.getenv("OPENAI_API_KEY", "")
+    _openai_client: Optional[AsyncOpenAI] = AsyncOpenAI(api_key=_openai_key) if _openai_key and _openai_key != "your-openai-api-key" else None
+    _openai_model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+except ImportError:
+    _openai_client = None
+    _openai_model = "gpt-3.5-turbo"
 
 router = APIRouter()
 
@@ -300,6 +315,54 @@ async def get_metrics_summary() -> Dict[str, Any]:
 #  Chat / AI Summarisation endpoint
 # ─────────────────────────────────────────────
 
+# ── Input validation helpers ───────────────────────────────────────────────────
+
+# Minimum meaningful word count for a business query
+_MIN_WORDS = 1
+# Ratio of printable ASCII to total chars; below this = gibberish
+_MIN_PRINTABLE_RATIO = 0.70
+# Max repeated-char run (e.g. "aaaaaaa" or "@@@@@")
+_MAX_CHAR_RUN = 4
+# Regex: message must contain at least one letter
+_HAS_LETTER = re.compile(r"[a-zA-Z]")
+
+def _is_valid_query(msg: str) -> bool:
+    """Return False for gibberish, symbol-spam, or non-text inputs."""
+    stripped = msg.strip()
+    if not stripped:
+        return False
+    # Must contain at least one letter
+    if not _HAS_LETTER.search(stripped):
+        return False
+    # Reject if more than 60% non-printable / non-ASCII
+    printable = sum(1 for c in stripped if c.isprintable() and ord(c) < 128)
+    if len(stripped) > 0 and (printable / len(stripped)) < _MIN_PRINTABLE_RATIO:
+        return False
+    # Reject long runs of the same character (e.g. "@@@@@@@@" or "aaaaaaaa")
+    if re.search(r"(.)\1{" + str(_MAX_CHAR_RUN) + r",}", stripped):
+        return False
+    # Reject if almost all chars are special symbols (no semantic value)
+    letter_count = sum(1 for c in stripped if c.isalpha())
+    if len(stripped) > 3 and letter_count / len(stripped) < 0.25:
+        return False
+    return True
+
+_INVALID_QUERY_RESPONSE = {
+    "answer": (
+        "I couldn't understand that query. Please ask a business question — for example: "
+        "\"What happened to revenue this quarter?\", \"Show me a cash flow summary\", "
+        "or \"What are the top risks?\""
+    ),
+    "context": "error",
+    "suggestions": [
+        "What happened to revenue?",
+        "Show me a summary",
+        "What are the key risks?",
+        "What do you recommend?",
+    ],
+}
+
+
 class ChatRequest(BaseModel):
     message: str
     context: Optional[str] = None      # e.g. "sales", "finance", "operations"
@@ -403,12 +466,52 @@ def _detect_greeting(msg: str) -> Optional[str]:
     return None
 
 
+async def _openai_answer(message: str, ctx: str, snapshot_note: str) -> str:
+    """Call OpenAI GPT and return the assistant's reply."""
+    from config import settings as _settings
+
+    ctx_descriptions = {
+        "sales": "Sales metrics: revenue, pipeline, deals, win rate, regional performance.",
+        "finance": "Finance metrics: cash balance, burn rate, gross margin, EBITDA, net income.",
+        "operations": "Operations metrics: system uptime, CSAT, NPS, active users, support tickets.",
+        "general": "Overall business health: sales, finance, and operations KPIs.",
+    }
+
+    system_prompt = (
+        "You are the Enterprise Digital COO AI Assistant — a concise, data-driven executive advisor. "
+        "You help business leaders understand their company's sales, finance, and operations performance. "
+        "Keep answers focused, professional, and actionable. "
+        "If a question is outside the business domain (e.g. coding help, recipes, general knowledge), "
+        "politely redirect the user to ask about business metrics instead. "
+        f"Current context: {ctx_descriptions.get(ctx, ctx_descriptions['general'])}"
+        + (f" Live data note: {snapshot_note}" if snapshot_note else "")
+    )
+
+    resp = await _openai_client.chat.completions.create(  # type: ignore[union-attr]
+        model=_settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": message},
+        ],
+        temperature=_settings.OPENAI_TEMPERATURE,
+        max_tokens=_settings.OPENAI_MAX_TOKENS,
+    )
+    return resp.choices[0].message.content.strip()
+
+
 @router.post("/chat")
 async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     """
-    Chat endpoint: handles greetings/small-talk first, then routes to
-    contextual business insights based on the current page context.
+    Chat endpoint:
+      1. Validates the query (rejects gibberish / symbol-spam).
+      2. Handles greetings / small-talk with friendly canned replies.
+      3. Routes real business questions to OpenAI GPT when a key is configured,
+         otherwise falls back to contextual canned insights.
     """
+    # ── 0. Input validation — reject invalid / gibberish queries ──────────
+    if not _is_valid_query(req.message):
+        return {**_INVALID_QUERY_RESPONSE, "timestamp": datetime.now().isoformat()}
+
     ctx = (req.context or "general").lower()
     if ctx not in CANNED_INSIGHTS:
         ctx = "general"
@@ -419,7 +522,6 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     greeting_cat = _detect_greeting(req.message)
     if greeting_cat:
         replies = _GREETING_REPLIES[greeting_cat]
-        # Rotate through replies deterministically based on message length
         answer = replies[len(req.message) % len(replies)]
         return {
             "answer": answer,
@@ -433,7 +535,37 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
             ],
         }
 
-    # ── 2. Business insight matching ───────────────────────────────────────
+    # ── 2. Build optional snapshot note ────────────────────────────────────
+    snapshot_note = ""
+    if req.data_snapshot:
+        m = req.data_snapshot.get("metrics", {})
+        if ctx == "sales" and "total_revenue" in m:
+            snapshot_note = f"Current FY revenue: ${m['total_revenue']:,}"
+        elif ctx == "finance" and "cash_balance" in m:
+            snapshot_note = f"Current cash balance: ${m['cash_balance']:,}"
+        elif ctx == "operations" and "customer_satisfaction" in m:
+            snapshot_note = f"CSAT: {m['customer_satisfaction']}/5.0"
+
+    # ── 3. OpenAI GPT (when key is configured) ─────────────────────────────
+    if _openai_client is not None:
+        try:
+            answer = await _openai_answer(req.message, ctx, snapshot_note)
+            return {
+                "answer": answer,
+                "context": ctx,
+                "timestamp": datetime.now().isoformat(),
+                "source": "openai",
+                "suggestions": [
+                    "What are the key risks?",
+                    "Show me a summary",
+                    "What do you recommend?",
+                    "How are trends looking?",
+                ],
+            }
+        except Exception as exc:
+            logger.warning("OpenAI call failed (%s) — falling back to canned response.", exc)
+
+    # ── 4. Canned fallback (no OpenAI key or API error) ────────────────────
     if any(w in msg_lower for w in ["summar", "overview", "tldr", "brief"]):
         answer = CANNED_INSIGHTS[ctx][0]
     elif any(w in msg_lower for w in ["risk", "concern", "problem", "issue", "warn", "alert"]):
@@ -446,21 +578,14 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
         idx = len(req.message) % len(CANNED_INSIGHTS[ctx])
         answer = CANNED_INSIGHTS[ctx][idx]
 
-    # ── 3. Weave in live snapshot numbers if available ─────────────────────
-    snapshot_note = ""
-    if req.data_snapshot:
-        m = req.data_snapshot.get("metrics", {})
-        if ctx == "sales" and "total_revenue" in m:
-            snapshot_note = f" (Current FY revenue: ${m['total_revenue']:,})"
-        elif ctx == "finance" and "cash_balance" in m:
-            snapshot_note = f" (Current cash balance: ${m['cash_balance']:,})"
-        elif ctx == "operations" and "customer_satisfaction" in m:
-            snapshot_note = f" (CSAT: {m['customer_satisfaction']}/5.0)"
+    if snapshot_note:
+        answer += f" ({snapshot_note})"
 
     return {
-        "answer": answer + snapshot_note,
+        "answer": answer,
         "context": ctx,
         "timestamp": datetime.now().isoformat(),
+        "source": "canned",
         "suggestions": [
             "What are the key risks?",
             "Show me a summary",

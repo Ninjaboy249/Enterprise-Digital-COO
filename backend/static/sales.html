@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,48 +7,67 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
+    /* ── Theme variables ── */
+    :root {
+      --bg:#f3f4f6; --surface:#ffffff; --surface-2:#f9fafb; --border:#e5e7eb;
+      --text:#1f2937; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --shadow:0 2px 12px rgba(0,0,0,.07); --input-bg:#ffffff; --input-border:#d1d5db;
+      --chat-user-bg:#ede9fe; --chat-user-fg:#1e293b;
+      --chat-bot-bg:#f3f4f6;  --chat-bot-fg:#374151;
+      --accent-light-bg:#f5f3ff; --status-ok-bg:#ecfdf5; --status-warn-bg:#fffbeb; --status-err-bg:#fef2f2;
+    }
+    [data-theme="dark"] {
+      --bg:#0f172a; --surface:#1e2535; --surface-2:#252d3d; --border:#334155;
+      --text:#e2e8f0; --text-muted:#94a3b8; --text-faint:#64748b;
+      --shadow:0 2px 8px rgba(0,0,0,.6); --input-bg:#1e293b; --input-border:#475569;
+      --chat-user-bg:#2d1f5e; --chat-user-fg:#e2e8f0;
+      --chat-bot-bg:#1e293b;  --chat-bot-fg:#cbd5e1;
+      --accent-light-bg:#1e1245; --status-ok-bg:#052e16; --status-warn-bg:#1c1007; --status-err-bg:#1c0707;
+    }
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg:#0f172a; --surface:#1e2535; --surface-2:#252d3d; --border:#334155;
+        --text:#e2e8f0; --text-muted:#94a3b8; --text-faint:#64748b;
+        --shadow:0 2px 8px rgba(0,0,0,.6); --input-bg:#1e293b; --input-border:#475569;
+        --chat-user-bg:#2d1f5e; --chat-user-fg:#e2e8f0;
+        --chat-bot-bg:#1e293b;  --chat-bot-fg:#cbd5e1;
+        --accent-light-bg:#1e1245; --status-ok-bg:#052e16; --status-warn-bg:#1c1007; --status-err-bg:#1c0707;
+      }
+    }
+    body, .bg-gray-100 { background: var(--bg) !important; color: var(--text); }
+    .bg-white          { background: var(--surface) !important; }
+    .bg-gray-50        { background: var(--surface-2) !important; }
+    .text-gray-800, .text-gray-700 { color: var(--text) !important; }
+    .text-gray-600, .text-gray-500 { color: var(--text-muted) !important; }
+    .text-gray-400     { color: var(--text-faint) !important; }
+    td, th             { color: var(--text) !important; }
+    .border-gray-100, .border-gray-200, .border-gray-300 { border-color: var(--border) !important; }
+    .shadow-md, .shadow-lg { box-shadow: var(--shadow) !important; }
+    input, select, textarea { background: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }
+    .bg-green-50  { background: var(--status-ok-bg)   !important; }
+    .bg-yellow-50 { background: var(--status-warn-bg)  !important; }
+    .bg-red-50    { background: var(--status-err-bg)   !important; }
+    .bg-blue-50, .bg-purple-50 { background: var(--accent-light-bg) !important; }
+    .bg-blue-100, .bg-purple-100, .bg-sky-100, .bg-green-100 { background: var(--surface-2) !important; }
+
     .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
     #chat-panel { transition: transform .3s ease; }
-    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
-    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; color:#374151; }
+    .chat-msg-user { background:var(--chat-user-bg); border-radius:12px 12px 2px 12px; color:var(--chat-user-fg); }
+    .chat-msg-bot  { background:var(--chat-bot-bg);  border-radius:12px 12px 12px 2px; color:var(--chat-bot-fg); }
     .fy-btn { transition: background .15s, color .15s, border-color .15s; }
     .fy-btn.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
-    @media (prefers-color-scheme: dark) {
-      body, .bg-gray-100 { background-color: #0f172a !important; color: #e2e8f0; }
-      .bg-white { background-color: #1e2535 !important; }
-      .bg-gray-50, .bg-gray-100 { background-color: #252d3d !important; }
-      .text-gray-800, .text-gray-700 { color: #e2e8f0 !important; }
-      .text-gray-600, .text-gray-500 { color: #94a3b8 !important; }
-      .text-gray-400 { color: #64748b !important; }
-      td, th { color: #e2e8f0 !important; }
-      .border-gray-100, .border-gray-200, .border-gray-300 { border-color: #334155 !important; }
-      .border-purple-300 { border-color: #6d28d9 !important; }
-      .border-green-300  { border-color: #15803d !important; }
-      .hover\:bg-purple-100:hover { background-color: #3b1a6b !important; }
-      .hover\:bg-green-100:hover  { background-color: #052e16 !important; }
-      .shadow-md, .shadow-lg { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
-      .chat-msg-user { background: #2d1f5e !important; color: #e2e8f0 !important; }
-      .chat-msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
-      .bg-green-50  { background-color: #052e16 !important; color:#86efac !important; }
-      .bg-yellow-50 { background-color: #1c1007 !important; color:#fcd34d !important; }
-      .bg-red-50    { background-color: #1c0707 !important; color:#fca5a5 !important; }
-      .bg-blue-50   { background-color: #0c1a2e !important; }
-      .bg-blue-100, .bg-sky-100 { background-color: #1e3a5f !important; }
-      .bg-green-100  { background-color: #052e16 !important; }
-      .bg-purple-100 { background-color: #2e1065 !important; }
-      input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
-      .bg-slate-900 { background-color: #020617 !important; }
-    }
-    @media (forced-colors: active) {
-      .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
-      .border-b, .border-t { border-color: ButtonText !important; }
-    }
-    /* Toast notification */
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
              background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
              font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
              pointer-events:none; z-index:9999; white-space:nowrap; }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    #theme-toggle { cursor:pointer; font-size:15px; background:rgba(255,255,255,.15);
+                    border:1px solid rgba(255,255,255,.25); border-radius:8px;
+                    padding:5px 9px; color:#fff; transition:background .15s; }
+    #theme-toggle:hover { background:rgba(255,255,255,.28); }
+    @media (forced-colors: active) {
+      .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
+    }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -62,6 +81,7 @@
         <p class="text-sm opacity-90">Real-time Sales Performance &amp; FY Comparison</p>
       </div>
       <div class="flex items-center gap-3">
+        <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
         <button id="chat-toggle" class="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg shadow hover:bg-purple-50 transition-colors">
           💬 AI Insights
         </button>
@@ -487,6 +507,12 @@ function quickAsk(msg) {
   document.getElementById('chat-input').value = msg;
   sendChat();
 }
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+const _THEMES=['auto','light','dark'],_THEME_ICONS={auto:'🌙',light:'☀️',dark:'🌑'};
+function _applyTheme(t){document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('theme-toggle');if(b)b.textContent=_THEME_ICONS[t]||'🌙';try{localStorage.setItem('coo-theme',t);}catch{}}
+function cycleTheme(){const c=document.documentElement.getAttribute('data-theme')||'auto';_applyTheme(_THEMES[(_THEMES.indexOf(c)+1)%_THEMES.length]);}
+(function(){try{const s=localStorage.getItem('coo-theme');if(s)_applyTheme(s);}catch{}})();
 
 // ── Boot ─────────────────────────────────────────────────────────────────
 init();

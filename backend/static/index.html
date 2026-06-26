@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,59 +7,125 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
+    /* ═══════════════════════════════════════════════════════════════
+       THEME SYSTEM — CSS custom properties
+       data-theme="light" | "dark" | "auto" (follows OS)
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --bg:           #f3f4f6;
+      --surface:      #ffffff;
+      --surface-2:    #f9fafb;
+      --border:       #e5e7eb;
+      --text:         #1f2937;
+      --text-muted:   #6b7280;
+      --text-faint:   #9ca3af;
+      --shadow:       0 2px 12px rgba(0,0,0,.07);
+      --shadow-lg:    0 4px 24px rgba(0,0,0,.10);
+      --input-bg:     #ffffff;
+      --input-border: #d1d5db;
+      --badge-wait-bg:#fef3c7; --badge-wait-fg:#92400e;
+      --badge-done-bg:#d1fae5; --badge-done-fg:#065f46;
+      --badge-appr-bg:#dbeafe; --badge-appr-fg:#1e40af;
+      --chat-user-bg: #ede9fe; --chat-user-fg:#1e293b;
+      --chat-bot-bg:  #f3f4f6; --chat-bot-fg: #374151;
+      --import-bg:    #ffffff;
+      --modal-overlay:rgba(0,0,0,.55);
+    }
+    [data-theme="dark"] {
+      --bg:           #0f172a;
+      --surface:      #1e2535;
+      --surface-2:    #252d3d;
+      --border:       #334155;
+      --text:         #e2e8f0;
+      --text-muted:   #94a3b8;
+      --text-faint:   #64748b;
+      --shadow:       0 2px 8px rgba(0,0,0,.6);
+      --shadow-lg:    0 4px 20px rgba(0,0,0,.8);
+      --input-bg:     #1e293b;
+      --input-border: #475569;
+      --badge-wait-bg:#422006; --badge-wait-fg:#fcd34d;
+      --badge-done-bg:#052e16; --badge-done-fg:#86efac;
+      --badge-appr-bg:#1e3a5f; --badge-appr-fg:#93c5fd;
+      --chat-user-bg: #2d1f5e; --chat-user-fg:#e2e8f0;
+      --chat-bot-bg:  #1e293b; --chat-bot-fg: #cbd5e1;
+      --import-bg:    #1e2535;
+      --modal-overlay:rgba(0,0,0,.75);
+    }
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg:           #0f172a;
+        --surface:      #1e2535;
+        --surface-2:    #252d3d;
+        --border:       #334155;
+        --text:         #e2e8f0;
+        --text-muted:   #94a3b8;
+        --text-faint:   #64748b;
+        --shadow:       0 2px 8px rgba(0,0,0,.6);
+        --shadow-lg:    0 4px 20px rgba(0,0,0,.8);
+        --input-bg:     #1e293b;
+        --input-border: #475569;
+        --badge-wait-bg:#422006; --badge-wait-fg:#fcd34d;
+        --badge-done-bg:#052e16; --badge-done-fg:#86efac;
+        --badge-appr-bg:#1e3a5f; --badge-appr-fg:#93c5fd;
+        --chat-user-bg: #2d1f5e; --chat-user-fg:#e2e8f0;
+        --chat-bot-bg:  #1e293b; --chat-bot-fg: #cbd5e1;
+        --import-bg:    #1e2535;
+        --modal-overlay:rgba(0,0,0,.75);
+      }
+    }
+
+    /* ── Apply variables to Tailwind utility overrides ── */
+    body        { background: var(--bg) !important; color: var(--text); }
+    .card       { background: var(--surface); border-radius:14px; box-shadow: var(--shadow); }
+    .bg-white   { background: var(--surface) !important; }
+    .bg-gray-50, .bg-gray-100 { background: var(--surface-2) !important; }
+    .text-gray-800, .text-gray-700 { color: var(--text) !important; }
+    .text-gray-600, .text-gray-500 { color: var(--text-muted) !important; }
+    .text-gray-400 { color: var(--text-faint) !important; }
+    td, th { color: var(--text) !important; }
+    .border-gray-100, .border-gray-200 { border-color: var(--border) !important; }
+    .shadow-md, .shadow-lg { box-shadow: var(--shadow) !important; }
+    input, select, textarea {
+      background: var(--input-bg) !important;
+      color: var(--text) !important;
+      border-color: var(--input-border) !important;
+    }
+
     .gradient-bg { background: linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%); }
-    .card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
     .fy-tab { transition:background .15s,color .15s,border-color .15s; }
     .fy-tab.active { background:#7c3aed!important; color:#fff!important; border-color:#7c3aed!important; }
     .change-pos{color:#059669;} .change-neg{color:#dc2626;}
-    /* typing cursor */
     .typing::after { content:'▋'; animation:blink .7s step-end infinite; }
     @keyframes blink { 50%{opacity:0;} }
-    /* investigation steps */
     .inv-step { opacity:0; transform:translateY(6px); transition:opacity .35s,transform .35s; }
     .inv-step.show { opacity:1; transform:none; }
-    /* agent dot pulse */
     .agent-online { animation:pulse-green 2s infinite; }
     @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5);} 70%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
-    /* action badge */
-    .badge-wait   { background:#fef3c7; color:#92400e; }
-    .badge-done   { background:#d1fae5; color:#065f46; }
-    .badge-appr   { background:#dbeafe; color:#1e40af; }
-    /* toast */
+    .badge-wait   { background:var(--badge-wait-bg); color:var(--badge-wait-fg); }
+    .badge-done   { background:var(--badge-done-bg); color:var(--badge-done-fg); }
+    .badge-appr   { background:var(--badge-appr-bg); color:var(--badge-appr-fg); }
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
              background:#1f2937; color:#fff; padding:10px 22px; border-radius:10px;
              font-size:13px; opacity:0; transition:opacity .25s,transform .25s;
              pointer-events:none; z-index:9999; white-space:nowrap; }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    /* import modal */
-    #import-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+    #import-modal { display:none; position:fixed; inset:0; background:var(--modal-overlay);
                     z-index:10000; align-items:center; justify-content:center; }
     #import-modal.open { display:flex; }
-    #import-box { background:#fff; border-radius:16px; padding:28px; width:min(480px,92vw);
-                  box-shadow:0 20px 60px rgba(0,0,0,.3); }
-    /* chat panel */
-    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
-    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; color:#374151; }
-    /* workflow arrow */
+    #import-box { background:var(--import-bg); border-radius:16px; padding:28px; width:min(480px,92vw);
+                  box-shadow:var(--shadow-lg); color:var(--text); }
+    .chat-msg-user { background:var(--chat-user-bg); border-radius:12px 12px 2px 12px; color:var(--chat-user-fg); }
+    .chat-msg-bot  { background:var(--chat-bot-bg);  border-radius:12px 12px 12px 2px; color:var(--chat-bot-fg); }
     .wf-arrow { width:2px; height:22px; background:linear-gradient(#7c3aed,#a78bfa); margin:0 auto; }
-    /* dark mode */
-    @media (prefers-color-scheme:dark){
-      body { background:#0f172a!important; color:#e2e8f0; }
-      .card { background:#1e2535!important; }
-      .bg-gray-100,.bg-gray-50 { background:#252d3d!important; }
-      .text-gray-800,.text-gray-700 { color:#e2e8f0!important; }
-      .text-gray-600,.text-gray-500 { color:#94a3b8!important; }
-      .text-gray-400 { color:#64748b!important; }
-      td,th { color:#e2e8f0!important; }
-      .border-gray-100,.border-gray-200 { border-color:#334155!important; }
-      .shadow-md,.shadow-lg { box-shadow:0 2px 8px rgba(0,0,0,.6)!important; }
-      input,select,textarea { background:#1e293b!important; color:#e2e8f0!important; border-color:#475569!important; }
-      #import-box { background:#1e2535!important; color:#e2e8f0!important; }
-      .chat-msg-user { background:#2d1f5e!important; color:#e2e8f0!important; }
-      .chat-msg-bot  { background:#1e293b!important; color:#cbd5e1!important; }
-      .badge-wait { background:#422006!important; color:#fcd34d!important; }
-      .badge-done { background:#052e16!important; color:#86efac!important; }
-      .badge-appr { background:#1e3a5f!important; color:#93c5fd!important; }
+
+    /* Theme toggle button */
+    #theme-toggle { cursor:pointer; font-size:16px; background:rgba(255,255,255,.15);
+                    border:1px solid rgba(255,255,255,.25); border-radius:8px;
+                    padding:6px 10px; color:#fff; transition:background .15s; line-height:1; }
+    #theme-toggle:hover { background:rgba(255,255,255,.28); }
+
+    @media (forced-colors: active) {
+      .card, .badge-wait, .badge-done, .badge-appr { border: 1px solid ButtonText !important; }
     }
   </style>
 </head>
@@ -80,6 +146,7 @@
         <span>Connecting…</span>
       </div>
       <span id="last-updated" class="text-xs opacity-60 hidden md:block"></span>
+      <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
       <button id="chat-toggle" class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
         💬 Ask COO
       </button>
@@ -1135,6 +1202,24 @@ function downloadSampleExcel() {
 
 // ── Exec brief compat stubs ────────────────────────────────────────
 function ebSimulate(){window.open('/static/finance.html?sim='+encodeURIComponent(window._ebCurrentAction||'strategy'),'_blank');}
+
+// ── Theme ─────────────────────────────────────────────────────────
+const _THEMES = ['auto','light','dark'];
+const _THEME_ICONS = {auto:'🌙', light:'☀️', dark:'🌑'};
+function _applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = _THEME_ICONS[t] || '🌙';
+  try { localStorage.setItem('coo-theme', t); } catch {}
+}
+function cycleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'auto';
+  const next = _THEMES[(_THEMES.indexOf(cur) + 1) % _THEMES.length];
+  _applyTheme(next);
+}
+(function initTheme(){
+  try { const s = localStorage.getItem('coo-theme'); if (s) _applyTheme(s); } catch {}
+})();
 
 // ── Boot ──────────────────────────────────────────────────────────
 init();

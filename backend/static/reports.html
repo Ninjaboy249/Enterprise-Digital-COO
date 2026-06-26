@@ -1,65 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reports Portal — Enterprise Digital COO</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- marked.js for rendering markdown summaries -->
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <style>
+    /* ── Theme variables ── */
+    :root {
+      --bg:#f1f5f9; --surface:#ffffff; --surface-2:#f8fafc; --border:#e2e8f0;
+      --text:#1e293b; --text-muted:#64748b; --text-faint:#94a3b8;
+      --shadow:0 2px 8px rgba(0,0,0,.07); --input-bg:#ffffff; --input-border:#cbd5e1;
+      --msg-user-bg:#dbeafe; --msg-user-fg:#1e293b;
+      --msg-bot-bg:#f1f5f9;  --msg-bot-fg:#334155;
+      --msg-err-bg:#fee2e2;  --msg-err-fg:#991b1b;
+      --prose-h2:#1e40af; --prose-h3:#1e3a5f; --prose-strong:#1e293b;
+      --prose-code-bg:#e2e8f0; --prose-code-fg:#334155;
+      --drop-bg:#f8fafc; --drop-border:#93c5fd;
+      --row-hover:#f0f9ff;
+      --tab-active-fg:#2563eb; --tab-active-border:#2563eb;
+    }
+    [data-theme="dark"] {
+      --bg:#0f172a; --surface:#1e2535; --surface-2:#1e293b; --border:#334155;
+      --text:#e2e8f0; --text-muted:#94a3b8; --text-faint:#64748b;
+      --shadow:0 2px 8px rgba(0,0,0,.6); --input-bg:#1e293b; --input-border:#475569;
+      --msg-user-bg:#1e3a6e; --msg-user-fg:#e2e8f0;
+      --msg-bot-bg:#1e293b;  --msg-bot-fg:#cbd5e1;
+      --msg-err-bg:#1c0707;  --msg-err-fg:#fca5a5;
+      --prose-h2:#93c5fd; --prose-h3:#7dd3fc; --prose-strong:#e2e8f0;
+      --prose-code-bg:#252d3d; --prose-code-fg:#93c5fd;
+      --drop-bg:#0f172a; --drop-border:#3b82f6;
+      --row-hover:#1e2d40;
+      --tab-active-fg:#60a5fa; --tab-active-border:#3b82f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg:#0f172a; --surface:#1e2535; --surface-2:#1e293b; --border:#334155;
+        --text:#e2e8f0; --text-muted:#94a3b8; --text-faint:#64748b;
+        --shadow:0 2px 8px rgba(0,0,0,.6); --input-bg:#1e293b; --input-border:#475569;
+        --msg-user-bg:#1e3a6e; --msg-user-fg:#e2e8f0;
+        --msg-bot-bg:#1e293b;  --msg-bot-fg:#cbd5e1;
+        --msg-err-bg:#1c0707;  --msg-err-fg:#fca5a5;
+        --prose-h2:#93c5fd; --prose-h3:#7dd3fc; --prose-strong:#e2e8f0;
+        --prose-code-bg:#252d3d; --prose-code-fg:#93c5fd;
+        --drop-bg:#0f172a; --drop-border:#3b82f6;
+        --row-hover:#1e2d40;
+        --tab-active-fg:#60a5fa; --tab-active-border:#3b82f6;
+      }
+    }
+    body, .bg-slate-100 { background: var(--bg) !important; color: var(--text); }
+    .bg-white, .bg-slate-50 { background: var(--surface) !important; }
+    .text-slate-800, .text-slate-700 { color: var(--text) !important; }
+    .text-slate-600, .text-slate-500 { color: var(--text-muted) !important; }
+    .text-slate-400     { color: var(--text-faint) !important; }
+    td, th              { color: var(--text) !important; }
+    .border-slate-100, .border-slate-200 { border-color: var(--border) !important; }
+    .shadow-md          { box-shadow: var(--shadow) !important; }
+    input, select, textarea { background: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }
+
     .gradient-bg { background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
-
-    #drop-zone { border: 2.5px dashed #93c5fd; transition: background .2s, border-color .2s; }
+    #drop-zone { border: 2.5px dashed var(--drop-border); background: var(--drop-bg); transition: background .2s, border-color .2s; }
     #drop-zone.drag-over { background: #eff6ff; border-color: #3b82f6; }
-
-    .msg-user { background:#dbeafe; border-radius:16px 16px 4px 16px; color:#1e293b; }
-    .msg-bot  { background:#f1f5f9; border-radius:16px 16px 16px 4px; color:#334155; }
-    .msg-bot.error { background:#fee2e2; color:#991b1b; }
-
+    .msg-user { background:var(--msg-user-bg); border-radius:16px 16px 4px 16px; color:var(--msg-user-fg); }
+    .msg-bot  { background:var(--msg-bot-bg);  border-radius:16px 16px 16px 4px; color:var(--msg-bot-fg); }
+    .msg-bot.error { background:var(--msg-err-bg); color:var(--msg-err-fg); }
     .prose h1,.prose h2,.prose h3 { font-weight:700; margin:.8em 0 .3em; }
     .prose h1 { font-size:1.25rem; }
-    .prose h2 { font-size:1.1rem; color:#1e40af; }
-    .prose h3 { font-size:1rem; color:#1e3a5f; }
+    .prose h2 { font-size:1.1rem; color:var(--prose-h2); }
+    .prose h3 { font-size:1rem;   color:var(--prose-h3); }
     .prose p  { margin:.4em 0; line-height:1.65; }
     .prose ul,.prose ol { padding-left:1.4em; margin:.4em 0; }
     .prose li { margin:.2em 0; }
-    .prose strong { color:#1e293b; }
-    .prose code { background:#e2e8f0; padding:0 4px; border-radius:3px; font-size:.85em; }
+    .prose strong { color:var(--prose-strong); }
+    .prose code { background:var(--prose-code-bg); color:var(--prose-code-fg); padding:0 4px; border-radius:3px; font-size:.85em; }
     .prose pre  { background:#0f172a; color:#e2e8f0; padding:1em; border-radius:6px; overflow-x:auto; font-size:.82em; }
-
-    .report-row:hover { background:#f0f9ff; }
+    .report-row:hover { background:var(--row-hover); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .section { animation: fadeIn .3s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-    .tab-btn.active { border-bottom: 3px solid #2563eb; color:#2563eb; font-weight:600; }
+    .tab-btn.active { border-bottom: 3px solid var(--tab-active-border); color:var(--tab-active-fg); font-weight:600; }
     #chat-log, #parsed-viewer { max-height: 480px; overflow-y: auto; }
     #summary-box { max-height: 520px; overflow-y: auto; }
-
-    /* ── Dark / high-contrast theme ── */
-    @media (prefers-color-scheme: dark) {
-      body, .bg-slate-100 { background-color: #0f172a !important; color: #e2e8f0; }
-      .bg-white, .bg-slate-50 { background-color: #1e2535 !important; }
-      .bg-slate-900 { background-color: #020617 !important; }
-      .text-slate-800, .text-slate-700 { color: #e2e8f0 !important; }
-      .text-slate-600, .text-slate-500 { color: #94a3b8 !important; }
-      .text-slate-400 { color: #64748b !important; }
-      td, th { color: #e2e8f0 !important; }
-      .border-slate-100, .border-slate-200 { border-color: #334155 !important; }
-      .shadow-md { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
-      .msg-user { background: #1e3a6e !important; color: #e2e8f0 !important; }
-      .msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
-      .msg-bot.error { background: #1c0707 !important; color: #fca5a5 !important; }
-      .prose h2 { color: #93c5fd !important; }
-      .prose h3 { color: #7dd3fc !important; }
-      .prose strong { color: #e2e8f0 !important; }
-      .prose code { background: #252d3d !important; color: #93c5fd !important; }
-      .tab-btn.active { color: #60a5fa !important; border-color: #3b82f6 !important; }
-      input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
-      .report-row:hover { background: #1e2d40 !important; }
-      #drop-zone { border-color: #3b82f6 !important; }
-    }
+    #theme-toggle { cursor:pointer; font-size:15px; background:rgba(255,255,255,.15);
+                    border:1px solid rgba(255,255,255,.25); border-radius:8px;
+                    padding:5px 9px; color:#fff; transition:background .15s; }
+    #theme-toggle:hover { background:rgba(255,255,255,.28); }
     @media (forced-colors: active) {
       .rounded-lg, .rounded-xl, table, th, td { border: 1px solid ButtonText !important; }
     }
@@ -75,6 +102,7 @@
       <p class="text-sm opacity-75 mt-0.5">Upload Power BI (.pbix) or JSON reports — AI reads, summarises &amp; answers questions. For Excel files use the <a href="/static/excel-analysis.html" class="underline opacity-90 hover:opacity-100">Excel AI Analyser →</a></p>
     </div>
     <div class="flex items-center gap-3">
+      <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
       <span id="openai-badge" class="text-xs bg-white/20 px-3 py-1 rounded-full">⚙ Checking AI…</span>
       <a href="/" class="bg-white/20 hover:bg-white/30 text-white text-sm px-4 py-2 rounded-lg transition-colors">← Dashboard</a>
     </div>
@@ -217,6 +245,12 @@
 let currentReportId   = null;
 let currentReportData = null;
 let chatHistory       = [];   // [{role, content}, ...]
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+const _THEMES=['auto','light','dark'],_THEME_ICONS={auto:'🌙',light:'☀️',dark:'🌑'};
+function _applyTheme(t){document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('theme-toggle');if(b)b.textContent=_THEME_ICONS[t]||'🌙';try{localStorage.setItem('coo-theme',t);}catch{}}
+function cycleTheme(){const c=document.documentElement.getAttribute('data-theme')||'auto';_applyTheme(_THEMES[(_THEMES.indexOf(c)+1)%_THEMES.length]);}
+(function(){try{const s=localStorage.getItem('coo-theme');if(s)_applyTheme(s);}catch{}})();
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
