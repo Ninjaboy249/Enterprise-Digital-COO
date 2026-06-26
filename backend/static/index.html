@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enterprise Digital COO - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
     .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
@@ -454,6 +455,22 @@ async function sendChat() {
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
 
+// ── Download Sample Excel ─────────────────────────────────────────────────
+function downloadSampleExcel() {
+  const rows = [
+    { Revenue: 4200000, 'Cash Balance': 1850000, 'Active Users': 12400, 'CSAT Score': 4.3, Region: 'North America', Quarter: 'Q1' },
+    { Revenue: 4750000, 'Cash Balance': 2100000, 'Active Users': 13800, 'CSAT Score': 4.5, Region: 'North America', Quarter: 'Q2' },
+    { Revenue: 5100000, 'Cash Balance': 2450000, 'Active Users': 15200, 'CSAT Score': 4.4, Region: 'Europe',        Quarter: 'Q3' },
+    { Revenue: 5600000, 'Cash Balance': 2700000, 'Active Users': 17000, 'CSAT Score': 4.6, Region: 'Europe',        Quarter: 'Q4' },
+    { Revenue: 3800000, 'Cash Balance': 1600000, 'Active Users': 10900, 'CSAT Score': 4.1, Region: 'Asia Pacific',  Quarter: 'Q1' },
+    { Revenue: 4100000, 'Cash Balance': 1750000, 'Active Users': 11500, 'CSAT Score': 4.2, Region: 'Asia Pacific',  Quarter: 'Q2' },
+  ];
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Company Data');
+  XLSX.writeFile(wb, 'sample_company_data.xlsx');
+}
+
 // ── Company Data Import ───────────────────────────────────────────────────
 function openImportModal() {
   document.getElementById('import-modal').classList.add('open');
@@ -581,6 +598,10 @@ setInterval(()=>{checkStatus();loadAllFYData();},60000);
       <p>📊 <strong>Excel columns detected:</strong> Revenue / Sales / Income, Cash / Balance, Users / Customers, CSAT / Satisfaction / Score</p>
       <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
     </div>
+    <button onclick="downloadSampleExcel()"
+            class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
+      ⬇ Download Sample Excel
+    </button>
     <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
     <div id="import-status"></div>
