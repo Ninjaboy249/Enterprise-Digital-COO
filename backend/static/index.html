@@ -7,29 +7,57 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .gradient-bg { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); }
-    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; }
-    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; }
-    /* Use !important so Tailwind CDN border/bg classes cannot override the active state */
+    .chat-msg-user { background:#ede9fe; border-radius:12px 12px 2px 12px; color:#1e293b; }
+    .chat-msg-bot  { background:#f3f4f6; border-radius:12px 12px 12px 2px; color:#374151; }
     .fy-tab { transition: background .15s, color .15s, border-color .15s; }
     .fy-tab.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
     .change-pos { color:#059669; } .change-neg { color:#dc2626; }
-    /* Toast */
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
              background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
              font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
              pointer-events:none; z-index:9999; white-space:nowrap; }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    /* ── Dark / high-contrast theme compatibility ── */
+    /* ── Company data import modal ── */
+    #import-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+                    z-index:10000; align-items:center; justify-content:center; }
+    #import-modal.open { display:flex; }
+    #import-box { background:#fff; border-radius:16px; padding:28px; width:min(480px,92vw);
+                  box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    /* ── Full dark / high-contrast theme ── */
     @media (prefers-color-scheme: dark) {
+      body, .bg-gray-100 { background-color: #0f172a !important; color: #e2e8f0; }
       .bg-white { background-color: #1e2535 !important; }
       .bg-gray-50, .bg-gray-100 { background-color: #252d3d !important; }
+      /* All text shades */
       .text-gray-800, .text-gray-700 { color: #e2e8f0 !important; }
-      .text-gray-600, .text-gray-500, .text-gray-400 { color: #94a3b8 !important; }
-      .border-gray-100, .border-gray-200 { border-color: #334155 !important; }
-      .shadow-md { box-shadow: 0 1px 6px rgba(0,0,0,.5) !important; }
-      .bg-green-50  { background-color: #052e16 !important; }
-      .bg-yellow-50 { background-color: #1c1007 !important; }
-      .bg-red-50    { background-color: #1c0707 !important; }
+      .text-gray-600, .text-gray-500 { color: #94a3b8 !important; }
+      .text-gray-400 { color: #64748b !important; }
+      /* Table cells inherit dark body text */
+      td, th { color: #e2e8f0 !important; }
+      td.text-gray-700, td.text-gray-800 { color: #e2e8f0 !important; }
+      /* Borders */
+      .border-gray-100, .border-gray-200, .border-gray-300 { border-color: #334155 !important; }
+      /* FY pill border */
+      .border-purple-300 { border-color: #6d28d9 !important; }
+      .hover\:bg-purple-100:hover { background-color: #3b1a6b !important; }
+      /* Cards & shadows */
+      .shadow-md, .shadow-lg { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
+      /* Chat bubbles */
+      .chat-msg-user { background: #2d1f5e !important; color: #e2e8f0 !important; }
+      .chat-msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
+      /* Status / alert colours */
+      .bg-green-50  { background-color: #052e16 !important; color:#86efac !important; }
+      .bg-yellow-50 { background-color: #1c1007 !important; color:#fcd34d !important; }
+      .bg-red-50    { background-color: #1c0707 !important; color:#fca5a5 !important; }
+      .bg-blue-100, .bg-sky-100 { background-color: #1e3a5f !important; }
+      .bg-green-100  { background-color: #052e16 !important; }
+      .bg-purple-100 { background-color: #2e1065 !important; }
+      /* Inputs and selects */
+      input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important;
+                                border-color: #475569 !important; }
+      /* Import modal */
+      #import-box { background: #1e2535 !important; color: #e2e8f0 !important; }
+      code { background: #252d3d !important; color: #93c5fd !important; }
     }
     @media (forced-colors: active) {
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
@@ -161,7 +189,7 @@
           <a href="/static/operations.html" class="block w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors text-center text-sm font-medium">View Operations Dashboard →</a>
         </div>
 
-        <!-- Reports Portal -->
+        <!-- Reports Portal — Power BI / JSON -->
         <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
           <div class="flex items-center mb-4">
             <div class="bg-sky-100 p-3 rounded-full">
@@ -172,9 +200,41 @@
             </div>
             <h3 class="ml-3 text-lg font-semibold">Reports Portal</h3>
           </div>
-          <p class="text-gray-600 text-sm mb-3">Upload Excel, Power BI &amp; JSON reports for AI analysis</p>
-          <p class="text-xs text-gray-500 mb-4">Drag &amp; drop <strong>.xlsx</strong> / .pbix / .json · Power BI-style AI summary · KPI stats · Ask questions</p>
+          <p class="text-gray-600 text-sm mb-3">Upload Power BI &amp; JSON reports for AI analysis</p>
+          <p class="text-xs text-gray-500 mb-4">.pbix / .json · AI executive summary · Ask questions · Download parsed data</p>
           <a href="/static/reports.html" class="block w-full bg-sky-600 text-white py-2 px-4 rounded hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports Portal →</a>
+        </div>
+
+        <!-- Excel AI Analysis — separate card -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-4">
+            <div class="bg-emerald-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M3 10h18M3 14h18M10 3v18M6 3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6a3 3 0 013-3z"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold">Excel AI Analysis</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Upload any Excel workbook — AI converts it to a Power BI-style report</p>
+          <p class="text-xs text-gray-500 mb-4">.xlsx / .xls · KPI stats (min/max/mean/sum) · Suggested dashboard layout · AI recommendations</p>
+          <a href="/static/reports.html" class="block w-full bg-emerald-600 text-white py-2 px-4 rounded hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Excel Analyser →</a>
+        </div>
+
+        <!-- Import Company Data -->
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-2 border-dashed border-purple-200">
+          <div class="flex items-center mb-4">
+            <div class="bg-purple-100 p-3 rounded-full">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold text-purple-700">Import Company Data</h3>
+          </div>
+          <p class="text-gray-600 text-sm mb-3">Replace all dashboard KPIs with your own company's real data</p>
+          <p class="text-xs text-gray-500 mb-4">Upload .xlsx or .pbix — Revenue, Cash, CSAT, Users replace demo data across all dashboards</p>
+          <button onclick="openImportModal()" class="block w-full bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition-colors text-center text-sm font-medium">Import My Data →</button>
         </div>
       </div>
 
@@ -394,10 +454,149 @@ async function sendChat() {
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
 
+// ── Company Data Import ───────────────────────────────────────────────────
+function openImportModal() {
+  document.getElementById('import-modal').classList.add('open');
+}
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('open');
+  document.getElementById('import-status').innerHTML = '';
+  document.getElementById('import-file').value = '';
+}
+
+async function submitImport() {
+  const file = document.getElementById('import-file').files[0];
+  if (!file) return showImportStatus('error', 'Please select a file first.');
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','pbix'].includes(ext))
+    return showImportStatus('error', 'Only .xlsx, .xls, or .pbix files are supported.');
+
+  showImportStatus('loading', '⏳ Reading your data…');
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const r = await fetch('/api/v1/reports/upload', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) return showImportStatus('error', d.detail || 'Upload failed.');
+
+    // Extract KPI values from parsed Excel data
+    const imported = extractCompanyKPIs(d);
+    if (!imported) return showImportStatus('error', 'Could not find any numeric KPI columns in your file. Make sure your sheet has column headers and numeric data.');
+
+    // Inject into live dashboard
+    applyCompanyData(imported);
+    showImportStatus('success',
+      `✅ Company data imported from <strong>${file.name}</strong>.<br>
+       <span class="text-xs">Dashboard KPIs updated. Refresh the page to revert to demo data.</span>`);
+  } catch(e) {
+    showImportStatus('error', 'Import failed: ' + e.message);
+  }
+}
+
+function extractCompanyKPIs(reportData) {
+  const parsed = reportData.parsed;
+  if (!parsed) return null;
+
+  let revenue = null, cash = null, users = null, csat = null;
+
+  // Excel: look through sheets for known column names
+  const sheets = parsed.sheets || [];
+  for (const sheet of sheets) {
+    const stats = sheet.column_stats || {};
+    for (const [col, s] of Object.entries(stats)) {
+      if (s.type !== 'numeric') continue;
+      const c = col.toLowerCase().replace(/[^a-z]/g, '');
+      if (!revenue && (c.includes('revenue') || c.includes('sales') || c.includes('income')))
+        revenue = s.sum || s.mean;
+      if (!cash && (c.includes('cash') || c.includes('balance') || c.includes('liquidity')))
+        cash = s.sum || s.mean;
+      if (!users && (c.includes('user') || c.includes('customer') || c.includes('client')))
+        users = Math.round(s.sum || s.mean);
+      if (!csat && (c.includes('csat') || c.includes('satisfaction') || c.includes('nps') || c.includes('score')))
+        csat = s.mean;
+    }
+  }
+
+  if (revenue === null && cash === null) return null;
+  return { revenue, cash, users, csat, filename: reportData.filename };
+}
+
+function applyCompanyData(data) {
+  const fmt = (n, d=2) => n != null ? '$'+(n/1e6).toFixed(d)+'M' : null;
+
+  if (data.revenue != null) {
+    const el = document.getElementById('kpi-revenue');
+    if (el) { el.textContent = fmt(data.revenue); el.title = 'Imported from ' + data.filename; }
+    const chgEl = document.getElementById('kpi-revenue-chg');
+    if (chgEl) chgEl.innerHTML = `<span class="text-purple-600 font-semibold">📥 Company data</span>`;
+  }
+  if (data.cash != null) {
+    const el = document.getElementById('kpi-cash');
+    if (el) { el.textContent = fmt(data.cash, 1); el.title = 'Imported from ' + data.filename; }
+    const sub = document.getElementById('kpi-cash-chg');
+    if (sub) sub.textContent = 'From ' + data.filename;
+  }
+  if (data.users != null) {
+    const el = document.getElementById('kpi-users');
+    if (el) { el.textContent = data.users.toLocaleString(); el.title = 'Imported from ' + data.filename; }
+  }
+  if (data.csat != null) {
+    const el = document.getElementById('kpi-csat');
+    if (el) { el.textContent = data.csat.toFixed(1) + '/5.0'; el.title = 'Imported from ' + data.filename; }
+  }
+
+  // Show a persistent banner
+  const banner = document.createElement('div');
+  banner.className = 'bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
+  banner.innerHTML = `📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="this.parentElement.remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
+  const main = document.querySelector('main');
+  if (main) main.prepend(banner);
+}
+
+function showImportStatus(type, html) {
+  const cls = { loading:'text-blue-600', success:'text-green-700', error:'text-red-600' };
+  document.getElementById('import-status').innerHTML =
+    `<p class="${cls[type]} text-sm mt-3">${html}</p>`;
+}
+
 // Boot
 init();
 setInterval(()=>{checkStatus();loadAllFYData();},60000);
 </script>
+
+<!-- ── Company Data Import Modal ── -->
+<div id="import-modal">
+  <div id="import-box">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-800">Import Your Company Data</h2>
+      <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-gray-600 mb-4">
+      Upload your company's Excel (.xlsx) or Power BI (.pbix) file. The dashboard will automatically
+      detect <strong>Revenue</strong>, <strong>Cash</strong>, <strong>Users</strong>, and <strong>CSAT</strong>
+      columns and replace the demo KPIs with your real data.
+    </p>
+    <div class="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500 space-y-1">
+      <p>📊 <strong>Excel columns detected:</strong> Revenue / Sales / Income, Cash / Balance, Users / Customers, CSAT / Satisfaction / Score</p>
+      <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
+    </div>
+    <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
+           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
+    <div id="import-status"></div>
+    <div class="flex gap-3 mt-4">
+      <button onclick="submitImport()"
+              class="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
+        Import Data
+      </button>
+      <button onclick="closeImportModal()"
+              class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-200">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 </body>
 </html>

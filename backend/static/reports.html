@@ -10,16 +10,13 @@
   <style>
     .gradient-bg { background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); }
 
-    /* Upload drop-zone */
     #drop-zone { border: 2.5px dashed #93c5fd; transition: background .2s, border-color .2s; }
     #drop-zone.drag-over { background: #eff6ff; border-color: #3b82f6; }
 
-    /* Chat bubbles */
-    .msg-user { background:#dbeafe; border-radius:16px 16px 4px 16px; }
-    .msg-bot  { background:#f1f5f9; border-radius:16px 16px 16px 4px; }
-    .msg-bot.error { background:#fee2e2; }
+    .msg-user { background:#dbeafe; border-radius:16px 16px 4px 16px; color:#1e293b; }
+    .msg-bot  { background:#f1f5f9; border-radius:16px 16px 16px 4px; color:#334155; }
+    .msg-bot.error { background:#fee2e2; color:#991b1b; }
 
-    /* Markdown rendered output */
     .prose h1,.prose h2,.prose h3 { font-weight:700; margin:.8em 0 .3em; }
     .prose h1 { font-size:1.25rem; }
     .prose h2 { font-size:1.1rem; color:#1e40af; }
@@ -31,23 +28,41 @@
     .prose code { background:#e2e8f0; padding:0 4px; border-radius:3px; font-size:.85em; }
     .prose pre  { background:#0f172a; color:#e2e8f0; padding:1em; border-radius:6px; overflow-x:auto; font-size:.82em; }
 
-    /* Report row hover */
     .report-row:hover { background:#f0f9ff; }
-
-    /* Spinner */
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Section fade-in */
     .section { animation: fadeIn .3s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-
-    /* Tab active */
     .tab-btn.active { border-bottom: 3px solid #2563eb; color:#2563eb; font-weight:600; }
-
-    /* Scrollable panels */
     #chat-log, #parsed-viewer { max-height: 480px; overflow-y: auto; }
     #summary-box { max-height: 520px; overflow-y: auto; }
+
+    /* ── Dark / high-contrast theme ── */
+    @media (prefers-color-scheme: dark) {
+      body, .bg-slate-100 { background-color: #0f172a !important; color: #e2e8f0; }
+      .bg-white, .bg-slate-50 { background-color: #1e2535 !important; }
+      .bg-slate-900 { background-color: #020617 !important; }
+      .text-slate-800, .text-slate-700 { color: #e2e8f0 !important; }
+      .text-slate-600, .text-slate-500 { color: #94a3b8 !important; }
+      .text-slate-400 { color: #64748b !important; }
+      td, th { color: #e2e8f0 !important; }
+      .border-slate-100, .border-slate-200 { border-color: #334155 !important; }
+      .shadow-md { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
+      .msg-user { background: #1e3a6e !important; color: #e2e8f0 !important; }
+      .msg-bot  { background: #1e293b !important; color: #cbd5e1 !important; }
+      .msg-bot.error { background: #1c0707 !important; color: #fca5a5 !important; }
+      .prose h2 { color: #93c5fd !important; }
+      .prose h3 { color: #7dd3fc !important; }
+      .prose strong { color: #e2e8f0 !important; }
+      .prose code { background: #252d3d !important; color: #93c5fd !important; }
+      .tab-btn.active { color: #60a5fa !important; border-color: #3b82f6 !important; }
+      input, select, textarea { background-color: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+      .report-row:hover { background: #1e2d40 !important; }
+      #drop-zone { border-color: #3b82f6 !important; }
+    }
+    @media (forced-colors: active) {
+      .rounded-lg, .rounded-xl, table, th, td { border: 1px solid ButtonText !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
