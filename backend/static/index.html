@@ -468,6 +468,8 @@ const CY = new Date().getFullYear();
 const FYS = [CY, CY-1, CY-2];
 let selectedFY = CY;
 let allFYData  = { sales: null, finance: null, operations: null };
+// Holds imported KPIs — set by applyCompanyData(), cleared by loadAllFYData() on revert
+let _importedKPIs = null;  // { revenue, cash, users, csat, filename } | null
 
 // ── Init ──────────────────────────────────────────────────────────
 async function init() {
@@ -504,6 +506,9 @@ function selectFY(fy) { selectedFY = fy; setActiveFYTab(fy); renderKPIs(); }
 
 // ── Data Load ─────────────────────────────────────────────────────
 async function loadAllFYData() {
+  // If user has imported their own data, don't silently overwrite it from the API.
+  // The banner's "Revert to demo" button calls this after clearing _importedKPIs.
+  if (_importedKPIs) return;
   try {
     const [s, f, o] = await Promise.all([
       fetch('/api/v1/metrics/sales/fy').then(r=>r.json()),
@@ -523,6 +528,9 @@ async function loadAllFYData() {
 
 // ── KPIs (hidden stores) ──────────────────────────────────────────
 function renderKPIs() {
+  // If imported data is active, don't overwrite the hidden spans from API
+  if (_importedKPIs) { renderExecutiveBrief(); return; }
+
   const fy = String(selectedFY), prevFY = String(selectedFY - 1);
   if (allFYData.sales?.data?.[fy]) {
     const m = allFYData.sales.data[fy].metrics;
@@ -556,47 +564,86 @@ function renderExecutiveBrief() {
   document.getElementById('eb-csat').textContent  = document.getElementById('kpi-csat').textContent   || '–';
   document.getElementById('eb-users').textContent = document.getElementById('kpi-users').textContent  || '–';
 
-  const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
-  const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
-  const finCur    = allFYData.finance?.data?.[fy]?.metrics;
-  const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
-  if (!salesCur) return;
-
-  const revChgPct = salesPrev
-    ? ((salesCur.total_revenue - salesPrev.total_revenue) / salesPrev.total_revenue * 100) : null;
-
   let signal, cause, impactVal, impactSub, action, confidence, opp, save;
 
-  if (revChgPct !== null && revChgPct < -3) {
-    const a = Math.abs(revChgPct).toFixed(1);
-    const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
-    signal = `Revenue dropped ${a}%`; cause = `Cause: Revenue declined vs FY ${selectedFY-1}. Enterprise renewals and regional mix are primary drivers.`;
-    impactVal = `$${m}M`; impactSub = 'Projected full-FY variance';
-    action = `Increase Enterprise pricing by 3% and accelerate pipeline conversion in top regions.`;
-    confidence = Math.min(99, 91 + Math.round(Math.abs(revChgPct)));
-    opp = `+$${(Math.abs(parseFloat(m))*0.17).toFixed(1)}M`; save = `$${(Math.abs(parseFloat(m))*0.05).toFixed(1)}M`;
-  } else if (revChgPct !== null && revChgPct >= 5) {
-    const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
-    signal = `Revenue up ${revChgPct.toFixed(1)}%`; cause = `Strong growth vs FY ${selectedFY-1}. Sustain momentum across top-performing segments.`;
-    impactVal = `+$${m}M`; impactSub = 'Projected full-FY upside';
-    action = `Accelerate expansion in high-growth regions and protect gross margin.`;
-    confidence = Math.min(99, 93 + Math.round(revChgPct/2));
-    opp = `+$${(parseFloat(m)*0.12).toFixed(1)}M`; save = `$${(parseFloat(m)*0.04).toFixed(1)}M`;
-  } else if (finCur && finCur.runway_months < 9) {
-    signal = `Cash runway ${finCur.runway_months.toFixed(1)} months`; cause = `Cause: Cash burn rate exceeds safe threshold. Immediate action required.`;
-    impactVal = '–'; impactSub = 'Liquidity attention required';
-    action = `Prioritise receivables and defer non-critical CapEx.`; confidence = 96;
-    opp = '+$0.8M'; save = '$1.2M';
-  } else if (opsCur && opsCur.customer_satisfaction < 4.0) {
-    signal = `CSAT ${opsCur.customer_satisfaction.toFixed(1)}/5.0`; cause = `Cause: Satisfaction below 4.0 threshold — elevated churn risk.`;
-    impactVal = '–'; impactSub = 'Potential NRR impact';
-    action = `Launch customer success outreach and fix top ticket categories.`; confidence = 88;
-    opp = '+$1.1M'; save = '$0.4M';
+  // ── BRANCH: imported company data overrides all signal logic ──────
+  if (_importedKPIs) {
+    const imp = _importedKPIs;
+    const fmt  = (n, d=2) => n != null ? '$' + (n/1e6).toFixed(d) + 'M' : null;
+    const revStr  = fmt(imp.revenue)   || '–';
+    const cashStr = fmt(imp.cash, 1)   || '–';
+    const csatStr = imp.csat  != null ? imp.csat.toFixed(1) + '/5.0' : '–';
+    const usrStr  = imp.users != null ? imp.users.toLocaleString()   : '–';
+
+    // Derive a signal from the imported revenue vs API baseline for comparison
+    const apiRev = allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+    let revChgPct = null;
+    if (apiRev && imp.revenue != null) revChgPct = ((imp.revenue - apiRev) / apiRev * 100);
+
+    if (revChgPct !== null && revChgPct < -3) {
+      const a = Math.abs(revChgPct).toFixed(1);
+      const m = ((imp.revenue - apiRev)/1e6).toFixed(1);
+      signal = `Revenue ${a}% below baseline`; cause = `Cause: Your imported revenue (${revStr}) is below the current demo baseline. Review pricing and pipeline strategy.`;
+      impactVal = `$${m}M`; impactSub = 'Variance from baseline';
+      action = `Review regional pricing and accelerate enterprise tier upsell.`;
+      confidence = Math.min(99, 91 + Math.round(Math.abs(revChgPct)));
+      opp = `+$${(Math.abs(parseFloat(m))*0.17).toFixed(1)}M`; save = `$${(Math.abs(parseFloat(m))*0.05).toFixed(1)}M`;
+    } else if (revChgPct !== null && revChgPct >= 5) {
+      const m = ((imp.revenue - apiRev)/1e6).toFixed(1);
+      signal = `Revenue ${revChgPct.toFixed(1)}% above baseline`; cause = `Your imported revenue (${revStr}) outperforms the baseline. Sustain momentum.`;
+      impactVal = `+$${m}M`; impactSub = 'Upside vs baseline';
+      action = `Accelerate high-growth regions and protect gross margin.`;
+      confidence = Math.min(99, 93 + Math.round(revChgPct/2));
+      opp = `+$${(parseFloat(m)*0.12).toFixed(1)}M`; save = `$${(parseFloat(m)*0.04).toFixed(1)}M`;
+    } else {
+      signal = `Company data imported — ${imp.filename}`; cause = `Revenue ${revStr} · Cash ${cashStr} · CSAT ${csatStr} · Users ${usrStr}`;
+      impactVal = revStr; impactSub = 'From your imported data';
+      action = `Review AI-generated findings above and take action on the highest-priority signal.`;
+      confidence = 94;
+      opp = '+$2.1M'; save = '$0.6M';
+    }
   } else {
-    signal = `Business on track for FY ${selectedFY}`; cause = 'No critical signals. KPIs within healthy operating ranges.';
-    impactVal = 'On Plan'; impactSub = 'No material variance';
-    action = `Maintain strategy. Monitor lagging indicators weekly.`; confidence = 97;
-    opp = '+$2.1M'; save = '$0.6M';
+    // ── BRANCH: live API data ─────────────────────────────────────
+    const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
+    const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
+    const finCur    = allFYData.finance?.data?.[fy]?.metrics;
+    const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
+    if (!salesCur) return;
+
+    const revChgPct = salesPrev
+      ? ((salesCur.total_revenue - salesPrev.total_revenue) / salesPrev.total_revenue * 100) : null;
+
+    if (revChgPct !== null && revChgPct < -3) {
+      const a = Math.abs(revChgPct).toFixed(1);
+      const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
+      signal = `Revenue dropped ${a}%`; cause = `Cause: Revenue declined vs FY ${selectedFY-1}. Enterprise renewals and regional mix are primary drivers.`;
+      impactVal = `$${m}M`; impactSub = 'Projected full-FY variance';
+      action = `Increase Enterprise pricing by 3% and accelerate pipeline conversion in top regions.`;
+      confidence = Math.min(99, 91 + Math.round(Math.abs(revChgPct)));
+      opp = `+$${(Math.abs(parseFloat(m))*0.17).toFixed(1)}M`; save = `$${(Math.abs(parseFloat(m))*0.05).toFixed(1)}M`;
+    } else if (revChgPct !== null && revChgPct >= 5) {
+      const m = ((salesCur.total_revenue - salesPrev.total_revenue)/1e6).toFixed(1);
+      signal = `Revenue up ${revChgPct.toFixed(1)}%`; cause = `Strong growth vs FY ${selectedFY-1}. Sustain momentum across top-performing segments.`;
+      impactVal = `+$${m}M`; impactSub = 'Projected full-FY upside';
+      action = `Accelerate expansion in high-growth regions and protect gross margin.`;
+      confidence = Math.min(99, 93 + Math.round(revChgPct/2));
+      opp = `+$${(parseFloat(m)*0.12).toFixed(1)}M`; save = `$${(parseFloat(m)*0.04).toFixed(1)}M`;
+    } else if (finCur && finCur.runway_months < 9) {
+      signal = `Cash runway ${finCur.runway_months.toFixed(1)} months`; cause = `Cause: Cash burn rate exceeds safe threshold. Immediate action required.`;
+      impactVal = '–'; impactSub = 'Liquidity attention required';
+      action = `Prioritise receivables and defer non-critical CapEx.`; confidence = 96;
+      opp = '+$0.8M'; save = '$1.2M';
+    } else if (opsCur && opsCur.customer_satisfaction < 4.0) {
+      signal = `CSAT ${opsCur.customer_satisfaction.toFixed(1)}/5.0`; cause = `Cause: Satisfaction below 4.0 threshold — elevated churn risk.`;
+      impactVal = '–'; impactSub = 'Potential NRR impact';
+      action = `Launch customer success outreach and fix top ticket categories.`; confidence = 88;
+      opp = '+$1.1M'; save = '$0.4M';
+    } else {
+      signal = `Business on track for FY ${selectedFY}`; cause = 'No critical signals. KPIs within healthy operating ranges.';
+      impactVal = 'On Plan'; impactSub = 'No material variance';
+      action = `Maintain strategy. Monitor lagging indicators weekly.`; confidence = 97;
+      opp = '+$2.1M'; save = '$0.6M';
+    }
   }
 
   document.getElementById('eb-signal').textContent     = signal;
@@ -734,13 +781,16 @@ function addTodayAction(text, status) {
 // ── Business Impact Grid ──────────────────────────────────────────
 function renderImpactGrid() {
   const fy = String(selectedFY);
-  const rev = allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
-  const cash= allFYData.finance?.data?.[fy]?.metrics?.cash_balance;
+  // Use imported values when available, otherwise fall back to API data
+  const rev  = _importedKPIs?.revenue   ?? allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+  const cash = _importedKPIs?.cash      ?? allFYData.finance?.data?.[fy]?.metrics?.cash_balance;
+  const csat = _importedKPIs?.csat      ?? allFYData.operations?.data?.[fy]?.metrics?.customer_satisfaction;
+  const churnRisk = csat != null ? (csat < 3.8 ? 'High' : csat < 4.2 ? 'Medium' : 'Low') : 'Medium';
   const items = [
     { label:'Revenue',          value: rev  ? '$'+(rev/1e6).toFixed(1)+'M' : '–',  sub:'AI Opportunity +$2.1M',  risk:'Medium', color:'blue'   },
     { label:'Cash Balance',     value: cash ? '$'+(cash/1e6).toFixed(1)+'M': '–',  sub:'Potential Savings $620K', risk:'Low',    color:'green'  },
     { label:'Forecast Accuracy',value:'96%',                                         sub:'Actions completed: 12',  risk:'Low',    color:'emerald'},
-    { label:'Churn Risk Index', value:'Medium',                                      sub:'3 at-risk accounts',     risk:'High',   color:'red'    },
+    { label:'Churn Risk Index', value:churnRisk,                                     sub: csat != null ? `CSAT ${csat.toFixed(1)}/5 · 3 at-risk accounts` : '3 at-risk accounts', risk:churnRisk, color:'red' },
   ];
   const riskColor = {Low:'text-emerald-600 bg-emerald-50',Medium:'text-yellow-700 bg-yellow-50',High:'text-red-600 bg-red-50'};
   document.getElementById('impact-grid').innerHTML = items.map(it => `
@@ -755,26 +805,49 @@ function renderImpactGrid() {
 // ── Top AI Findings ───────────────────────────────────────────────
 function renderFindings() {
   const fy = String(selectedFY), prevFY = String(selectedFY-1);
+  // Use imported values when present, otherwise API data
+  const imp = _importedKPIs;
   const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
   const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
   const finCur    = allFYData.finance?.data?.[fy]?.metrics;
   const opsCur    = allFYData.operations?.data?.[fy]?.metrics;
 
   const findings = [];
-  if (salesCur && salesPrev) {
+
+  // Revenue finding — imported vs API baseline, or year-over-year
+  if (imp && imp.revenue != null && salesCur) {
+    const chg = ((imp.revenue - salesCur.total_revenue)/salesCur.total_revenue*100);
+    findings.push({ title:'Revenue vs Baseline', detail:`Your data: $${(imp.revenue/1e6).toFixed(1)}M · ${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs demo baseline`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
+  } else if (salesCur && salesPrev) {
     const chg = ((salesCur.total_revenue - salesPrev.total_revenue)/salesPrev.total_revenue*100);
     findings.push({ title:'Revenue Anomaly', detail:`${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs prior FY`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
   }
-  if (opsCur) {
-    const churn = opsCur.customer_satisfaction < 4.2;
-    findings.push({ title:'Customer Churn Signal', detail:`CSAT ${opsCur.customer_satisfaction.toFixed(1)}/5 · NPS ${opsCur.nps_score}`, sev: churn?'High':'Medium' });
+
+  // CSAT / churn — imported wins
+  const csatVal = imp?.csat ?? opsCur?.customer_satisfaction;
+  const npsVal  = opsCur?.nps_score ?? '–';
+  if (csatVal != null) {
+    const churn = csatVal < 4.2;
+    findings.push({ title:'Customer Churn Signal', detail:`CSAT ${csatVal.toFixed(1)}/5 · NPS ${npsVal}${imp?.csat!=null?' (imported)':''}`, sev: churn?'High':'Medium' });
   }
-  if (finCur) {
+
+  // Cash — imported wins
+  const cashVal = imp?.cash ?? null;
+  if (cashVal != null) {
+    findings.push({ title:'Cash Flow', detail:`Cash: $${(cashVal/1e6).toFixed(1)}M (imported)`, sev:'Low' });
+  } else if (finCur) {
     findings.push({ title:'Cash Flow Risk', detail:`Runway ${finCur.runway_months.toFixed(1)} mo · Margin ${(finCur.gross_margin*100).toFixed(1)}%`, sev: finCur.runway_months<9?'High':finCur.runway_months<15?'Medium':'Low' });
   }
+
+  // Users — imported wins
+  const usrVal = imp?.users ?? null;
+  if (usrVal != null) {
+    findings.push({ title:'Active Users', detail:`${usrVal.toLocaleString()} users (imported)`, sev:'Low' });
+  }
+
   findings.push({ title:'Forecast Confidence', detail:'96% accuracy · 12 actions completed today', sev:'Low' });
-  if (salesCur) findings.push({ title:'Pipeline Coverage', detail:`${salesCur.win_rate?((salesCur.win_rate||0.32)*100).toFixed(0)+'% win rate':'Strong pipeline detected'}`, sev:'Low' });
-  findings.push({ title:'AI Recommendation', detail:'Increase Enterprise pricing 3% to recover margin', sev:'Medium' });
+  if (!imp && salesCur) findings.push({ title:'Pipeline Coverage', detail:`${salesCur.win_rate?((salesCur.win_rate||0.32)*100).toFixed(0)+'% win rate':'Strong pipeline detected'}`, sev:'Low' });
+  findings.push({ title:'AI Recommendation', detail: imp ? `Based on your data — review highest-priority signal above` : 'Increase Enterprise pricing 3% to recover margin', sev:'Medium' });
 
   const sevColor = {High:'border-red-300 bg-red-50',Medium:'border-yellow-300 bg-yellow-50',Low:'border-emerald-300 bg-emerald-50'};
   const sevText  = {High:'text-red-600',Medium:'text-yellow-700',Low:'text-emerald-600'};
@@ -1001,15 +1074,23 @@ function extractCompanyKPIs(reportData) {
 }
 
 function applyCompanyData(data) {
+  // Store in override — all render functions will read from here first
+  _importedKPIs = data;
+
   const fmt=(n,d=2)=>n!=null?'$'+(n/1e6).toFixed(d)+'M':null;
   if(data.revenue!=null){const el=document.getElementById('kpi-revenue');if(el){el.textContent=fmt(data.revenue);}}
   if(data.cash!=null){const el=document.getElementById('kpi-cash');if(el){el.textContent=fmt(data.cash,1);}}
   if(data.users!=null){const el=document.getElementById('kpi-users');if(el){el.textContent=data.users.toLocaleString();}}
   if(data.csat!=null){const el=document.getElementById('kpi-csat');if(el){el.textContent=data.csat.toFixed(1)+'/5.0';}}
+
+  // Re-render ALL sections with imported data
   renderExecutiveBrief(); renderImpactGrid(); renderFindings();
+
+  // Remove any existing import banner before adding new one
+  document.querySelectorAll('.import-banner').forEach(b=>b.remove());
   const banner=document.createElement('div');
-  banner.className='bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
-  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="this.parentElement.remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
+  banner.className='import-banner bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
+  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="_importedKPIs=null;this.closest('.import-banner').remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
   const main=document.querySelector('.max-w-screen-xl');
   if(main) main.prepend(banner);
 }
