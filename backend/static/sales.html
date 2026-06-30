@@ -214,9 +214,18 @@ let salesData = null;
 let fyData    = null;
 let currentFY = new Date().getFullYear();
 let availableFYs = [currentFY, currentFY-1, currentFY-2];
+let _importedKPIs = null;
 
 let revenueChart = null;
 let regionalChart = null;
+
+// ── Read imported KPIs from localStorage (set by index.html on import) ──
+(function loadImportedKPIs() {
+  try {
+    const raw = localStorage.getItem('coo-imported-kpis');
+    if (raw) _importedKPIs = JSON.parse(raw);
+  } catch {}
+})();
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
@@ -313,6 +322,9 @@ function renderDashboard() {
   document.getElementById('closed-deals').textContent    = m.closed_deals;
   document.getElementById('pipeline-value').textContent  = '$'+m.pipeline_value.toLocaleString();
   document.getElementById('avg-deal').textContent        = '$'+m.average_deal_size.toLocaleString();
+
+  // Overlay imported KPIs after API render
+  applyImportedKPIs();
 
   // Regional list
   const reg = salesData.regional_performance;
@@ -429,6 +441,45 @@ function showToast(msg, duration = 3000) {
   t.classList.add('show');
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Overlay imported company KPIs on the sales dashboard ──────────
+function applyImportedKPIs() {
+  if (!_importedKPIs) return;
+  const imp = _importedKPIs;
+
+  // Override total revenue with imported value
+  if (imp.revenue != null) {
+    document.getElementById('total-revenue').textContent = '$' + imp.revenue.toLocaleString();
+    document.getElementById('revenue-change').innerHTML =
+      `<span class="text-blue-600">📥 Imported data</span>`;
+  }
+
+  // Show a prominent banner at the top of the dashboard
+  const existing = document.getElementById('import-kpi-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'import-kpi-banner';
+  banner.style.cssText = 'background:#f5f3ff;border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:center;';
+  const parts = [];
+  if (imp.revenue != null) parts.push('Revenue $' + (imp.revenue / 1e6).toFixed(2) + 'M');
+  if (imp.cash    != null) parts.push('Cash $'    + (imp.cash    / 1e6).toFixed(1)  + 'M');
+  if (imp.users   != null) parts.push('Users '    + imp.users.toLocaleString());
+  if (imp.csat    != null) parts.push('CSAT '     + imp.csat.toFixed(1) + '/5');
+  banner.innerHTML =
+    `<span>📥 Showing imported data from <strong>${imp.filename}</strong>` +
+    (parts.length ? ` — ${parts.join(' · ')}` : '') + `</span>` +
+    `<button onclick="clearImportedKPIs()" style="margin-left:12px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#5b21b6;font-size:11px;">Revert to demo</button>`;
+  const dashboard = document.getElementById('dashboard');
+  if (dashboard) dashboard.prepend(banner);
+}
+
+function clearImportedKPIs() {
+  try { localStorage.removeItem('coo-imported-kpis'); } catch {}
+  _importedKPIs = null;
+  const banner = document.getElementById('import-kpi-banner');
+  if (banner) banner.remove();
+  loadSalesData(currentFY);
 }
 
 function refreshData() { loadFYData(); loadSalesData(currentFY); }

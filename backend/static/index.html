@@ -1162,6 +1162,9 @@ function applyCompanyData(data) {
   // Store in override — all render functions will read from here first
   _importedKPIs = data;
 
+  // Persist to localStorage so sub-pages (finance, sales, operations) pick it up
+  try { localStorage.setItem('coo-imported-kpis', JSON.stringify(data)); } catch {}
+
   const fmt=(n,d=2)=>n!=null?'$'+(n/1e6).toFixed(d)+'M':null;
   if(data.revenue!=null){const el=document.getElementById('kpi-revenue');if(el){el.textContent=fmt(data.revenue);}}
   if(data.cash!=null){const el=document.getElementById('kpi-cash');if(el){el.textContent=fmt(data.cash,1);}}
@@ -1175,7 +1178,7 @@ function applyCompanyData(data) {
   document.querySelectorAll('.import-banner').forEach(b=>b.remove());
   const banner=document.createElement('div');
   banner.className='import-banner bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
-  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="_importedKPIs=null;this.closest('.import-banner').remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
+  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="_importedKPIs=null;try{localStorage.removeItem('coo-imported-kpis');}catch{}this.closest('.import-banner').remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
   const main=document.querySelector('.max-w-screen-xl');
   if(main) main.prepend(banner);
 }
@@ -1237,6 +1240,14 @@ function cycleTheme() {
 }
 (function initTheme(){
   try { const s = localStorage.getItem('coo-theme'); if (s) _applyTheme(s); } catch {}
+})();
+
+// ── Restore imported KPIs from localStorage on page load ─────────
+(function restoreImportedKPIs(){
+  try {
+    const raw = localStorage.getItem('coo-imported-kpis');
+    if (raw) { const d = JSON.parse(raw); if (d) { _importedKPIs = d; } }
+  } catch {}
 })();
 
 // ── Boot ──────────────────────────────────────────────────────────

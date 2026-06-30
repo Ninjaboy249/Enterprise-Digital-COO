@@ -234,6 +234,15 @@ let fyData = null;
 let currentFY = new Date().getFullYear();
 let availableFYs = [currentFY, currentFY-1, currentFY-2];
 let revExpChart = null, marginChart = null;
+let _importedKPIs = null;
+
+// ── Read imported KPIs from localStorage (set by index.html on import) ──
+(function loadImportedKPIs() {
+  try {
+    const raw = localStorage.getItem('coo-imported-kpis');
+    if (raw) _importedKPIs = JSON.parse(raw);
+  } catch {}
+})();
 
 async function init() {
   buildFYButtons();
@@ -327,6 +336,9 @@ function renderDashboard() {
   document.getElementById('net-income').textContent       = '$'+m.net_income.toLocaleString();
   document.getElementById('insight-liquidity').textContent = `Strong — ${m.runway_months.toFixed(1)} months runway`;
 
+  // After rendering from API, overlay any imported company KPIs
+  applyImportedKPIs();
+
   // P&L Waterfall rows
   const wfRows = [
     { label: 'Revenue',                      value: m.revenue,                   cls: 'font-semibold text-green-700',  note: 'Top line' },
@@ -352,6 +364,46 @@ function renderDashboard() {
 
   const sc = {healthy:'bg-green-50 border-green-400 text-green-800',warning:'bg-yellow-50 border-yellow-400 text-yellow-800'};
   document.getElementById('status-alert').innerHTML = `<div class="border-l-4 p-3 rounded ${sc[financeData.status]||sc.healthy}"><p class="font-semibold text-sm">FY ${financeData.fiscal_year} · ${financeData.status.toUpperCase()}</p><p class="text-xs mt-1">${new Date(financeData.timestamp).toLocaleString()}</p></div>`;
+}
+
+// ── Overlay imported company KPIs on the finance dashboard ────────
+function applyImportedKPIs() {
+  if (!_importedKPIs) return;
+  const imp = _importedKPIs;
+
+  // Override Cash Balance with imported value
+  if (imp.cash != null) {
+    document.getElementById('cash-balance').textContent = '$' + imp.cash.toLocaleString();
+    document.getElementById('insight-liquidity').textContent =
+      'Imported — $' + (imp.cash / 1e6).toFixed(1) + 'M cash on hand';
+  }
+
+  // Show a prominent banner at the top of the dashboard
+  const existing = document.getElementById('import-kpi-banner');
+  if (existing) return; // already shown
+  const banner = document.createElement('div');
+  banner.id = 'import-kpi-banner';
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;';
+  const parts = [];
+  if (imp.revenue != null) parts.push('Revenue $' + (imp.revenue / 1e6).toFixed(2) + 'M');
+  if (imp.cash    != null) parts.push('Cash $'    + (imp.cash    / 1e6).toFixed(1)  + 'M');
+  if (imp.users   != null) parts.push('Users '    + imp.users.toLocaleString());
+  if (imp.csat    != null) parts.push('CSAT '     + imp.csat.toFixed(1) + '/5');
+  banner.innerHTML =
+    `<span>📥 Showing imported data from <strong>${imp.filename}</strong>` +
+    (parts.length ? ` — ${parts.join(' · ')}` : '') + `</span>` +
+    `<button onclick="clearImportedKPIs()" style="margin-left:12px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#166534;font-size:11px;">Revert to demo</button>`;
+  const dashboard = document.getElementById('dashboard');
+  if (dashboard) dashboard.prepend(banner);
+}
+
+function clearImportedKPIs() {
+  try { localStorage.removeItem('coo-imported-kpis'); } catch {}
+  _importedKPIs = null;
+  const banner = document.getElementById('import-kpi-banner');
+  if (banner) banner.remove();
+  // Reload dashboard from API
+  loadFinanceData(currentFY);
 }
 
 function renderCharts() {
