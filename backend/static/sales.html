@@ -223,9 +223,22 @@ let regionalChart = null;
 (function loadImportedKPIs() {
   try {
     const raw = localStorage.getItem('coo-imported-kpis');
-    if (raw) _importedKPIs = JSON.parse(raw);
+    if (!raw) return;
+    let d = JSON.parse(raw);
+    if (!d) return;
+    if (d.revenue !== undefined && !d.years) {
+      const CY = new Date().getFullYear();
+      d = { years: { [String(CY)]: { revenue: d.revenue, cash: d.cash, users: d.users, csat: d.csat } }, filename: d.filename };
+    }
+    _importedKPIs = d;
   } catch {}
 })();
+
+// Helper: get KPIs for a specific FY from imported data
+function _impFY(fy) {
+  if (!_importedKPIs?.years) return null;
+  return _importedKPIs.years[String(fy)] || null;
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
@@ -270,7 +283,7 @@ function setActiveFYBtn(fy) {
 function selectFY(fy) {
   currentFY = fy;
   setActiveFYBtn(fy);
-  loadSalesData(fy).finally(() => setActiveFYBtn(currentFY));
+  loadSalesData(fy).finally(() => { setActiveFYBtn(currentFY); renderFYChart(); });
 }
 
 // ── Data Loading ──────────────────────────────────────────────────────────
@@ -323,8 +336,8 @@ function renderDashboard() {
   document.getElementById('pipeline-value').textContent  = '$'+m.pipeline_value.toLocaleString();
   document.getElementById('avg-deal').textContent        = '$'+m.average_deal_size.toLocaleString();
 
-  // Overlay imported KPIs after API render
-  applyImportedKPIs();
+  // Overlay imported KPIs after API render (per-FY)
+  applyImportedKPIs(currentFY);
 
   // Regional list
   const reg = salesData.regional_performance;
@@ -362,7 +375,8 @@ function renderFYChart() {
   if (!fyData) return;
   const years  = fyData.fiscal_years.slice().reverse();
   const labels = years.map(y => `FY ${y}`);
-  const revs   = years.map(y => fyData.data[y].metrics.total_revenue);
+  // Prefer imported revenue per year when available
+  const revs   = years.map(y => { const i = _impFY(y); return i?.revenue != null ? i.revenue : fyData.data[y].metrics.total_revenue; });
   const exps   = years.map(y => fyData.data[y].metrics.expected_revenue);
 
   const ctx = document.getElementById('fy-revenue-chart').getContext('2d');
@@ -444,32 +458,34 @@ function showToast(msg, duration = 3000) {
 }
 
 // ── Overlay imported company KPIs on the sales dashboard ──────────
-function applyImportedKPIs() {
-  if (!_importedKPIs) return;
-  const imp = _importedKPIs;
+function applyImportedKPIs(fy) {
+  const imp = _impFY(fy);
 
-  // Override total revenue with imported value
-  if (imp.revenue != null) {
+  // Remove stale banner and re-inject (FY may have changed)
+  const existing = document.getElementById('import-kpi-banner');
+  if (existing) existing.remove();
+  if (!_importedKPIs) return;
+
+  if (imp?.revenue != null) {
     document.getElementById('total-revenue').textContent = '$' + imp.revenue.toLocaleString();
-    document.getElementById('revenue-change').innerHTML =
-      `<span class="text-blue-600">📥 Imported data</span>`;
+    document.getElementById('revenue-change').innerHTML = `<span class="text-purple-600">📥 Imported FY${fy}</span>`;
   }
 
-  // Show a prominent banner at the top of the dashboard
-  const existing = document.getElementById('import-kpi-banner');
-  if (existing) return;
   const banner = document.createElement('div');
   banner.id = 'import-kpi-banner';
-  banner.style.cssText = 'background:#f5f3ff;border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:center;';
-  const parts = [];
-  if (imp.revenue != null) parts.push('Revenue $' + (imp.revenue / 1e6).toFixed(2) + 'M');
-  if (imp.cash    != null) parts.push('Cash $'    + (imp.cash    / 1e6).toFixed(1)  + 'M');
-  if (imp.users   != null) parts.push('Users '    + imp.users.toLocaleString());
-  if (imp.csat    != null) parts.push('CSAT '     + imp.csat.toFixed(1) + '/5');
+  banner.style.cssText = 'background:#f5f3ff;border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;';
+  const fyList = Object.keys(_importedKPIs.years||{}).sort().map(yr => {
+    const y = _importedKPIs.years[yr];
+    const parts = [];
+    if (y.revenue!=null) parts.push('Rev $'+(y.revenue/1e6).toFixed(1)+'M');
+    if (y.cash!=null)    parts.push('Cash $'+(y.cash/1e6).toFixed(1)+'M');
+    if (y.csat!=null)    parts.push('CSAT '+y.csat.toFixed(1));
+    return `<span style="margin-right:10px;"><strong>FY${yr}</strong>: ${parts.join(' · ')||'partial'}</span>`;
+  }).join('');
   banner.innerHTML =
-    `<span>📥 Showing imported data from <strong>${imp.filename}</strong>` +
-    (parts.length ? ` — ${parts.join(' · ')}` : '') + `</span>` +
-    `<button onclick="clearImportedKPIs()" style="margin-left:12px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#5b21b6;font-size:11px;">Revert to demo</button>`;
+    `<span>📥 <strong>${_importedKPIs.filename}</strong> — ${fyList}` +
+    (imp ? '' : ` <em style="opacity:.65;">(no data for FY${fy})</em>`) + `</span>` +
+    `<button onclick="clearImportedKPIs()" style="text-decoration:underline;background:none;border:none;cursor:pointer;color:#5b21b6;font-size:11px;">Revert to demo</button>`;
   const dashboard = document.getElementById('dashboard');
   if (dashboard) dashboard.prepend(banner);
 }

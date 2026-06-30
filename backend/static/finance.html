@@ -240,9 +240,23 @@ let _importedKPIs = null;
 (function loadImportedKPIs() {
   try {
     const raw = localStorage.getItem('coo-imported-kpis');
-    if (raw) _importedKPIs = JSON.parse(raw);
+    if (!raw) return;
+    let d = JSON.parse(raw);
+    if (!d) return;
+    // Normalise legacy flat format
+    if (d.revenue !== undefined && !d.years) {
+      const CY = new Date().getFullYear();
+      d = { years: { [String(CY)]: { revenue: d.revenue, cash: d.cash, users: d.users, csat: d.csat } }, filename: d.filename };
+    }
+    _importedKPIs = d;
   } catch {}
 })();
+
+// Helper: get KPIs for a specific FY from imported data
+function _impFY(fy) {
+  if (!_importedKPIs?.years) return null;
+  return _importedKPIs.years[String(fy)] || null;
+}
 
 async function init() {
   buildFYButtons();
@@ -285,7 +299,7 @@ function setActiveFYBtn(fy) {
 function selectFY(fy) {
   currentFY = fy;
   setActiveFYBtn(fy);
-  loadFinanceData(fy).finally(() => setActiveFYBtn(currentFY));
+  loadFinanceData(fy).finally(() => { setActiveFYBtn(currentFY); renderCharts(); });
 }
 
 async function loadFYData() {
@@ -336,8 +350,8 @@ function renderDashboard() {
   document.getElementById('net-income').textContent       = '$'+m.net_income.toLocaleString();
   document.getElementById('insight-liquidity').textContent = `Strong — ${m.runway_months.toFixed(1)} months runway`;
 
-  // After rendering from API, overlay any imported company KPIs
-  applyImportedKPIs();
+  // After rendering from API, overlay any imported company KPIs for this FY
+  applyImportedKPIs(currentFY);
 
   // P&L Waterfall rows
   const wfRows = [
@@ -367,32 +381,45 @@ function renderDashboard() {
 }
 
 // ── Overlay imported company KPIs on the finance dashboard ────────
-function applyImportedKPIs() {
-  if (!_importedKPIs) return;
-  const imp = _importedKPIs;
+function applyImportedKPIs(fy) {
+  const imp = _impFY(fy);
 
-  // Override Cash Balance with imported value
-  if (imp.cash != null) {
-    document.getElementById('cash-balance').textContent = '$' + imp.cash.toLocaleString();
-    document.getElementById('insight-liquidity').textContent =
-      'Imported — $' + (imp.cash / 1e6).toFixed(1) + 'M cash on hand';
+  // Remove stale banner and re-inject (FY may have changed)
+  const existing = document.getElementById('import-kpi-banner');
+  if (existing) existing.remove();
+
+  if (!_importedKPIs) return;  // nothing imported at all
+
+  if (imp) {
+    // Override KPI cards with this FY's imported values
+    if (imp.cash != null) {
+      document.getElementById('cash-balance').textContent = '$' + imp.cash.toLocaleString();
+      document.getElementById('insight-liquidity').textContent =
+        'Imported FY' + fy + ' — $' + (imp.cash / 1e6).toFixed(1) + 'M cash on hand';
+    }
+    if (imp.revenue != null) {
+      // revenue maps to the top-line revenue card in the P&L — update only if present
+      const revEl = document.querySelector('#pl-waterfall-body tr:first-child td:nth-child(2)');
+      // We don't update the P&L table directly; the summary KPI cards suffice
+    }
   }
 
-  // Show a prominent banner at the top of the dashboard
-  const existing = document.getElementById('import-kpi-banner');
-  if (existing) return; // already shown
+  // Always show banner when ANY imported data exists (even if this FY has none)
   const banner = document.createElement('div');
   banner.id = 'import-kpi-banner';
-  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;';
-  const parts = [];
-  if (imp.revenue != null) parts.push('Revenue $' + (imp.revenue / 1e6).toFixed(2) + 'M');
-  if (imp.cash    != null) parts.push('Cash $'    + (imp.cash    / 1e6).toFixed(1)  + 'M');
-  if (imp.users   != null) parts.push('Users '    + imp.users.toLocaleString());
-  if (imp.csat    != null) parts.push('CSAT '     + imp.csat.toFixed(1) + '/5');
+  banner.style.cssText = 'background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;';
+  const fyList = Object.keys(_importedKPIs.years||{}).sort().map(yr => {
+    const y = _importedKPIs.years[yr];
+    const parts = [];
+    if (y.revenue!=null) parts.push('Rev $'+(y.revenue/1e6).toFixed(1)+'M');
+    if (y.cash!=null)    parts.push('Cash $'+(y.cash/1e6).toFixed(1)+'M');
+    if (y.csat!=null)    parts.push('CSAT '+y.csat.toFixed(1));
+    return `<span style="margin-right:10px;"><strong>FY${yr}</strong>: ${parts.join(' · ')||'partial'}</span>`;
+  }).join('');
   banner.innerHTML =
-    `<span>📥 Showing imported data from <strong>${imp.filename}</strong>` +
-    (parts.length ? ` — ${parts.join(' · ')}` : '') + `</span>` +
-    `<button onclick="clearImportedKPIs()" style="margin-left:12px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#166534;font-size:11px;">Revert to demo</button>`;
+    `<span>📥 <strong>${_importedKPIs.filename}</strong> — ${fyList}` +
+    (imp ? '' : ` <em style="opacity:.65;">(no data for FY${fy})</em>`) + `</span>` +
+    `<button onclick="clearImportedKPIs()" style="text-decoration:underline;background:none;border:none;cursor:pointer;color:#166534;font-size:11px;">Revert to demo</button>`;
   const dashboard = document.getElementById('dashboard');
   if (dashboard) dashboard.prepend(banner);
 }
@@ -411,19 +438,30 @@ function renderCharts() {
   const years  = fyData.fiscal_years.slice().reverse();
   const labels = years.map(y=>`FY ${y}`);
 
-  // Revenue vs Expenses
+  // For each year, prefer imported revenue if available
+  const revData = years.map(y => {
+    const imp = _impFY(y);
+    return imp?.revenue != null ? imp.revenue : fyData.data[y].metrics.revenue;
+  });
+  const expData = years.map(y => fyData.data[y].metrics.expenses);
+  const cashData = years.map(y => {
+    const imp = _impFY(y);
+    return imp?.cash != null ? imp.cash : fyData.data[y].metrics.cash_balance;
+  });
+
+  // Revenue vs Expenses chart
   const ctx1 = document.getElementById('fy-rev-exp-chart').getContext('2d');
   if (revExpChart) revExpChart.destroy();
   revExpChart = new Chart(ctx1, {
     type:'bar',
     data:{labels,datasets:[
-      {label:'Revenue', data:years.map(y=>fyData.data[y].metrics.revenue), backgroundColor:'rgba(16,185,129,0.75)',borderRadius:6},
-      {label:'Expenses',data:years.map(y=>fyData.data[y].metrics.expenses),backgroundColor:'rgba(239,68,68,0.5)',  borderRadius:6},
+      {label:'Revenue', data:revData,  backgroundColor:'rgba(16,185,129,0.75)',borderRadius:6},
+      {label:'Expenses',data:expData,  backgroundColor:'rgba(239,68,68,0.5)',  borderRadius:6},
     ]},
     options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'},beginAtZero:true}}}
   });
 
-  // Margins line
+  // Margins line (always from API — imported data doesn't include margins)
   const ctx2 = document.getElementById('margin-chart').getContext('2d');
   if (marginChart) marginChart.destroy();
   marginChart = new Chart(ctx2, {

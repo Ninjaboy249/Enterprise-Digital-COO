@@ -248,9 +248,22 @@ let _importedKPIs = null;
 (function loadImportedKPIs() {
   try {
     const raw = localStorage.getItem('coo-imported-kpis');
-    if (raw) _importedKPIs = JSON.parse(raw);
+    if (!raw) return;
+    let d = JSON.parse(raw);
+    if (!d) return;
+    if (d.revenue !== undefined && !d.years) {
+      const CY = new Date().getFullYear();
+      d = { years: { [String(CY)]: { revenue: d.revenue, cash: d.cash, users: d.users, csat: d.csat } }, filename: d.filename };
+    }
+    _importedKPIs = d;
   } catch {}
 })();
+
+// Helper: get KPIs for a specific FY from imported data
+function _impFY(fy) {
+  if (!_importedKPIs?.years) return null;
+  return _importedKPIs.years[String(fy)] || null;
+}
 
 async function init() {
   buildFYButtons();
@@ -302,7 +315,7 @@ async function loadOpsData(fy) {
     document.getElementById('loading').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
     const r = await fetch(`/api/v1/metrics/operations?fy=${fy}`);
-    opsData = await r.json(); renderDashboard();
+    opsData = await r.json(); renderDashboard(); renderCharts();
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
   } catch(e){
@@ -340,38 +353,39 @@ function renderDashboard() {
   const sc={good:'bg-green-50 border-green-400 text-green-800',warning:'bg-yellow-50 border-yellow-400 text-yellow-800'};
   document.getElementById('status-alert').innerHTML=`<div class="border-l-4 p-3 rounded ${sc[opsData.status]||sc.good}"><p class="font-semibold text-sm">FY ${opsData.fiscal_year} · ${opsData.status.toUpperCase()}</p><p class="text-xs mt-1">${new Date(opsData.timestamp).toLocaleString()}</p></div>`;
 
-  // Overlay imported KPIs after API render
-  applyImportedKPIs();
+  // Overlay imported KPIs after API render (per-FY)
+  applyImportedKPIs(currentFY);
 }
 
 // ── Overlay imported company KPIs on the operations dashboard ─────
-function applyImportedKPIs() {
-  if (!_importedKPIs) return;
-  const imp = _importedKPIs;
+function applyImportedKPIs(fy) {
+  const imp = _impFY(fy);
 
-  // Override CSAT and active users with imported values
-  if (imp.csat != null) {
-    document.getElementById('csat').textContent = imp.csat.toFixed(1) + '/5.0';
-  }
-  if (imp.users != null) {
-    document.getElementById('active-users').textContent = imp.users.toLocaleString();
-  }
-
-  // Show a banner at the top of the dashboard
+  // Remove stale banner and re-inject (FY may have changed)
   const existing = document.getElementById('import-kpi-banner');
-  if (existing) return;
+  if (existing) existing.remove();
+  if (!_importedKPIs) return;
+
+  if (imp) {
+    if (imp.csat  != null) document.getElementById('csat').textContent         = imp.csat.toFixed(1) + '/5.0';
+    if (imp.users != null) document.getElementById('active-users').textContent = imp.users.toLocaleString();
+  }
+
   const banner = document.createElement('div');
   banner.id = 'import-kpi-banner';
-  banner.style.cssText = 'background:#faf5ff;border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:center;';
-  const parts = [];
-  if (imp.revenue != null) parts.push('Revenue $' + (imp.revenue / 1e6).toFixed(2) + 'M');
-  if (imp.cash    != null) parts.push('Cash $'    + (imp.cash    / 1e6).toFixed(1)  + 'M');
-  if (imp.users   != null) parts.push('Users '    + imp.users.toLocaleString());
-  if (imp.csat    != null) parts.push('CSAT '     + imp.csat.toFixed(1) + '/5');
+  banner.style.cssText = 'background:#faf5ff;border:1px solid #c4b5fd;border-radius:12px;padding:10px 16px;margin-bottom:16px;font-size:12px;color:#5b21b6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;';
+  const fyList = Object.keys(_importedKPIs.years||{}).sort().map(yr => {
+    const y = _importedKPIs.years[yr];
+    const parts = [];
+    if (y.revenue!=null) parts.push('Rev $'+(y.revenue/1e6).toFixed(1)+'M');
+    if (y.users!=null)   parts.push('Users '+y.users.toLocaleString());
+    if (y.csat!=null)    parts.push('CSAT '+y.csat.toFixed(1));
+    return `<span style="margin-right:10px;"><strong>FY${yr}</strong>: ${parts.join(' · ')||'partial'}</span>`;
+  }).join('');
   banner.innerHTML =
-    `<span>📥 Showing imported data from <strong>${imp.filename}</strong>` +
-    (parts.length ? ` — ${parts.join(' · ')}` : '') + `</span>` +
-    `<button onclick="clearImportedKPIs()" style="margin-left:12px;text-decoration:underline;background:none;border:none;cursor:pointer;color:#5b21b6;font-size:11px;">Revert to demo</button>`;
+    `<span>📥 <strong>${_importedKPIs.filename}</strong> — ${fyList}` +
+    (imp ? '' : ` <em style="opacity:.65;">(no data for FY${fy})</em>`) + `</span>` +
+    `<button onclick="clearImportedKPIs()" style="text-decoration:underline;background:none;border:none;cursor:pointer;color:#5b21b6;font-size:11px;">Revert to demo</button>`;
   const dashboard = document.getElementById('dashboard');
   if (dashboard) dashboard.prepend(banner);
 }
@@ -389,13 +403,17 @@ function renderCharts() {
   const years  = fyData.fiscal_years.slice().reverse();
   const labels = years.map(y=>`FY ${y}`);
 
+  // Prefer imported CSAT / Users per year when available
+  const csatData  = years.map(y => { const i = _impFY(y); return i?.csat  != null ? i.csat  : fyData.data[y].metrics.customer_satisfaction; });
+  const usersData = years.map(y => { const i = _impFY(y); return i?.users != null ? i.users : fyData.data[y].metrics.active_users; });
+
   const ctx1 = document.getElementById('fy-csat-chart').getContext('2d');
   if(csatChart) csatChart.destroy();
   csatChart = new Chart(ctx1,{
     type:'line',
     data:{labels,datasets:[
-      {label:'CSAT (/5)',data:years.map(y=>fyData.data[y].metrics.customer_satisfaction),borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.1)',tension:0.4,fill:true,yAxisID:'y'},
-      {label:'NPS',      data:years.map(y=>fyData.data[y].metrics.nps_score),             borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)', tension:0.4,fill:true,yAxisID:'y1'},
+      {label:'CSAT (/5)',data:csatData,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.1)',tension:0.4,fill:true,yAxisID:'y'},
+      {label:'NPS',      data:years.map(y=>fyData.data[y].metrics.nps_score),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',tension:0.4,fill:true,yAxisID:'y1'},
     ]},
     options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{position:'left',min:0,max:5},y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false}}}}
   });
@@ -405,8 +423,8 @@ function renderCharts() {
   usersChart = new Chart(ctx2,{
     type:'bar',
     data:{labels,datasets:[
-      {label:'Active Users', data:years.map(y=>fyData.data[y].metrics.active_users),   backgroundColor:'rgba(124,58,237,0.7)',borderRadius:6,yAxisID:'y'},
-      {label:'Tickets Open', data:years.map(y=>fyData.data[y].metrics.support_tickets),backgroundColor:'rgba(239,68,68,0.5)',  borderRadius:6,yAxisID:'y1'},
+      {label:'Active Users', data:usersData,                                                          backgroundColor:'rgba(124,58,237,0.7)',borderRadius:6,yAxisID:'y'},
+      {label:'Tickets Open', data:years.map(y=>fyData.data[y].metrics.support_tickets),              backgroundColor:'rgba(239,68,68,0.5)',  borderRadius:6,yAxisID:'y1'},
     ]},
     options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{position:'left',beginAtZero:true},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false}}}}
   });

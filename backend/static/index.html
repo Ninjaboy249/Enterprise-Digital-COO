@@ -493,25 +493,26 @@
     </div>
 
     <div id="import-section-file">
-      <p class="text-sm text-gray-600 mb-3">Upload your company's Excel or Power BI file to replace all demo KPIs.</p>
+      <p class="text-sm text-gray-600 mb-3">Upload an Excel file with a <strong>Year</strong> column to automatically populate all 3 fiscal years, or use a single-year file for the current FY only.</p>
       <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500 space-y-1">
-        <p>📊 <strong>Detected columns:</strong> Revenue / Cash / Users / CSAT</p>
+        <p>📊 <strong>Detected columns:</strong> Year · Revenue / Cash / Users / CSAT</p>
+        <p>📅 <strong>Multi-year:</strong> Add a <code>Year</code> column (e.g. 2023, 2024, 2025) to fill all 3 FYs</p>
         <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
       </div>
       <button onclick="downloadSampleExcel()" class="w-full mb-3 border border-purple-400 text-purple-700 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center justify-center gap-2">
-        ⬇ Download Sample Excel
+        ⬇ Download Sample Excel (3-Year)
       </button>
       <input id="import-file" type="file" accept=".xlsx,.xls,.pbix"
              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 text-gray-700" />
     </div>
 
     <div id="import-section-ai" class="hidden">
-      <p class="text-sm text-gray-600 mb-3">Describe your financials in plain English — AI extracts & applies KPIs automatically.</p>
+      <p class="text-sm text-gray-600 mb-3">Describe your financials for up to 3 years in plain English — AI extracts & applies KPIs for each FY automatically.</p>
       <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3 text-xs text-purple-700">
-        <strong>Example:</strong> "Acme Corp: Revenue $12.4M, Cash $3.2M, 8,500 active users, CSAT 4.3/5."
+        <strong>Example (3-year):</strong> "Acme Corp FY2023: Revenue $10M, Cash $2.8M, 7,200 users, CSAT 4.1. FY2024: Revenue $12.4M, Cash $3.2M, 8,500 users, CSAT 4.3. FY2025: Revenue $14.1M, Cash $3.8M, 9,800 users, CSAT 4.5."
       </div>
-      <textarea id="ai-import-prompt" rows="4"
-                placeholder="Describe your company data here…"
+      <textarea id="ai-import-prompt" rows="5"
+                placeholder="Describe your company data here — include FY labels for multi-year support…"
                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
       <button onclick="submitAIImport()" class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
         <span id="ai-import-btn-text">✨ Import with AI</span>
@@ -536,7 +537,14 @@ const FYS = [CY, CY-1, CY-2];
 let selectedFY = CY;
 let allFYData  = { sales: null, finance: null, operations: null };
 // Holds imported KPIs — set by applyCompanyData(), cleared by loadAllFYData() on revert
-let _importedKPIs = null;  // { revenue, cash, users, csat, filename } | null
+// Per-FY imported data: { filename, years: { "2025":{revenue,cash,users,csat}, ... } } | null
+let _importedKPIs = null;
+
+// Helper: get KPIs for a specific fiscal year from imported data
+function _impFY(fy) {
+  if (!_importedKPIs?.years) return null;
+  return _importedKPIs.years[String(fy)] || null;
+}
 
 // ── Init ──────────────────────────────────────────────────────────
 async function init() {
@@ -573,9 +581,6 @@ function selectFY(fy) { selectedFY = fy; setActiveFYTab(fy); renderKPIs(); }
 
 // ── Data Load ─────────────────────────────────────────────────────
 async function loadAllFYData() {
-  // If user has imported their own data, don't silently overwrite it from the API.
-  // The banner's "Revert to demo" button calls this after clearing _importedKPIs.
-  if (_importedKPIs) return;
   try {
     const [s, f, o] = await Promise.all([
       fetch('/api/v1/metrics/sales/fy').then(r=>r.json()),
@@ -595,11 +600,22 @@ async function loadAllFYData() {
 
 // ── KPIs (hidden stores) ──────────────────────────────────────────
 function renderKPIs() {
-  // If imported data is active, don't overwrite the hidden spans from API
-  if (_importedKPIs) { renderExecutiveBrief(); return; }
+  const imp = _impFY(selectedFY);
 
   const fy = String(selectedFY), prevFY = String(selectedFY - 1);
-  if (allFYData.sales?.data?.[fy]) {
+  const prevImp = _impFY(selectedFY - 1);
+
+  // Revenue
+  if (imp?.revenue != null) {
+    document.getElementById('kpi-revenue').textContent = '$' + (imp.revenue/1e6).toFixed(2) + 'M';
+    if (prevImp?.revenue != null) {
+      const chg = ((imp.revenue - prevImp.revenue)/prevImp.revenue*100).toFixed(1);
+      document.getElementById('kpi-revenue-chg').innerHTML =
+        `<span class="${chg>=0?'change-pos':'change-neg'}">${chg>=0?'↑':'↓'} ${Math.abs(chg)}% vs FY ${selectedFY-1}</span>`;
+    } else {
+      document.getElementById('kpi-revenue-chg').innerHTML = '<span class="text-xs text-purple-300">📥 Imported</span>';
+    }
+  } else if (allFYData.sales?.data?.[fy]) {
     const m = allFYData.sales.data[fy].metrics;
     const prev = allFYData.sales.data[prevFY]?.metrics;
     document.getElementById('kpi-revenue').textContent = '$' + (m.total_revenue/1e6).toFixed(2) + 'M';
@@ -609,16 +625,29 @@ function renderKPIs() {
         `<span class="${chg>=0?'change-pos':'change-neg'}">${chg>=0?'↑':'↓'} ${Math.abs(chg)}% vs FY ${selectedFY-1}</span>`;
     }
   }
-  if (allFYData.finance?.data?.[fy]) {
+
+  // Cash
+  if (imp?.cash != null) {
+    document.getElementById('kpi-cash').textContent = '$' + (imp.cash/1e6).toFixed(1) + 'M';
+    document.getElementById('kpi-cash-chg').textContent = 'From imported data';
+  } else if (allFYData.finance?.data?.[fy]) {
     const m = allFYData.finance.data[fy].metrics;
     document.getElementById('kpi-cash').textContent = '$' + (m.cash_balance/1e6).toFixed(1) + 'M';
     document.getElementById('kpi-cash-chg').textContent = `Runway: ${m.runway_months.toFixed(1)} mo`;
   }
-  if (allFYData.operations?.data?.[fy]) {
-    const m = allFYData.operations.data[fy].metrics;
-    document.getElementById('kpi-csat').textContent = m.customer_satisfaction.toFixed(1) + '/5.0';
-    document.getElementById('kpi-users').textContent = m.active_users.toLocaleString();
+
+  // CSAT / Users
+  if (imp?.csat != null) {
+    document.getElementById('kpi-csat').textContent = imp.csat.toFixed(1) + '/5.0';
+  } else if (allFYData.operations?.data?.[fy]) {
+    document.getElementById('kpi-csat').textContent = allFYData.operations.data[fy].metrics.customer_satisfaction.toFixed(1) + '/5.0';
   }
+  if (imp?.users != null) {
+    document.getElementById('kpi-users').textContent = imp.users.toLocaleString();
+  } else if (allFYData.operations?.data?.[fy]) {
+    document.getElementById('kpi-users').textContent = allFYData.operations.data[fy].metrics.active_users.toLocaleString();
+  }
+
   renderExecutiveBrief();
 }
 
@@ -634,36 +663,43 @@ function renderExecutiveBrief() {
   let signal, cause, impactVal, impactSub, action, confidence, opp, save;
 
   // ── BRANCH: imported company data overrides all signal logic ──────
-  if (_importedKPIs) {
-    const imp = _importedKPIs;
+  const imp    = _impFY(selectedFY);
+  const impPrv = _impFY(selectedFY - 1);
+  if (imp) {
     const fmt  = (n, d=2) => n != null ? '$' + (n/1e6).toFixed(d) + 'M' : null;
     const revStr  = fmt(imp.revenue)   || '–';
     const cashStr = fmt(imp.cash, 1)   || '–';
     const csatStr = imp.csat  != null ? imp.csat.toFixed(1) + '/5.0' : '–';
     const usrStr  = imp.users != null ? imp.users.toLocaleString()   : '–';
 
-    // Derive a signal from the imported revenue vs API baseline for comparison
-    const apiRev = allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+    // Year-over-year from imported data (preferred) or vs API baseline
     let revChgPct = null;
-    if (apiRev && imp.revenue != null) revChgPct = ((imp.revenue - apiRev) / apiRev * 100);
+    if (impPrv?.revenue != null && imp.revenue != null) {
+      revChgPct = ((imp.revenue - impPrv.revenue) / impPrv.revenue * 100);
+    } else {
+      const apiRev = allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+      if (apiRev && imp.revenue != null) revChgPct = ((imp.revenue - apiRev) / apiRev * 100);
+    }
 
     if (revChgPct !== null && revChgPct < -3) {
       const a = Math.abs(revChgPct).toFixed(1);
-      const m = ((imp.revenue - apiRev)/1e6).toFixed(1);
-      signal = `Revenue ${a}% below baseline`; cause = `Cause: Your imported revenue (${revStr}) is below the current demo baseline. Review pricing and pipeline strategy.`;
-      impactVal = `$${m}M`; impactSub = 'Variance from baseline';
+      const m = impPrv?.revenue != null ? ((imp.revenue - impPrv.revenue)/1e6).toFixed(1)
+                : ((imp.revenue - (allFYData.sales?.data?.[fy]?.metrics?.total_revenue||0))/1e6).toFixed(1);
+      signal = `Revenue ${a}% below ${impPrv?.revenue != null ? `FY ${selectedFY-1}` : 'baseline'}`; cause = `Cause: Imported revenue (${revStr}) declined. Review pricing and pipeline strategy.`;
+      impactVal = `$${m}M`; impactSub = impPrv?.revenue != null ? `YoY variance` : 'Variance from baseline';
       action = `Review regional pricing and accelerate enterprise tier upsell.`;
       confidence = Math.min(99, 91 + Math.round(Math.abs(revChgPct)));
       opp = `+$${(Math.abs(parseFloat(m))*0.17).toFixed(1)}M`; save = `$${(Math.abs(parseFloat(m))*0.05).toFixed(1)}M`;
     } else if (revChgPct !== null && revChgPct >= 5) {
-      const m = ((imp.revenue - apiRev)/1e6).toFixed(1);
-      signal = `Revenue ${revChgPct.toFixed(1)}% above baseline`; cause = `Your imported revenue (${revStr}) outperforms the baseline. Sustain momentum.`;
-      impactVal = `+$${m}M`; impactSub = 'Upside vs baseline';
+      const m = impPrv?.revenue != null ? ((imp.revenue - impPrv.revenue)/1e6).toFixed(1)
+                : ((imp.revenue - (allFYData.sales?.data?.[fy]?.metrics?.total_revenue||0))/1e6).toFixed(1);
+      signal = `Revenue up ${revChgPct.toFixed(1)}% vs ${impPrv?.revenue != null ? `FY ${selectedFY-1}` : 'baseline'}`; cause = `Imported revenue (${revStr}) outperforms. Sustain momentum.`;
+      impactVal = `+$${m}M`; impactSub = 'Upside';
       action = `Accelerate high-growth regions and protect gross margin.`;
       confidence = Math.min(99, 93 + Math.round(revChgPct/2));
       opp = `+$${(parseFloat(m)*0.12).toFixed(1)}M`; save = `$${(parseFloat(m)*0.04).toFixed(1)}M`;
     } else {
-      signal = `Company data imported — ${imp.filename}`; cause = `Revenue ${revStr} · Cash ${cashStr} · CSAT ${csatStr} · Users ${usrStr}`;
+      signal = `Company data imported — FY ${selectedFY}`; cause = `Revenue ${revStr} · Cash ${cashStr} · CSAT ${csatStr} · Users ${usrStr}`;
       impactVal = revStr; impactSub = 'From your imported data';
       action = `Review AI-generated findings above and take action on the highest-priority signal.`;
       confidence = 94;
@@ -848,10 +884,11 @@ function addTodayAction(text, status) {
 // ── Business Impact Grid ──────────────────────────────────────────
 function renderImpactGrid() {
   const fy = String(selectedFY);
+  const imp  = _impFY(selectedFY);
   // Use imported values when available, otherwise fall back to API data
-  const rev  = _importedKPIs?.revenue   ?? allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
-  const cash = _importedKPIs?.cash      ?? allFYData.finance?.data?.[fy]?.metrics?.cash_balance;
-  const csat = _importedKPIs?.csat      ?? allFYData.operations?.data?.[fy]?.metrics?.customer_satisfaction;
+  const rev  = imp?.revenue ?? allFYData.sales?.data?.[fy]?.metrics?.total_revenue;
+  const cash = imp?.cash    ?? allFYData.finance?.data?.[fy]?.metrics?.cash_balance;
+  const csat = imp?.csat    ?? allFYData.operations?.data?.[fy]?.metrics?.customer_satisfaction;
   const churnRisk = csat != null ? (csat < 3.8 ? 'High' : csat < 4.2 ? 'Medium' : 'Low') : 'Medium';
   const items = [
     { label:'Revenue',          value: rev  ? '$'+(rev/1e6).toFixed(1)+'M' : '–',  sub:'AI Opportunity +$2.1M',  risk:'Medium', color:'blue'   },
@@ -872,8 +909,9 @@ function renderImpactGrid() {
 // ── Top AI Findings ───────────────────────────────────────────────
 function renderFindings() {
   const fy = String(selectedFY), prevFY = String(selectedFY-1);
-  // Use imported values when present, otherwise API data
-  const imp = _importedKPIs;
+  // Use per-FY imported values when present, otherwise API data
+  const imp     = _impFY(selectedFY);
+  const impPrev = _impFY(selectedFY - 1);
   const salesCur  = allFYData.sales?.data?.[fy]?.metrics;
   const salesPrev = allFYData.sales?.data?.[prevFY]?.metrics;
   const finCur    = allFYData.finance?.data?.[fy]?.metrics;
@@ -881,10 +919,17 @@ function renderFindings() {
 
   const findings = [];
 
-  // Revenue finding — imported vs API baseline, or year-over-year
-  if (imp && imp.revenue != null && salesCur) {
-    const chg = ((imp.revenue - salesCur.total_revenue)/salesCur.total_revenue*100);
-    findings.push({ title:'Revenue vs Baseline', detail:`Your data: $${(imp.revenue/1e6).toFixed(1)}M · ${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs demo baseline`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
+  // Revenue finding — imported YoY preferred, then vs API baseline, then API YoY
+  if (imp?.revenue != null) {
+    if (impPrev?.revenue != null) {
+      const chg = ((imp.revenue - impPrev.revenue)/impPrev.revenue*100);
+      findings.push({ title:'Revenue YoY', detail:`FY${selectedFY}: $${(imp.revenue/1e6).toFixed(1)}M · ${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs FY${selectedFY-1} (imported)`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
+    } else if (salesCur) {
+      const chg = ((imp.revenue - salesCur.total_revenue)/salesCur.total_revenue*100);
+      findings.push({ title:'Revenue vs Demo Baseline', detail:`Your data: $${(imp.revenue/1e6).toFixed(1)}M · ${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs demo baseline`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
+    } else {
+      findings.push({ title:'Revenue (Imported)', detail:`FY${selectedFY}: $${(imp.revenue/1e6).toFixed(1)}M`, sev:'Low' });
+    }
   } else if (salesCur && salesPrev) {
     const chg = ((salesCur.total_revenue - salesPrev.total_revenue)/salesPrev.total_revenue*100);
     findings.push({ title:'Revenue Anomaly', detail:`${chg>=0?'↑':'↓'}${Math.abs(chg).toFixed(1)}% vs prior FY`, sev: chg < -3 ? 'High' : chg > 5 ? 'Low' : 'Medium' });
@@ -901,7 +946,7 @@ function renderFindings() {
   // Cash — imported wins
   const cashVal = imp?.cash ?? null;
   if (cashVal != null) {
-    findings.push({ title:'Cash Flow', detail:`Cash: $${(cashVal/1e6).toFixed(1)}M (imported)`, sev:'Low' });
+    findings.push({ title:'Cash Flow', detail:`Cash: $${(cashVal/1e6).toFixed(1)}M (FY${selectedFY} imported)`, sev:'Low' });
   } else if (finCur) {
     findings.push({ title:'Cash Flow Risk', detail:`Runway ${finCur.runway_months.toFixed(1)} mo · Margin ${(finCur.gross_margin*100).toFixed(1)}%`, sev: finCur.runway_months<9?'High':finCur.runway_months<15?'Medium':'Low' });
   }
@@ -909,12 +954,12 @@ function renderFindings() {
   // Users — imported wins
   const usrVal = imp?.users ?? null;
   if (usrVal != null) {
-    findings.push({ title:'Active Users', detail:`${usrVal.toLocaleString()} users (imported)`, sev:'Low' });
+    findings.push({ title:'Active Users', detail:`${usrVal.toLocaleString()} users (FY${selectedFY} imported)`, sev:'Low' });
   }
 
   findings.push({ title:'Forecast Confidence', detail:'96% accuracy · 12 actions completed today', sev:'Low' });
   if (!imp && salesCur) findings.push({ title:'Pipeline Coverage', detail:`${salesCur.win_rate?((salesCur.win_rate||0.32)*100).toFixed(0)+'% win rate':'Strong pipeline detected'}`, sev:'Low' });
-  findings.push({ title:'AI Recommendation', detail: imp ? `Based on your data — review highest-priority signal above` : 'Increase Enterprise pricing 3% to recover margin', sev:'Medium' });
+  findings.push({ title:'AI Recommendation', detail: imp ? `Based on your FY${selectedFY} data — review highest-priority signal above` : 'Increase Enterprise pricing 3% to recover margin', sev:'Medium' });
 
   const sevColor = {High:'border-red-300 bg-red-50',Medium:'border-yellow-300 bg-yellow-50',Low:'border-emerald-300 bg-emerald-50'};
   const sevText  = {High:'text-red-600',Medium:'text-yellow-700',Low:'text-emerald-600'};
@@ -975,22 +1020,53 @@ function renderWorkflow() {
 function renderFYSnapshot() {
   const years = FYS.slice().reverse();
   years.forEach((y,i) => { document.getElementById(`th-fy${i}`).textContent = `FY ${y}`; });
+
+  // For each cell, prefer imported per-year data, then fall back to API data
+  function cell(y, getter, impGetter) {
+    const imp = _impFY(y);
+    if (imp) {
+      const v = impGetter(imp);
+      if (v != null) return `<span title="📥 Imported">${v} <span style="font-size:9px;opacity:.55;">📥</span></span>`;
+    }
+    return getter(String(y), allFYData);
+  }
+
   const rows = [
-    { label:'Revenue',        get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.total_revenue/1e6).toFixed(2)+'M':'–' },
-    { label:'Expected Rev.',  get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.expected_revenue/1e6).toFixed(2)+'M':'–' },
-    { label:'Cash Balance',   get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.cash_balance/1e6).toFixed(1)+'M':'–' },
-    { label:'Gross Margin',   get:(y,d)=>d.finance?.data?.[y] ?(d.finance.data[y].metrics.gross_margin*100).toFixed(1)+'%':'–' },
-    { label:'EBITDA',         get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.ebitda/1e6).toFixed(2)+'M':'–' },
-    { label:'Net Income',     get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.net_income/1e6).toFixed(2)+'M':'–' },
-    { label:'CSAT',           get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.customer_satisfaction.toFixed(1)+'/5':'–' },
-    { label:'NPS Score',      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.nps_score:'–' },
-    { label:'Active Users',   get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.active_users.toLocaleString():'–' },
-    { label:'System Uptime',  get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.system_uptime+'%':'–' },
+    { label:'Revenue',
+      get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.total_revenue/1e6).toFixed(2)+'M':'–',
+      imp:(i)=>i.revenue!=null?'$'+(i.revenue/1e6).toFixed(2)+'M':null },
+    { label:'Expected Rev.',
+      get:(y,d)=>d.sales?.data?.[y]   ?'$'+(d.sales.data[y].metrics.expected_revenue/1e6).toFixed(2)+'M':'–',
+      imp:()=>null },
+    { label:'Cash Balance',
+      get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.cash_balance/1e6).toFixed(1)+'M':'–',
+      imp:(i)=>i.cash!=null?'$'+(i.cash/1e6).toFixed(1)+'M':null },
+    { label:'Gross Margin',
+      get:(y,d)=>d.finance?.data?.[y] ?(d.finance.data[y].metrics.gross_margin*100).toFixed(1)+'%':'–',
+      imp:()=>null },
+    { label:'EBITDA',
+      get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.ebitda/1e6).toFixed(2)+'M':'–',
+      imp:()=>null },
+    { label:'Net Income',
+      get:(y,d)=>d.finance?.data?.[y] ?'$'+(d.finance.data[y].metrics.net_income/1e6).toFixed(2)+'M':'–',
+      imp:()=>null },
+    { label:'CSAT',
+      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.customer_satisfaction.toFixed(1)+'/5':'–',
+      imp:(i)=>i.csat!=null?i.csat.toFixed(1)+'/5':null },
+    { label:'NPS Score',
+      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.nps_score:'–',
+      imp:()=>null },
+    { label:'Active Users',
+      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.active_users.toLocaleString():'–',
+      imp:(i)=>i.users!=null?i.users.toLocaleString():null },
+    { label:'System Uptime',
+      get:(y,d)=>d.operations?.data?.[y]?d.operations.data[y].metrics.system_uptime+'%':'–',
+      imp:()=>null },
   ];
   document.getElementById('fy-snapshot-body').innerHTML = rows.map(row=>`
     <tr class="border-b border-gray-50 hover:bg-gray-50">
       <td class="py-2 px-3 font-medium text-gray-700">${row.label}</td>
-      ${years.map(y=>`<td class="py-2 px-3 text-center text-gray-800">${row.get(String(y),allFYData)}</td>`).join('')}
+      ${years.map(y=>`<td class="py-2 px-3 text-center text-gray-800">${cell(y, row.get, row.imp)}</td>`).join('')}
     </tr>`).join('');
 }
 
@@ -1140,45 +1216,95 @@ async function submitImport() {
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function extractCompanyKPIs(reportData) {
-  const parsed=reportData.parsed; if(!parsed) return null;
-  let revenue=null,cash=null,users=null,csat=null;
-  const sheets=parsed.sheets||[];
-  for(const sheet of sheets){
-    const stats=sheet.column_stats||{};
-    for(const[col,s] of Object.entries(stats)){
-      if(s.type!=='numeric') continue;
-      const c=col.toLowerCase().replace(/[^a-z]/g,'');
-      if(!revenue&&(c.includes('revenue')||c.includes('sales')||c.includes('income'))) revenue=s.sum||s.mean;
-      if(!cash&&(c.includes('cash')||c.includes('balance')||c.includes('liquidity'))) cash=s.sum||s.mean;
-      if(!users&&(c.includes('user')||c.includes('customer')||c.includes('client'))) users=Math.round(s.sum||s.mean);
-      if(!csat&&(c.includes('csat')||c.includes('satisfaction')||c.includes('nps')||c.includes('score'))) csat=s.mean;
+  const parsed = reportData.parsed; if (!parsed) return null;
+  const sheets = parsed.sheets || [];
+  const CY = new Date().getFullYear();
+  const validYears = new Set([CY, CY-1, CY-2].map(String));
+
+  // ── Try multi-year: look for a Year / FY column in row data ──────
+  const yearBuckets = {};  // { "2025": { revenue, cash, users, csat, count } }
+
+  for (const sheet of sheets) {
+    const rows = sheet.rows || [];
+    if (!rows.length) continue;
+    const headers = Object.keys(rows[0]).map(h => h.toLowerCase().trim());
+    const yearCol  = Object.keys(rows[0]).find(h => /^(year|fy|fiscal.?year)$/i.test(h.trim()));
+    const revCol   = Object.keys(rows[0]).find(h => /revenue|sales|income/i.test(h));
+    const cashCol  = Object.keys(rows[0]).find(h => /cash|balance|liquidity/i.test(h));
+    const userCol  = Object.keys(rows[0]).find(h => /user|customer|client/i.test(h));
+    const csatCol  = Object.keys(rows[0]).find(h => /csat|satisfaction|nps|score/i.test(h));
+
+    if (yearCol) {
+      // Multi-year: aggregate per year
+      for (const row of rows) {
+        const yr = String(row[yearCol]).trim().replace(/^FY/i,'');
+        if (!validYears.has(yr)) continue;
+        if (!yearBuckets[yr]) yearBuckets[yr] = { revenue:0, cash:0, users:0, csatSum:0, csatN:0, count:0 };
+        const b = yearBuckets[yr];
+        if (revCol  && !isNaN(+row[revCol]))  b.revenue += +row[revCol];
+        if (cashCol && !isNaN(+row[cashCol])) b.cash    += +row[cashCol];
+        if (userCol && !isNaN(+row[userCol])) b.users   += +row[userCol];
+        if (csatCol && !isNaN(+row[csatCol])){ b.csatSum += +row[csatCol]; b.csatN++; }
+        b.count++;
+      }
     }
   }
-  if(revenue===null&&cash===null) return null;
-  return {revenue,cash,users,csat,filename:reportData.filename};
+
+  // Build per-year map if we found year buckets
+  if (Object.keys(yearBuckets).length > 0) {
+    const years = {};
+    for (const [yr, b] of Object.entries(yearBuckets)) {
+      years[yr] = {
+        revenue: b.revenue > 0 ? b.revenue : null,
+        cash:    b.cash    > 0 ? b.cash    : null,
+        users:   b.users   > 0 ? Math.round(b.users) : null,
+        csat:    b.csatN   > 0 ? +(b.csatSum / b.csatN).toFixed(2) : null,
+      };
+    }
+    return { years, filename: reportData.filename };
+  }
+
+  // ── Fallback: single-year from column_stats (no Year column) ─────
+  let revenue=null, cash=null, users=null, csat=null;
+  for (const sheet of sheets) {
+    const stats = sheet.column_stats || {};
+    for (const [col, s] of Object.entries(stats)) {
+      if (s.type !== 'numeric') continue;
+      const c = col.toLowerCase().replace(/[^a-z]/g,'');
+      if (!revenue && (c.includes('revenue')||c.includes('sales')||c.includes('income'))) revenue = s.sum||s.mean;
+      if (!cash    && (c.includes('cash')||c.includes('balance')||c.includes('liquidity'))) cash = s.sum||s.mean;
+      if (!users   && (c.includes('user')||c.includes('customer')||c.includes('client'))) users = Math.round(s.sum||s.mean);
+      if (!csat    && (c.includes('csat')||c.includes('satisfaction')||c.includes('nps')||c.includes('score'))) csat = s.mean;
+    }
+  }
+  if (revenue === null && cash === null) return null;
+  // Treat as current FY only
+  const years = { [String(CY)]: { revenue, cash, users, csat } };
+  return { years, filename: reportData.filename };
 }
 
 function applyCompanyData(data) {
+  // Normalise legacy flat format { revenue, cash, users, csat } → per-FY shape
+  if (data.revenue !== undefined && !data.years) {
+    const CY = new Date().getFullYear();
+    data = { years: { [String(CY)]: { revenue: data.revenue, cash: data.cash, users: data.users, csat: data.csat } }, filename: data.filename };
+  }
+
   // Store in override — all render functions will read from here first
   _importedKPIs = data;
 
   // Persist to localStorage so sub-pages (finance, sales, operations) pick it up
   try { localStorage.setItem('coo-imported-kpis', JSON.stringify(data)); } catch {}
 
-  const fmt=(n,d=2)=>n!=null?'$'+(n/1e6).toFixed(d)+'M':null;
-  if(data.revenue!=null){const el=document.getElementById('kpi-revenue');if(el){el.textContent=fmt(data.revenue);}}
-  if(data.cash!=null){const el=document.getElementById('kpi-cash');if(el){el.textContent=fmt(data.cash,1);}}
-  if(data.users!=null){const el=document.getElementById('kpi-users');if(el){el.textContent=data.users.toLocaleString();}}
-  if(data.csat!=null){const el=document.getElementById('kpi-csat');if(el){el.textContent=data.csat.toFixed(1)+'/5.0';}}
-
   // Re-render ALL sections with imported data
-  renderExecutiveBrief(); renderImpactGrid(); renderFindings();
+  renderKPIs(); renderFYSnapshot(); renderImpactGrid(); renderFindings();
 
   // Remove any existing import banner before adding new one
   document.querySelectorAll('.import-banner').forEach(b=>b.remove());
+  const fyCount = Object.keys(data.years||{}).length;
   const banner=document.createElement('div');
   banner.className='import-banner bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-xs text-purple-700 mb-4 flex justify-between items-center';
-  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> — <button onclick="_importedKPIs=null;try{localStorage.removeItem('coo-imported-kpis');}catch{}this.closest('.import-banner').remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
+  banner.innerHTML=`📥 Showing company data from <strong class="mx-1">${data.filename}</strong> (${fyCount} fiscal year${fyCount!==1?'s':''}) — <button onclick="_importedKPIs=null;try{localStorage.removeItem('coo-imported-kpis');}catch{}this.closest('.import-banner').remove();loadAllFYData();" class="underline ml-1">Revert to demo</button>`;
   const main=document.querySelector('.max-w-screen-xl');
   if(main) main.prepend(banner);
 }
@@ -1194,8 +1320,9 @@ async function submitAIImport() {
     const d=await r.json();
     if(!r.ok) return showImportStatus('error',d.detail||'AI import failed.');
     const kpis=d.kpis;
-    if(!kpis||(kpis.revenue==null&&kpis.cash==null)) return showImportStatus('error','AI could not extract KPI values. Try: "Revenue $10M, Cash $2M, 5000 users, CSAT 4.2"');
-    applyCompanyData({...kpis,filename:'AI prompt'});
+    if(!kpis||(kpis.revenue==null&&kpis.cash==null&&!kpis.years)) return showImportStatus('error','AI could not extract KPI values. Try including FY labels: "FY2025: Revenue $10M, Cash $2M…"');
+    // kpis may already have a years map (multi-year AI) or be flat (single year)
+    applyCompanyData({...kpis, filename:'AI prompt'});
     showImportStatus('success',`✅ AI extracted KPIs and updated the dashboard.<br><span class="text-xs">${d.extracted_text||''}</span>`);
     btnText.textContent='✨ Import with AI';
   } catch(e) { btnText.textContent='✨ Import with AI'; showImportStatus('error','AI import failed: '+e.message); }
@@ -1208,17 +1335,24 @@ function showImportStatus(type,html){
 
 // ── Sample Excel ──────────────────────────────────────────────────
 function downloadSampleExcel() {
+  const CY = new Date().getFullYear();
   const rows=[
-    {Revenue:4200000,'Cash Balance':1850000,'Active Users':12400,'CSAT Score':4.3,Region:'North America',Quarter:'Q1'},
-    {Revenue:4750000,'Cash Balance':2100000,'Active Users':13800,'CSAT Score':4.5,Region:'North America',Quarter:'Q2'},
-    {Revenue:5100000,'Cash Balance':2450000,'Active Users':15200,'CSAT Score':4.4,Region:'Europe',Quarter:'Q3'},
-    {Revenue:5600000,'Cash Balance':2700000,'Active Users':17000,'CSAT Score':4.6,Region:'Europe',Quarter:'Q4'},
-    {Revenue:3800000,'Cash Balance':1600000,'Active Users':10900,'CSAT Score':4.1,Region:'Asia Pacific',Quarter:'Q1'},
-    {Revenue:4100000,'Cash Balance':1750000,'Active Users':11500,'CSAT Score':4.2,Region:'Asia Pacific',Quarter:'Q2'},
+    // FY current year
+    {Year:CY,   Revenue:19650000,'Cash Balance':6050000,'Active Users':42600,'CSAT Score':4.5,Region:'North America',Quarter:'Q1-Q4'},
+    {Year:CY,   Revenue:19650000,'Cash Balance':6050000,'Active Users':42600,'CSAT Score':4.5,Region:'Europe',       Quarter:'Q1-Q4'},
+    {Year:CY,   Revenue:19650000,'Cash Balance':6050000,'Active Users':42600,'CSAT Score':4.5,Region:'Asia Pacific', Quarter:'Q1-Q4'},
+    // FY previous year
+    {Year:CY-1, Revenue:17200000,'Cash Balance':5100000,'Active Users':36800,'CSAT Score':4.3,Region:'North America',Quarter:'Q1-Q4'},
+    {Year:CY-1, Revenue:17200000,'Cash Balance':5100000,'Active Users':36800,'CSAT Score':4.3,Region:'Europe',       Quarter:'Q1-Q4'},
+    {Year:CY-1, Revenue:17200000,'Cash Balance':5100000,'Active Users':36800,'CSAT Score':4.3,Region:'Asia Pacific', Quarter:'Q1-Q4'},
+    // FY two years ago
+    {Year:CY-2, Revenue:14800000,'Cash Balance':4200000,'Active Users':30500,'CSAT Score':4.1,Region:'North America',Quarter:'Q1-Q4'},
+    {Year:CY-2, Revenue:14800000,'Cash Balance':4200000,'Active Users':30500,'CSAT Score':4.1,Region:'Europe',       Quarter:'Q1-Q4'},
+    {Year:CY-2, Revenue:14800000,'Cash Balance':4200000,'Active Users':30500,'CSAT Score':4.1,Region:'Asia Pacific', Quarter:'Q1-Q4'},
   ];
   const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Company Data');
-  XLSX.writeFile(wb,'sample_company_data.xlsx');
+  XLSX.writeFile(wb,'sample_company_data_3yr.xlsx');
 }
 
 // ── Exec brief compat stubs ────────────────────────────────────────
@@ -1246,7 +1380,15 @@ function cycleTheme() {
 (function restoreImportedKPIs(){
   try {
     const raw = localStorage.getItem('coo-imported-kpis');
-    if (raw) { const d = JSON.parse(raw); if (d) { _importedKPIs = d; } }
+    if (!raw) return;
+    let d = JSON.parse(raw);
+    if (!d) return;
+    // Normalise legacy flat format saved by older code
+    if (d.revenue !== undefined && !d.years) {
+      const CY = new Date().getFullYear();
+      d = { years: { [String(CY)]: { revenue: d.revenue, cash: d.cash, users: d.users, csat: d.csat } }, filename: d.filename };
+    }
+    _importedKPIs = d;
   } catch {}
 })();
 
