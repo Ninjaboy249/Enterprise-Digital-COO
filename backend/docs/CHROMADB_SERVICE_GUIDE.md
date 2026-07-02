@@ -344,4 +344,4 @@ The test suite covers:
 
 ---
 
-**Made with Bob**
+**Made with Codex**

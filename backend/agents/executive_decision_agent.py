@@ -678,4 +678,4 @@ Output JSON with:
 # Export
 __all__ = ["ExecutiveDecisionAgent", "ExecutiveDecision"]
 
-# Made with Bob
+# Made with Codex

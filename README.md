@@ -126,6 +126,41 @@ python backend/main.py  # Start API
 npm start  # Start frontend
 ```
 
+## 🛠️ Node.js Developer Tooling
+
+A lightweight Node.js utility layer lives in the `tools/` directory.
+It does **not** replace or affect any Python backend, database, or UI — it is purely for developer convenience.
+
+### Setup
+
+```bash
+cd tools
+npm install
+```
+
+### Available Commands
+
+| Command | Description |
+|---|---|
+| `npm run health` | Ping all FastAPI endpoints and show a health report |
+| `npm run validate-env` | Check `backend/.env` against `backend/.env.example` and flag missing / placeholder keys |
+| `npm run watch-logs` | Tail `backend/app.log` and pretty-print JSON log lines in real time |
+
+### Examples
+
+```bash
+# Health check against a remote server
+node tools/health-check.js --host https://your-deploy.example.com
+
+# Validate env before deploying
+node tools/env-validator.js
+
+# Watch logs from CI output piped in
+cat backend/app.log | node tools/log-watcher.js --stdin
+```
+
+> **Requires Node.js 18+**
+
 ## 📝 License
 
 MIT License - Built for Business Transformation Hackathon 2026

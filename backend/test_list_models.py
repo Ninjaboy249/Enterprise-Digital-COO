@@ -60,4 +60,4 @@ except Exception as e:
     print(f"[ERROR] {e}")
     sys.exit(1)
 
-# Made with Bob
+# Made with Codex

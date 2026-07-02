@@ -1,0 +1,22 @@
+{
+  "name": "enterprise-digital-coo-tools",
+  "version": "1.0.0",
+  "description": "Node.js developer utilities for the Enterprise Digital COO project (health checks, env validation, log watching). Does NOT replace or affect the Python/FastAPI backend or any UI.",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "health": "node health-check.js",
+    "validate-env": "node env-validator.js",
+    "watch-logs": "node log-watcher.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^3.3.2"
+  },
+  "type": "module",
+  "author": "Enterprise Digital COO",
+  "license": "MIT"
+}

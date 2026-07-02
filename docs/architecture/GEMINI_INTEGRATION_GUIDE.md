@@ -340,4 +340,4 @@ This guide provides production-ready Gemini integration for the Enterprise Digit
 
 ---
 
-**Made with Bob**
+**Made with Codex**

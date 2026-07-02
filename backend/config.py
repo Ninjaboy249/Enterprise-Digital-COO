@@ -148,4 +148,4 @@ def get_settings() -> Settings:
 # Global settings instance
 settings = get_settings()
 
-# Made with Bob
+# Made with Codex

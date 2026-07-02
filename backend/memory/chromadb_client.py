@@ -587,4 +587,4 @@ __all__ = [
     "close_chromadb",
 ]
 
-# Made with Bob
+# Made with Codex

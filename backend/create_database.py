@@ -49,4 +49,4 @@ if __name__ == "__main__":
     else:
         print("\n[ERROR] Please check your PostgreSQL configuration")
 
-# Made with Bob
+# Made with Codex

@@ -712,4 +712,4 @@ CREATE TRIGGER update_workflows_updated_at BEFORE UPDATE ON workflows
 -- END OF SCHEMA
 -- ============================================================================
 
--- Made with Bob
+-- Made with Codex

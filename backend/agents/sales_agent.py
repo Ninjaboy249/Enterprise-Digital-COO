@@ -233,4 +233,4 @@ class SalesAgent(BaseAgent):
 # Create singleton instance
 sales_agent = SalesAgent()
 
-# Made with Bob
+# Made with Codex

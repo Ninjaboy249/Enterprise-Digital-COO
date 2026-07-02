@@ -434,4 +434,4 @@ async def close_chromadb_service():
         _chromadb_service = None
 
 
-# Made with Bob
+# Made with Codex

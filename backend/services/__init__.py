@@ -15,4 +15,4 @@ __all__ = [
     "close_chromadb_service"
 ]
 
-# Made with Bob
+# Made with Codex

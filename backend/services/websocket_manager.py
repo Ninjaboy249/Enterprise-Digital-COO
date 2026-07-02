@@ -132,4 +132,4 @@ class WebSocketManager:
 # Create singleton instance
 websocket_manager = WebSocketManager()
 
-# Made with Bob
+# Made with Codex
