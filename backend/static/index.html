@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enterprise Digital COO — AI Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     /* ═══════════════════════════════════════════════════════════════
@@ -180,6 +181,8 @@
     .chat-msg-user { background:var(--chat-user-bg); border-radius:12px 12px 2px 12px; color:var(--chat-user-fg); }
     .chat-msg-bot  { background:var(--chat-bot-bg);  border-radius:12px 12px 12px 2px; color:var(--chat-bot-fg); }
     .wf-arrow { width:2px; height:22px; background:linear-gradient(#7c3aed,#a78bfa); margin:0 auto; }
+    .icon-inline { width:1em; height:1em; display:inline-block; vertical-align:-0.14em; }
+    .icon-btn { width:1rem; height:1rem; flex-shrink:0; }
 
     /* Theme toggle button */
     #theme-toggle { cursor:pointer; font-size:16px; background:rgba(255,255,255,.15);
@@ -198,7 +201,7 @@
 <header class="gradient-bg text-white shadow-xl">
   <div class="max-w-screen-xl mx-auto px-5 py-5 flex flex-wrap justify-between items-center gap-3">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight">🎯 Enterprise Digital COO</h1>
+      <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2"><i data-lucide="radar" class="w-6 h-6"></i> Enterprise Digital COO</h1>
       <p class="text-xs opacity-75 mt-0.5">AI Command Center · Multi-Agent Business Intelligence</p>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
@@ -211,7 +214,7 @@
       <span id="last-updated" class="text-xs opacity-60 hidden md:block"></span>
       <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
       <button id="chat-toggle" class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-        💬 Ask COO
+        <span class="inline-flex items-center gap-2"><i data-lucide="message-circle" class="icon-btn"></i> Ask COO</span>
       </button>
     </div>
   </div>
@@ -243,23 +246,26 @@
         <h2 class="text-xl font-bold text-gray-800">Experience the AI COO in three clicks</h2>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           <button onclick="runScenarioByTitle('Revenue Crash')" class="text-left rounded-xl border border-red-200 bg-red-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <i data-lucide="trending-down" class="w-5 h-5 text-red-600 mb-2"></i>
             <span class="block text-xs font-bold text-red-600 uppercase">1. Click</span>
             <span class="block font-bold text-gray-800 mt-1">Revenue Crash</span>
           </button>
-          <button onclick="heroQuick('What happened to revenue and what should we do next?')" class="text-left rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 hover:shadow-md transition-shadow">
+          <button onclick="goToAskCOO()" class="text-left rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <i data-lucide="bot-message-square" class="w-5 h-5 text-purple-600 mb-2"></i>
             <span class="block text-xs font-bold text-purple-600 uppercase">2. Ask</span>
             <span class="block font-bold text-gray-800 mt-1">AI COO</span>
           </button>
           <button onclick="window.open('/static/finance.html?sim=revenue-crash','_blank')" class="text-left rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <i data-lucide="layout-dashboard" class="w-5 h-5 text-emerald-600 mb-2"></i>
             <span class="block text-xs font-bold text-emerald-600 uppercase">3. Open</span>
             <span class="block font-bold text-gray-800 mt-1">Finance/Sales</span>
           </button>
         </div>
         <div class="flex flex-wrap items-center gap-2 mt-4 text-sm">
           <span class="text-gray-500 font-medium">Try:</span>
-          <button onclick="runScenarioByTitle('Revenue Crash')" class="px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 font-semibold">Revenue Crash</button>
-          <button onclick="runScenarioByTitle('Customer Churn')" class="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-semibold">Customer Churn</button>
-          <button onclick="runScenarioByTitle('Cash Crisis')" class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold">Cash Crisis</button>
+          <button onclick="runScenarioByTitle('Revenue Crash')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 font-semibold"><i data-lucide="trending-down" class="icon-btn"></i> Revenue Crash</button>
+          <button onclick="runScenarioByTitle('Customer Churn')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-semibold"><i data-lucide="users" class="icon-btn"></i> Customer Churn</button>
+          <button onclick="runScenarioByTitle('Cash Crisis')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold"><i data-lucide="circle-dollar-sign" class="icon-btn"></i> Cash Crisis</button>
         </div>
       </div>
       <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 min-h-[220px]">
@@ -323,7 +329,7 @@
 
   <!-- ── 1. ASK COO BAR ──────────────────────────────────────── -->
   <div class="card p-5" style="background:linear-gradient(135deg,#1e1b4b,#312e81);">
-    <p class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-2">✨ Ask Enterprise COO</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-2 flex items-center gap-2"><i data-lucide="bot" class="icon-btn"></i> Ask Enterprise COO</p>
     <div class="flex gap-3">
       <input id="hero-ask-input" type="text" placeholder="What happened to revenue this quarter?"
              class="flex-1 rounded-xl px-4 py-3 text-sm bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -347,7 +353,7 @@
   <div id="exec-brief" class="card overflow-hidden" style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 55%,#1e3a5f 100%);">
     <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/10">
       <div class="flex items-center gap-2">
-        <span class="text-xl">🧠</span>
+        <i data-lucide="brain" class="w-5 h-5 text-purple-200"></i>
         <span class="text-white font-bold text-base tracking-tight">Executive Brief</span>
         <span id="eb-fy-badge" class="text-xs bg-white/15 text-purple-200 px-2.5 py-0.5 rounded-full font-medium ml-1"></span>
       </div>
@@ -413,7 +419,7 @@
 
     <!-- AI Workforce -->
     <div class="card p-6">
-      <h2 class="font-bold text-gray-800 mb-4">🤖 AI Workforce</h2>
+      <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="bot" class="icon-btn text-purple-600"></i> AI Workforce</h2>
       <div class="grid grid-cols-2 gap-3" id="agent-grid">
         <!-- filled by JS -->
       </div>
@@ -452,7 +458,7 @@
 
   <!-- ── 6. DEMO SCENARIOS ──────────────────────────────────────── -->
   <div class="card p-6">
-    <h2 class="font-bold text-gray-800 mb-1">🎬 Demo Scenarios</h2>
+    <h2 class="font-bold text-gray-800 mb-1 flex items-center gap-2"><i data-lucide="clapperboard" class="icon-btn text-purple-600"></i> Demo Scenarios</h2>
     <p class="text-xs text-gray-500 mb-4">Click a scenario to simulate a real business event across all dashboards</p>
     <div class="flex flex-wrap gap-3" id="scenario-btns">
       <!-- filled by JS -->
@@ -469,7 +475,7 @@
 
     <!-- 3-Year FY Snapshot -->
     <div class="card p-6 lg:col-span-2">
-      <h2 class="font-bold text-gray-700 mb-4">📊 3-Year FY Snapshot</h2>
+      <h2 class="font-bold text-gray-700 mb-4 flex items-center gap-2"><i data-lucide="chart-no-axes-combined" class="icon-btn text-purple-600"></i> 3-Year FY Snapshot</h2>
       <div class="overflow-x-auto">
         <table class="w-full text-sm" id="fy-snapshot-table">
           <thead>
@@ -497,7 +503,7 @@
       <div class="card executive-nav-card p-6 flex flex-col border-2 border-purple-300 sm:col-span-2 lg:col-span-1">
         <div class="flex items-center mb-4">
           <div class="bg-purple-600 p-3 rounded-xl">
-            <span class="text-white text-xl">🧠</span>
+            <i data-lucide="brain" class="w-5 h-5 text-white"></i>
           </div>
           <div class="ml-3">
             <h3 class="text-lg font-bold text-purple-800">AI Executive</h3>
@@ -515,7 +521,7 @@
       <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
         <div class="flex items-center mb-3">
           <div class="bg-blue-100 p-3 rounded-xl">
-            <span class="text-blue-600 text-xl">📊</span>
+            <i data-lucide="chart-no-axes-combined" class="w-5 h-5 text-blue-600"></i>
           </div>
           <h3 class="ml-3 text-base font-semibold text-gray-800">Sales</h3>
         </div>
@@ -527,7 +533,7 @@
       <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
         <div class="flex items-center mb-3">
           <div class="bg-green-100 p-3 rounded-xl">
-            <span class="text-green-600 text-xl">💰</span>
+            <i data-lucide="circle-dollar-sign" class="w-5 h-5 text-green-600"></i>
           </div>
           <h3 class="ml-3 text-base font-semibold text-gray-800">Finance</h3>
         </div>
@@ -539,7 +545,7 @@
       <div class="card p-6 flex flex-col hover:shadow-lg transition-shadow">
         <div class="flex items-center mb-3">
           <div class="bg-purple-100 p-3 rounded-xl">
-            <span class="text-purple-600 text-xl">⚙️</span>
+            <i data-lucide="settings" class="w-5 h-5 text-purple-600"></i>
           </div>
           <h3 class="ml-3 text-base font-semibold text-gray-800">Operations</h3>
         </div>
@@ -626,7 +632,7 @@
     </div>
     <div class="flex border border-gray-200 rounded-lg overflow-hidden mb-4 text-sm font-medium">
       <button id="import-tab-file" onclick="switchImportTab('file')" class="flex-1 py-2 bg-purple-600 text-white transition-colors">📁 Upload File</button>
-      <button id="import-tab-ai"   onclick="switchImportTab('ai')"   class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">✨ Ask AI</button>
+      <button id="import-tab-ai"   onclick="switchImportTab('ai')"   class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="sparkles" class="icon-btn"></i> Ask AI</button>
     </div>
 
     <!-- Import progress steps (shown during upload) -->
@@ -650,7 +656,7 @@
     <div id="import-section-file">
       <p class="text-sm text-gray-600 mb-3">Upload an Excel file with a <strong>Year</strong> column to automatically populate all 3 fiscal years, or use a single-year file for the current FY only.</p>
       <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-500 space-y-1">
-        <p>📊 <strong>Detected columns:</strong> Year · Revenue / Cash / Users / CSAT</p>
+        <p><i data-lucide="table-properties" class="icon-inline"></i> <strong>Detected columns:</strong> Year · Revenue / Cash / Users / CSAT</p>
         <p>📅 <strong>Multi-year:</strong> Add a <code>Year</code> column (e.g. 2023, 2024, 2025) to fill all 3 FYs</p>
         <p>📁 <strong>Supported:</strong> .xlsx, .xls, .pbix</p>
       </div>
@@ -670,7 +676,7 @@
                 placeholder="Describe your company data here — include FY labels for multi-year support…"
                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
       <button onclick="submitAIImport()" class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
-        <span id="ai-import-btn-text">✨ Import with AI</span>
+        <span id="ai-import-btn-text" class="inline-flex items-center justify-center gap-2"><i data-lucide="sparkles" class="icon-btn"></i> Import with AI</span>
       </button>
     </div>
 
@@ -696,6 +702,14 @@ let activeScenario = null;
 // Per-FY imported data: { filename, years: { "2025":{revenue,cash,users,csat}, ... } } | null
 let _importedKPIs = null;
 
+function icon(name, className = 'icon-btn') {
+  return `<i data-lucide="${name}" class="${className}"></i>`;
+}
+
+function refreshIcons() {
+  if (window.lucide) window.lucide.createIcons();
+}
+
 // Helper: get KPIs for a specific fiscal year from imported data
 function _impFY(fy) {
   if (!_importedKPIs?.years) return null;
@@ -711,6 +725,7 @@ async function init() {
   renderActions();
   renderScenarioBtns();
   await loadAllFYData();
+  refreshIcons();
   setTimeout(replayInvestigation, 800);
 }
 
@@ -952,17 +967,17 @@ function ebSimulate() {
 
 // ── AI Investigation ──────────────────────────────────────────────
 const INVESTIGATION_STEPS = [
-  { icon:'🔴', text:'Revenue anomaly detected',        delay:0,    type:'alert' },
-  { icon:'🤖', text:'Sales Agent investigating…',      delay:600,  type:'agent' },
-  { icon:'✓',  text:'Pipeline data checked',           delay:1400, type:'ok'    },
-  { icon:'✓',  text:'Regional breakdown analysed',     delay:2000, type:'ok'    },
-  { icon:'🤖', text:'Finance Agent investigating…',    delay:2600, type:'agent' },
-  { icon:'✓',  text:'Margin impact calculated',        delay:3400, type:'ok'    },
-  { icon:'🤖', text:'Operations Agent investigating…', delay:4000, type:'agent' },
-  { icon:'✓',  text:'Inventory &amp; CSAT verified',   delay:4700, type:'ok'    },
-  { icon:'🧠', text:'Root Cause: Enterprise renewals dropped — Q3 Europe region underperformed by 18%', delay:5400, type:'root' },
-  { icon:'💡', text:'Recommendation: Increase Enterprise discounts 5% and fast-track Q4 pipeline', delay:6200, type:'rec' },
-  { icon:'📊', text:'Confidence: 94%',                 delay:6800, type:'conf'  },
+  { icon:'circle-alert', text:'Revenue anomaly detected',        delay:0,    type:'alert' },
+  { icon:'bot', text:'Sales Agent investigating…',      delay:600,  type:'agent' },
+  { icon:'check',  text:'Pipeline data checked',           delay:1400, type:'ok'    },
+  { icon:'check',  text:'Regional breakdown analysed',     delay:2000, type:'ok'    },
+  { icon:'bot', text:'Finance Agent investigating…',    delay:2600, type:'agent' },
+  { icon:'check',  text:'Margin impact calculated',        delay:3400, type:'ok'    },
+  { icon:'bot', text:'Operations Agent investigating…', delay:4000, type:'agent' },
+  { icon:'check',  text:'Inventory &amp; CSAT verified',   delay:4700, type:'ok'    },
+  { icon:'brain', text:'Root Cause: Enterprise renewals dropped — Q3 Europe region underperformed by 18%', delay:5400, type:'root' },
+  { icon:'lightbulb', text:'Recommendation: Increase Enterprise discounts 5% and fast-track Q4 pipeline', delay:6200, type:'rec' },
+  { icon:'chart-no-axes-combined', text:'Confidence: 94%',                 delay:6800, type:'conf'  },
 ];
 
 let _invTimers = [];
@@ -984,28 +999,29 @@ function replayInvestigationSteps(steps) {
               :step.type==='agent'?'bg-blue-50 border-blue-200 text-blue-700'
               :'bg-gray-50 border-gray-200 text-gray-700';
     row.className = `inv-step flex items-start gap-2.5 border rounded-xl px-3.5 py-2.5 ${bg}`;
-    row.innerHTML = `<span class="text-base flex-shrink-0 mt-0.5">${step.icon}</span><span class="text-xs font-medium leading-relaxed">${step.text}</span>`;
+    row.innerHTML = `<span class="flex-shrink-0 mt-0.5">${icon(step.icon, 'w-4 h-4')}</span><span class="text-xs font-medium leading-relaxed">${step.text}</span>`;
     el.appendChild(row);
     const t = setTimeout(() => row.classList.add('show'), step.delay);
     _invTimers.push(t);
   });
+  refreshIcons();
 }
 
 // ── Agent Grid ────────────────────────────────────────────────────
 const AGENTS = [
-  { name:'CEO Agent',        icon:'👔', status:'online' },
-  { name:'Sales Agent',      icon:'📊', status:'online' },
-  { name:'Finance Agent',    icon:'💰', status:'online' },
-  { name:'HR Agent',         icon:'👥', status:'online' },
-  { name:'Operations Agent', icon:'⚙️', status:'online' },
-  { name:'Procurement Agent',icon:'📦', status:'online' },
-  { name:'Risk Agent',       icon:'🛡️', status:'online' },
-  { name:'Executive Agent',  icon:'🧠', status:'online' },
+  { name:'CEO Agent',        icon:'briefcase-business', status:'online' },
+  { name:'Sales Agent',      icon:'chart-no-axes-combined', status:'online' },
+  { name:'Finance Agent',    icon:'circle-dollar-sign', status:'online' },
+  { name:'HR Agent',         icon:'users', status:'online' },
+  { name:'Operations Agent', icon:'settings', status:'online' },
+  { name:'Procurement Agent',icon:'package', status:'online' },
+  { name:'Risk Agent',       icon:'shield-alert', status:'online' },
+  { name:'Executive Agent',  icon:'brain', status:'online' },
 ];
 function renderAgentGrid() {
   document.getElementById('agent-grid').innerHTML = AGENTS.map(a => `
     <div class="flex items-center gap-2.5 bg-gray-50 rounded-xl px-3 py-2.5">
-      <span class="text-lg">${a.icon}</span>
+      <span class="text-purple-600">${icon(a.icon, 'w-5 h-5')}</span>
       <div class="min-w-0">
         <p class="text-xs font-semibold text-gray-700 truncate">${a.name}</p>
         <div class="flex items-center gap-1 mt-0.5">
@@ -1014,6 +1030,7 @@ function renderAgentGrid() {
         </div>
       </div>
     </div>`).join('');
+  refreshIcons();
 }
 
 // ── Today's Actions ───────────────────────────────────────────────
@@ -1147,7 +1164,7 @@ function renderFindings() {
 // ── Demo Scenarios ────────────────────────────────────────────────
 const SCENARIOS = [
   {
-    label:'💥 Revenue Crash', title:'Revenue Crash', tone:'red',
+    label:'Revenue Crash', title:'Revenue Crash', icon:'trending-down', tone:'red',
     signal:'Revenue dropped 18.4%', cause:'Root cause: 12 enterprise renewals stalled after delivery delays and competitor discounting.',
     impact:'-$2.8M', impactSub:'Projected FY revenue exposure', opp:'+$1.6M', save:'$420K', confidence:96,
     action:'Activate executive save desk, approve tactical discounts, and fast-track delayed enterprise deliveries.',
@@ -1167,7 +1184,7 @@ const SCENARIOS = [
     ],
   },
   {
-    label:'👥 Customer Churn', title:'Customer Churn', tone:'purple',
+    label:'Customer Churn', title:'Customer Churn', icon:'users', tone:'purple',
     signal:'CSAT fell to 3.1/5.0', cause:'Root cause: support backlog and product quality issues hit high-value accounts.',
     impact:'$3.2M', impactSub:'ARR at risk over 90 days', opp:'+$1.1M', save:'$860K', confidence:94,
     action:'Launch retention campaign, assign executive sponsors, and fix the top three ticket categories.',
@@ -1187,7 +1204,7 @@ const SCENARIOS = [
     ],
   },
   {
-    label:'💸 Cash Crisis', title:'Cash Crisis', tone:'amber',
+    label:'Cash Crisis', title:'Cash Crisis', icon:'circle-dollar-sign', tone:'amber',
     signal:'Cash runway 4.2 months', cause:'Root cause: receivables delay combined with rising support and inventory carrying costs.',
     impact:'4.2 mo', impactSub:'Available cash runway', opp:'+$900K', save:'$1.4M', confidence:95,
     action:'Accelerate collections, defer non-critical spend, and initiate bridge financing options.',
@@ -1207,7 +1224,7 @@ const SCENARIOS = [
     ],
   },
   {
-    label:'📦 Supply Chain Delay', title:'Supply Chain Delay', tone:'orange',
+    label:'Supply Chain Delay', title:'Supply Chain Delay', icon:'package-x', tone:'orange',
     signal:'Inventory gap detected', cause:'Root cause: Supplier-X quality failures delayed priority shipments and created excess unusable stock.',
     impact:'$1.9M', impactSub:'Delivery and inventory exposure', opp:'+$740K', save:'$510K', confidence:93,
     action:'Switch to secondary suppliers, quarantine defective stock, and notify affected customers.',
@@ -1227,7 +1244,7 @@ const SCENARIOS = [
     ],
   },
   {
-    label:'🛡 Cyber Attack', title:'Cyber Attack', tone:'blue',
+    label:'Cyber Attack', title:'Cyber Attack', icon:'shield-alert', tone:'blue',
     signal:'Security anomaly found', cause:'Root cause: suspicious login burst against finance systems and unusual data export pattern.',
     impact:'22/25', impactSub:'Enterprise risk score', opp:'Protected', save:'$2.0M', confidence:92,
     action:'Isolate affected systems, rotate credentials, and engage incident response protocol.',
@@ -1247,7 +1264,7 @@ const SCENARIOS = [
     ],
   },
   {
-    label:'🚀 Product Launch', title:'Product Launch', tone:'emerald',
+    label:'Product Launch', title:'Product Launch', icon:'rocket', tone:'emerald',
     signal:'New revenue stream live', cause:'Opportunity: launch demand is above forecast, but onboarding capacity is becoming the constraint.',
     impact:'+$3.4M', impactSub:'Projected FY upside', opp:'+$2.2M', save:'$300K', confidence:97,
     action:'Accelerate marketing spend, expand onboarding capacity, and protect support SLAs.',
@@ -1270,9 +1287,10 @@ const SCENARIOS = [
 function renderScenarioBtns() {
   document.getElementById('scenario-btns').innerHTML = SCENARIOS.map((s,i) => `
     <button onclick="runScenario(${i})"
-            class="text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors shadow-sm">
-      ${s.label}
+            class="text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors shadow-sm inline-flex items-center gap-2">
+      ${icon(s.icon)} ${s.label}
     </button>`).join('');
+  refreshIcons();
 }
 function runScenario(i) {
   activeScenario = SCENARIOS[i];
@@ -1366,7 +1384,7 @@ function renderScenarioFindings(s) {
 
 function replayScenarioInvestigation(s) {
   const steps = s.steps.map((text, idx) => ({
-    icon: idx === 0 ? '🔴' : idx === s.steps.length - 1 ? '💡' : idx === s.steps.length - 2 ? '🧠' : '✓',
+    icon: idx === 0 ? 'circle-alert' : idx === s.steps.length - 1 ? 'lightbulb' : idx === s.steps.length - 2 ? 'brain' : 'check',
     text,
     delay: idx * 550,
     type: idx === 0 ? 'alert' : idx === s.steps.length - 1 ? 'rec' : idx === s.steps.length - 2 ? 'root' : 'ok',
@@ -1493,6 +1511,18 @@ async function heroAsk() {
   } catch { box.textContent = 'Could not reach AI. Is the backend running?'; }
 }
 function heroQuick(msg) { document.getElementById('hero-ask-input').value=msg; heroAsk(); }
+
+function goToAskCOO() {
+  const input = document.getElementById('hero-ask-input');
+  const card = input.closest('.card');
+  input.value = 'What happened to revenue and what should we do next?';
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    input.focus();
+    input.select();
+    showToast('Ask AI COO is ready. Press Enter or click Ask AI.');
+  }, 450);
+}
 
 // ── Chat Panel ────────────────────────────────────────────────────
 function toggleChat() {
@@ -1695,8 +1725,9 @@ async function submitAIImport() {
     // kpis may already have a years map (multi-year AI) or be flat (single year)
     applyCompanyData({...kpis, filename:'AI prompt'});
     showImportStatus('success',`✅ AI extracted KPIs and updated the dashboard.<br><span class="text-xs">${d.extracted_text||''}</span>`);
-    btnText.textContent='✨ Import with AI';
-  } catch(e) { btnText.textContent='✨ Import with AI'; showImportStatus('error','AI import failed: '+e.message); }
+    btnText.innerHTML=`${icon('sparkles')} Import with AI`;
+    refreshIcons();
+  } catch(e) { btnText.innerHTML=`${icon('sparkles')} Import with AI`; refreshIcons(); showImportStatus('error','AI import failed: '+e.message); }
 }
 
 function showImportStatus(type,html){
