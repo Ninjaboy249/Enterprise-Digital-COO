@@ -2,6 +2,7 @@
 Configuration management for Enterprise Digital COO
 """
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
+from pydantic import field_validator
 from typing import Optional, Tuple, Type
 
 
@@ -13,6 +14,19 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        """Handle noisy OS env values such as Windows DEBUG=release."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off", ""}:
+                return False
+            return False
+        return value
 
     # API
     API_V1_PREFIX: str = "/api/v1"

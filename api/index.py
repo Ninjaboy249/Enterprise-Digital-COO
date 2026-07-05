@@ -10,19 +10,35 @@ ChromaDB) are excluded here — use Railway or Render for the full stack.
 """
 import sys
 import os
+import importlib.util
+from pathlib import Path
 
 # Make the backend package importable from this file's location
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+BACKEND_DIR = Path(__file__).parent.parent / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import HTTPException, RequestValidationError
-from pathlib import Path
 
 from config import settings
-from api.v1.endpoints import metrics, reports
+
+
+def _load_backend_module(module_name: str, relative_path: str):
+    """Load backend modules without colliding with this top-level api package."""
+    module_path = BACKEND_DIR / relative_path
+    spec = importlib.util.spec_from_file_location(module_name, module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+metrics = _load_backend_module("enterprise_coo_metrics", "api/v1/endpoints/metrics.py")
+reports = _load_backend_module("enterprise_coo_reports", "api/v1/endpoints/reports.py")
 
 # ── App ──────────────────────────────────────────────────────────────
 app = FastAPI(

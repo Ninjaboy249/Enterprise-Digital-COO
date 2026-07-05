@@ -1,166 +1,190 @@
-# Enterprise Digital COO - AI-Powered Business Transformation System
+# Enterprise Digital COO
 
-## 🎯 Overview
+AI-powered executive command center for detecting business crises, explaining root cause, and recommending operational action.
 
-An intelligent multi-agent system that acts as a virtual Chief Operating Officer, monitoring and optimizing enterprise operations across Sales, Finance, Supply Chain, Procurement, HR, and Enterprise Risk.
+## Hackathon Story
 
-## 🏗️ Architecture
+Enterprises do not fail because one dashboard turns red. They fail because revenue, operations, finance, and customer signals are separated until it is too late.
 
-### System Components
+Enterprise Digital COO turns those scattered signals into one executive workflow:
 
-1. **Multi-Agent Orchestration Layer** (LangGraph)
-   - Coordinates 6 specialized monitoring agents
-   - Manages agent communication and state
-   - Handles workflow execution
+1. **Detect the crisis**: revenue drops, inventory rises, churn risk spikes, and cash runway tightens.
+2. **Explain the root cause**: the AI connects operational issues to financial impact and customer risk.
+3. **Simulate the impact**: leaders see projected revenue exposure, savings, and risk reduction.
+4. **Recommend action**: the system produces a COO-style response plan that can be approved or explored.
 
-2. **Monitoring Agents**
-   - Sales Agent
-   - Finance Agent
-   - Supply Chain Agent
-   - Procurement Agent
-   - HR Agent
-   - Enterprise Risk Agent
+The demo scenario is a "perfect storm" at a B2B company: revenue is down 15%, inventory is up 35%, churn risk is up 12%, and the AI COO identifies the operational chain behind the crisis.
 
-3. **Intelligence Layer**
-   - Anomaly Detection Engine
-   - Root Cause Analysis Engine
-   - Simulation Engine
-   - Recommendation Engine
+## What Is Working Now
 
-4. **Memory & Storage**
-   - ChromaDB (Vector Memory)
-   - PostgreSQL (Relational Data)
-   - Redis (Cache & Real-time State)
+This repository currently ships a working FastAPI + static dashboard prototype:
 
-5. **API Layer**
-   - FastAPI Backend
-   - WebSocket for Real-time Updates
-   - REST APIs for CRUD Operations
+- Executive dashboard served from `backend/static/index.html`
+- Sales, finance, operations, and summary APIs under `/api/v1/metrics`
+- Report upload, AI import, and report chat APIs under `/api/v1/reports`
+- Static pages for sales, finance, operations, reports, and Excel analysis
+- Vercel-compatible serverless entrypoint at `api/index.py`
+- Optional OpenAI-powered chat and report analysis when `OPENAI_API_KEY` is configured
+- Architecture docs for the larger multi-agent vision using LangGraph, ChromaDB, PostgreSQL, Redis, and WebSockets
 
-6. **Frontend**
-   - React Dashboard
-   - Real-time Monitoring Views
-   - Executive Insights Panel
+The production vision includes multi-agent orchestration, memory, and persistent infrastructure. The hackathon demo surface is intentionally lighter so judges can run and inspect it quickly.
 
-## 🚀 Key Features
+## Demo Flow
 
-- **Automatic Anomaly Detection**: ML-powered detection across all business domains
-- **Root Cause Analysis**: Multi-agent collaboration to identify issues
-- **Future Simulation**: Monte Carlo and scenario-based forecasting
-- **Executive Recommendations**: AI-generated actionable insights
-- **Real-time Monitoring**: Live dashboards with WebSocket updates
-- **Memory-Augmented**: ChromaDB for contextual awareness
+1. Open the dashboard.
+2. Start with the impact strip: revenue loss, inventory spike, churn risk, and action plan.
+3. Ask the AI COO: "What happened to revenue this quarter?"
+4. Open Sales, Finance, and Operations to show cross-domain signals.
+5. Use Reports or Excel Analysis to show how business data can be uploaded and summarized.
+6. Close with the recommendation: supplier quality recovery, customer save plan, inventory rebalance, and cash protection.
 
-## 📊 Technology Stack
+## Architecture
 
-- **AI/ML**: OpenAI GPT-4, LangChain, LangGraph
-- **Backend**: FastAPI, Python 3.11+
-- **Frontend**: React 18, TypeScript, Tailwind CSS
-- **Databases**: PostgreSQL, ChromaDB, Redis
-- **Orchestration**: LangGraph
-- **Deployment**: Docker, Kubernetes
+### Current Prototype
 
-## 📁 Project Structure
-
+```text
+Browser
+  |
+  | Static HTML dashboard and pages
+  v
+FastAPI
+  |
+  | /api/v1/metrics
+  | /api/v1/reports
+  v
+Deterministic demo data + optional OpenAI analysis
 ```
+
+### Larger System Vision
+
+```text
+Executive Dashboard
+  |
+FastAPI + WebSocket API
+  |
+LangGraph COO Orchestrator
+  |
+Specialized Agents: Sales, Finance, Operations, Procurement, HR, Risk
+  |
+Intelligence Layer: anomaly detection, root cause analysis, simulation, recommendations
+  |
+PostgreSQL + ChromaDB + Redis + OpenAI
+```
+
+## Key Features
+
+- **Executive command center**: one screen for business health, risk, and recommended action.
+- **Cross-domain metrics**: sales, finance, and operations endpoints expose fiscal-year data and comparisons.
+- **AI COO assistant**: dashboard chat summarizes risks and recommends next steps.
+- **Report intelligence**: upload JSON, Excel, or Power BI-style files and ask questions about them.
+- **Deployment-friendly prototype**: `api/index.py` excludes persistent database startup so the demo can run serverlessly.
+
+## Project Structure
+
+```text
 enterprise-digital-coo/
+├── api/
+│   └── index.py                  # Vercel/serverless FastAPI entrypoint
 ├── backend/
-│   ├── agents/              # AI Agent implementations
-│   ├── engines/             # Core intelligence engines
-│   ├── api/                 # FastAPI routes
-│   ├── models/              # Data models
-│   ├── services/            # Business logic
-│   ├── memory/              # ChromaDB integration
-│   └── orchestration/       # LangGraph workflows
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
-│   │   ├── services/        # API clients
-│   │   └── hooks/           # Custom hooks
-├── docs/
-│   ├── architecture/        # Architecture diagrams
-│   ├── api/                 # API documentation
-│   └── deployment/          # Deployment guides
-├── tests/
-├── docker/
-└── scripts/
+│   ├── api/v1/endpoints/         # Metrics and reports APIs
+│   ├── agents/                   # Agent prototypes
+│   ├── database/                 # PostgreSQL session/models for full-stack vision
+│   ├── memory/                   # ChromaDB client for full-stack vision
+│   ├── orchestration/            # Workflow prototypes
+│   ├── services/                 # Shared services
+│   ├── static/                   # Working dashboard and demo pages
+│   ├── config.py                 # App configuration
+│   └── main.py                   # Full backend entrypoint
+├── docs/                         # Architecture, demo, and presentation material
+├── tools/                        # Node helper scripts
+├── pyproject.toml                # Lightweight deploy/runtime dependencies
+└── vercel.json                   # Vercel routing
 ```
 
-## 🎓 Hackathon Highlights
+## Quick Start
 
-- **Innovation**: Multi-agent COO system with autonomous decision-making
-- **Scalability**: Microservices architecture with container orchestration
-- **Intelligence**: Advanced AI reasoning with memory augmentation
-- **Impact**: Real-time business transformation insights
-- **Production-Ready**: Enterprise-grade design patterns
+### Serverless-style demo app
 
-## 📖 Documentation
-
-See `/docs` directory for detailed documentation:
-- System Architecture
-- Agent Design
-- API Reference
-- Deployment Guide
-- Development Guide
-
-## 🔧 Quick Start
+This path is closest to the judging/demo surface.
 
 ```bash
-# Clone repository
-git clone <repo-url>
-
-# Setup backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Setup frontend
-cd frontend
-npm install
-
-# Start services
-docker-compose up -d  # Start databases
-python backend/main.py  # Start API
-npm start  # Start frontend
+pip install -e .
+uvicorn api.index:app --reload --port 8001
 ```
 
-## 🛠️ Node.js Developer Tooling
+Open:
 
-A lightweight Node.js utility layer lives in the `tools/` directory.
-It does **not** replace or affect any Python backend, database, or UI — it is purely for developer convenience.
+```text
+http://localhost:8001/
+```
 
-### Setup
+### Full backend app
+
+Use this only when PostgreSQL and related services are configured.
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python main.py
+```
+
+The full backend starts on the configured `PORT`, defaulting to `8001`.
+
+## Useful Endpoints
+
+```text
+GET  /health
+GET  /api/v1/metrics/sales
+GET  /api/v1/metrics/sales/fy
+GET  /api/v1/metrics/finance
+GET  /api/v1/metrics/operations
+GET  /api/v1/metrics/summary
+POST /api/v1/metrics/chat
+POST /api/v1/reports/upload
+POST /api/v1/reports/chat
+POST /api/v1/reports/ai-import
+```
+
+## Environment
+
+Copy `backend/.env.example` to `backend/.env` for local full-backend runs.
+
+For the demo, `OPENAI_API_KEY` is optional. Without it, the deterministic dashboard and metrics still work; OpenAI-backed chat/report analysis requires a valid key.
+
+## Validation
+
+From `backend/`:
+
+```bash
+python test_routes.py
+```
+
+Expected result: health, API health, sales, finance, operations, and summary routes return `200`.
+
+## Node.js Developer Tooling
+
+The `tools/` directory contains optional helper scripts.
 
 ```bash
 cd tools
 npm install
+npm run health
+npm run validate-env
+npm run watch-logs
 ```
 
-### Available Commands
+## Winning Position
 
-| Command | Description |
-|---|---|
-| `npm run health` | Ping all FastAPI endpoints and show a health report |
-| `npm run validate-env` | Check `backend/.env` against `backend/.env.example` and flag missing / placeholder keys |
-| `npm run watch-logs` | Tail `backend/app.log` and pretty-print JSON log lines in real time |
+Enterprise Digital COO is strongest when presented as a working executive decision prototype backed by a credible enterprise architecture:
 
-### Examples
+- **Innovation**: AI COO experience that connects siloed operational signals.
+- **Execution**: working dashboard, APIs, report upload, and AI assistant.
+- **Business impact**: faster crisis detection, root-cause clarity, and action prioritization.
+- **Scalability**: documented path to multi-agent orchestration, memory, and persistent enterprise data.
 
-```bash
-# Health check against a remote server
-node tools/health-check.js --host https://your-deploy.example.com
-
-# Validate env before deploying
-node tools/env-validator.js
-
-# Watch logs from CI output piped in
-cat backend/app.log | node tools/log-watcher.js --stdin
-```
-
-> **Requires Node.js 18+**
-
-## 📝 License
+## License
 
 MIT License - Built for Business Transformation Hackathon 2026
