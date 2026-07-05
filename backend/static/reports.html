@@ -87,6 +87,11 @@
                     border:1px solid rgba(255,255,255,.25); border-radius:8px;
                     padding:5px 9px; color:#fff; transition:background .15s; }
     #theme-toggle:hover { background:rgba(255,255,255,.28); }
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+             background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
+             font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
+             pointer-events:none; z-index:9999; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
     @media (forced-colors: active) {
       .rounded-lg, .rounded-xl, table, th, td { border: 1px solid ButtonText !important; }
     }
@@ -112,9 +117,30 @@
 <!-- ════════════════════ MAIN ════════════════════ -->
 <div class="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
+  <section class="bg-white rounded-2xl shadow-md p-6 border border-blue-100">
+    <p class="text-xs font-bold uppercase tracking-widest text-blue-600 mb-2">AI COO / Report Impact</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <p class="text-sm text-slate-500">Signal</p>
+        <p class="text-xl font-bold text-slate-800">Unstructured reports become decisions</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500">Business Impact</p>
+        <p class="text-xl font-bold text-blue-600">Minutes instead of hours</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500">Recommended Action</p>
+        <p class="text-sm font-semibold text-slate-800">Load the sample report, review the AI summary, then ask a follow-up question.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Upload Zone ── -->
   <div class="bg-white rounded-2xl shadow-md p-6">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Report</h2>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h2 class="text-lg font-semibold text-slate-800">Upload Report</h2>
+      <button onclick="loadSampleReport()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">Load Sample Report</button>
+    </div>
     <div id="drop-zone" class="rounded-xl p-10 text-center cursor-pointer bg-slate-50 select-none"
          onclick="document.getElementById('file-input').click()"
          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
@@ -400,8 +426,49 @@ async function openReportById(reportId) {
     if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
     openReport(reportId, d);
   } catch(e) {
-    alert('Could not load report: ' + e.message);
+    showToast('Could not load report: ' + e.message);
+    showUploadStatus('error', `❌ Could not load report: ${escHtml(e.message)}`);
   }
+}
+
+function loadSampleReport() {
+  const data = {
+    report_id: 'sample-board-risk-report',
+    filename: 'sample-board-risk-report.json',
+    type: 'json',
+    uploaded_at: new Date().toISOString(),
+    summary: `# AI COO Sample Report
+
+## Executive Signal
+Revenue is down 15%, inventory is up 35%, and churn risk is up 12%. The AI COO identifies a supplier quality issue cascading into delivery delays, stalled renewals, and cash pressure.
+
+## Recommended Actions
+- Launch an executive renewal save desk for the top 12 accounts.
+- Shift priority orders to secondary suppliers within 14 days.
+- Freeze discretionary spend until cash runway returns above 9 months.
+
+## Business Impact
+Estimated recoverable value: **$2.4M** over the next fiscal year.`,
+    parsed: {
+      company: 'TechCorp Inc.',
+      scenario: 'Perfect Storm',
+      kpis: {
+        revenue_change: '-15%',
+        inventory_change: '+35%',
+        churn_risk_change: '+12%',
+        recoverable_value: '$2.4M',
+      },
+      root_cause: 'Supplier quality failure caused delivery delays, customer dissatisfaction, and stalled renewals.',
+      recommended_actions: [
+        'Executive renewal save desk',
+        'Secondary supplier activation',
+        'Customer communication plan',
+        'Cash preservation controls',
+      ],
+    },
+  };
+  showUploadStatus('success', '✅ Sample report loaded. Use the AI Summary and Ask AI tabs for the judging flow.');
+  openReport(data.report_id, data);
 }
 
 function openReport(reportId, data) {
@@ -547,7 +614,7 @@ async function deleteReport(reportId, filename) {
     if (currentReportId === reportId) closeDetail();
     await loadReportList();
   } catch {
-    alert('Delete failed.');
+    showToast('Delete failed.');
   }
 }
 
@@ -564,7 +631,14 @@ function downloadParsed() {
 // ─── Copy to clipboard ────────────────────────────────────────────────────
 function copyToClipboard(elemId) {
   const text = document.getElementById(elemId).value || document.getElementById(elemId).textContent;
-  navigator.clipboard.writeText(text).catch(() => {});
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard')).catch(() => showToast('Copy failed'));
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -586,6 +660,7 @@ function fmtDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 }
-</script>
+ </script>
+<div id="toast"></div>
 </body>
 </html>

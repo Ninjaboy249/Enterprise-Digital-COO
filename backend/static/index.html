@@ -217,6 +217,13 @@
   </div>
 </header>
 
+<div id="scenario-banner" class="hidden sticky top-0 z-40 border-b border-purple-200 bg-purple-100 text-purple-700">
+  <div class="max-w-screen-xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+    <span id="scenario-banner-text" class="font-semibold">Scenario active</span>
+    <button onclick="resetScenario()" class="text-xs font-bold underline">Reset to live data</button>
+  </div>
+</div>
+
 <!-- Hidden KPI stores — written by renderKPIs() & applyCompanyData() -->
 <span id="kpi-revenue" class="hidden"></span>
 <span id="kpi-revenue-chg" class="hidden"></span>
@@ -227,6 +234,39 @@
 
 <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
 <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- ── JUDGE DEMO PATH ──────────────────────────────────────── -->
+  <section class="card p-5">
+    <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_.9fr] gap-5 items-stretch">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-purple-600 mb-2">Judge Demo Path</p>
+        <h2 class="text-xl font-bold text-gray-800">Experience the AI COO in three clicks</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+          <button onclick="runScenarioByTitle('Revenue Crash')" class="text-left rounded-xl border border-red-200 bg-red-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <span class="block text-xs font-bold text-red-600 uppercase">1. Click</span>
+            <span class="block font-bold text-gray-800 mt-1">Revenue Crash</span>
+          </button>
+          <button onclick="heroQuick('What happened to revenue and what should we do next?')" class="text-left rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <span class="block text-xs font-bold text-purple-600 uppercase">2. Ask</span>
+            <span class="block font-bold text-gray-800 mt-1">AI COO</span>
+          </button>
+          <button onclick="window.open('/static/finance.html?sim=revenue-crash','_blank')" class="text-left rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 hover:shadow-md transition-shadow">
+            <span class="block text-xs font-bold text-emerald-600 uppercase">3. Open</span>
+            <span class="block font-bold text-gray-800 mt-1">Finance/Sales</span>
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 mt-4 text-sm">
+          <span class="text-gray-500 font-medium">Try:</span>
+          <button onclick="runScenarioByTitle('Revenue Crash')" class="px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 font-semibold">Revenue Crash</button>
+          <button onclick="runScenarioByTitle('Customer Churn')" class="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-semibold">Customer Churn</button>
+          <button onclick="runScenarioByTitle('Cash Crisis')" class="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold">Cash Crisis</button>
+        </div>
+      </div>
+      <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 min-h-[220px]">
+        <iframe class="w-full h-full min-h-[220px]" src="https://www.youtube.com/embed/9d6j8M8Ge2o" title="Enterprise Digital COO demo video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
 
   <!-- ── HACKATHON IMPACT STORY ──────────────────────────────── -->
   <section class="card impact-story overflow-hidden border border-red-100">
@@ -1239,6 +1279,11 @@ function runScenario(i) {
   applyScenario(activeScenario);
 }
 
+function runScenarioByTitle(title) {
+  const idx = SCENARIOS.findIndex(s => s.title === title);
+  if (idx >= 0) runScenario(idx);
+}
+
 function applyScenario(s, opts = {}) {
   document.getElementById('eb-fy-badge').textContent = 'Scenario';
   document.getElementById('eb-signal').textContent = s.signal;
@@ -1271,6 +1316,9 @@ function applyScenario(s, opts = {}) {
   const st = document.getElementById('scenario-status');
   st.classList.remove('hidden');
   st.innerHTML = `<strong>${s.label}</strong> scenario activated — executive brief, investigation, actions, findings, and impact cards updated. <button onclick="resetScenario()" class="ml-2 underline text-purple-500">Reset to live data</button>`;
+  const banner = document.getElementById('scenario-banner');
+  document.getElementById('scenario-banner-text').textContent = `Scenario active: ${s.title}`;
+  banner.classList.remove('hidden');
   if (!opts.preserveStatus) showToast(`${s.label} scenario activated`);
   window._ebCurrentAction = s.action; window._ebCurrentSignal = s.signal;
 }
@@ -1279,6 +1327,7 @@ function resetScenario() {
   activeScenario = null;
   _actions = [...DEFAULT_ACTIONS];
   document.getElementById('scenario-status').classList.add('hidden');
+  document.getElementById('scenario-banner').classList.add('hidden');
   renderActions();
   loadAllFYData();
   setTimeout(replayInvestigation, 250);

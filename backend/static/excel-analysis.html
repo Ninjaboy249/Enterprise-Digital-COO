@@ -87,6 +87,11 @@
                     border:1px solid rgba(255,255,255,.25); border-radius:8px;
                     padding:5px 9px; color:#fff; transition:background .15s; }
     #theme-toggle:hover { background:rgba(255,255,255,.28); }
+    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+             background:#1f2937; color:#fff; padding:10px 20px; border-radius:8px;
+             font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
+             pointer-events:none; z-index:9999; white-space:nowrap; }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
@@ -109,9 +114,30 @@
 <!-- ════════════════════ MAIN ════════════════════ -->
 <div class="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
+  <section class="bg-white rounded-2xl shadow-md p-6 border border-emerald-100">
+    <p class="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-2">AI COO / Excel Impact</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <p class="text-sm text-slate-500">Signal</p>
+        <p class="text-xl font-bold text-slate-800">Spreadsheets become executive reports</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500">Business Impact</p>
+        <p class="text-xl font-bold text-emerald-600">Instant KPI narrative</p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-500">Recommended Action</p>
+        <p class="text-sm font-semibold text-slate-800">Try the demo workbook to show automated analysis without file setup.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Upload Zone ── -->
   <div class="bg-white rounded-2xl shadow-md p-6">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Excel Workbook</h2>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h2 class="text-lg font-semibold text-slate-800">Upload Excel Workbook</h2>
+      <button onclick="loadSampleWorkbook()" class="text-sm bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 font-semibold">Try Demo Workbook</button>
+    </div>
     <div id="drop-zone" class="rounded-xl p-10 text-center cursor-pointer bg-slate-50 select-none"
          onclick="document.getElementById('file-input').click()"
          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
@@ -385,8 +411,47 @@ async function openReportById(reportId) {
     if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
     openReport(reportId, d);
   } catch(e) {
-    alert('Could not load report: ' + e.message);
+    showToast('Could not load workbook: ' + e.message);
+    showUploadStatus('error', `❌ Could not load workbook: ${escHtml(e.message)}`);
   }
+}
+
+function loadSampleWorkbook() {
+  const data = {
+    report_id: 'sample-excel-coo-workbook',
+    filename: 'sample-company-kpis.xlsx',
+    type: 'excel',
+    uploaded_at: new Date().toISOString(),
+    summary: `# Power BI-Style AI Report
+
+## KPI Summary
+Revenue declined from **$12.4M** to **$10.5M**, while inventory increased by **35%** and CSAT fell to **3.4/5.0**.
+
+## AI COO Interpretation
+The workbook shows a cross-functional issue: supplier quality is driving delivery delays, which is increasing churn risk and slowing enterprise renewals.
+
+## Recommended Action Plan
+- Rebalance production to secondary suppliers.
+- Prioritise enterprise customer recovery calls.
+- Reduce excess inventory exposure by reallocating stock to active demand regions.`,
+    parsed: {
+      workbook: 'sample-company-kpis.xlsx',
+      sheets: {
+        FY_KPIs: [
+          { fiscal_year: 2024, revenue: 12400000, inventory: 1550000, csat: 4.3, churn_risk: 'Low' },
+          { fiscal_year: 2025, revenue: 10500000, inventory: 2090000, csat: 3.4, churn_risk: 'High' },
+        ],
+        Recommended_Actions: [
+          'Supplier quality recovery',
+          'Customer save desk',
+          'Inventory rebalance',
+          'Cash preservation review',
+        ],
+      },
+    },
+  };
+  showUploadStatus('success', '✅ Demo workbook loaded. Open the AI Report and Ask AI tabs for the judging flow.');
+  openReport(data.report_id, data);
 }
 
 function openReport(reportId, data) {
@@ -524,7 +589,7 @@ async function deleteReport(reportId, filename) {
     if (currentReportId === reportId) closeDetail();
     await loadReportList();
   } catch {
-    alert('Delete failed.');
+    showToast('Delete failed.');
   }
 }
 
@@ -541,7 +606,14 @@ function downloadParsed() {
 // ─── Copy to clipboard ────────────────────────────────────────────────────
 function copyToClipboard(elemId) {
   const text = document.getElementById(elemId).value || document.getElementById(elemId).textContent;
-  navigator.clipboard.writeText(text).catch(() => {});
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard')).catch(() => showToast('Copy failed'));
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -559,5 +631,6 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 }
 </script>
+<div id="toast"></div>
 </body>
 </html>
