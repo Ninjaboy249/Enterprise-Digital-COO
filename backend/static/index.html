@@ -30,6 +30,17 @@
       --chat-bot-bg:  #f3f4f6; --chat-bot-fg: #374151;
       --import-bg:    #ffffff;
       --modal-overlay:rgba(0,0,0,.55);
+      --surface-overlay: rgba(255,255,255,.65);
+      --impact-bg: linear-gradient(135deg,#fff7ed 0%,#ffffff 46%,#ecfeff 100%);
+      --red-bg:#fee2e2; --red-fg:#b91c1c; --red-border:#fecaca;
+      --orange-bg:#ffedd5; --orange-fg:#c2410c; --orange-border:#fed7aa;
+      --amber-bg:#fef3c7; --amber-fg:#b45309; --amber-border:#fde68a;
+      --yellow-bg:#fef9c3; --yellow-fg:#a16207; --yellow-border:#fde047;
+      --green-bg:#dcfce7; --green-fg:#15803d; --green-border:#bbf7d0;
+      --emerald-bg:#d1fae5; --emerald-fg:#047857; --emerald-border:#a7f3d0;
+      --blue-bg:#dbeafe; --blue-fg:#1d4ed8; --blue-border:#bfdbfe;
+      --sky-bg:#e0f2fe; --sky-fg:#0369a1; --sky-border:#bae6fd;
+      --purple-bg:#ede9fe; --purple-fg:#7e22ce; --purple-border:#ddd6fe;
     }
     [data-theme="dark"] {
       --bg:           #0f172a;
@@ -50,6 +61,17 @@
       --chat-bot-bg:  #1e293b; --chat-bot-fg: #cbd5e1;
       --import-bg:    #1e2535;
       --modal-overlay:rgba(0,0,0,.75);
+      --surface-overlay: rgba(15,23,42,.62);
+      --impact-bg: linear-gradient(135deg,#2a1a13 0%,#1e2535 48%,#0f2f37 100%);
+      --red-bg:#3f1518; --red-fg:#fca5a5; --red-border:#7f1d1d;
+      --orange-bg:#3b2112; --orange-fg:#fdba74; --orange-border:#9a3412;
+      --amber-bg:#392609; --amber-fg:#fcd34d; --amber-border:#92400e;
+      --yellow-bg:#332b08; --yellow-fg:#fde047; --yellow-border:#854d0e;
+      --green-bg:#102b1b; --green-fg:#86efac; --green-border:#166534;
+      --emerald-bg:#082f23; --emerald-fg:#6ee7b7; --emerald-border:#047857;
+      --blue-bg:#13284b; --blue-fg:#93c5fd; --blue-border:#1d4ed8;
+      --sky-bg:#0c2c3f; --sky-fg:#7dd3fc; --sky-border:#0369a1;
+      --purple-bg:#271b4f; --purple-fg:#c4b5fd; --purple-border:#6d28d9;
     }
     @media (prefers-color-scheme: dark) {
       [data-theme="auto"] {
@@ -71,6 +93,17 @@
         --chat-bot-bg:  #1e293b; --chat-bot-fg: #cbd5e1;
         --import-bg:    #1e2535;
         --modal-overlay:rgba(0,0,0,.75);
+        --surface-overlay: rgba(15,23,42,.62);
+        --impact-bg: linear-gradient(135deg,#2a1a13 0%,#1e2535 48%,#0f2f37 100%);
+        --red-bg:#3f1518; --red-fg:#fca5a5; --red-border:#7f1d1d;
+        --orange-bg:#3b2112; --orange-fg:#fdba74; --orange-border:#9a3412;
+        --amber-bg:#392609; --amber-fg:#fcd34d; --amber-border:#92400e;
+        --yellow-bg:#332b08; --yellow-fg:#fde047; --yellow-border:#854d0e;
+        --green-bg:#102b1b; --green-fg:#86efac; --green-border:#166534;
+        --emerald-bg:#082f23; --emerald-fg:#6ee7b7; --emerald-border:#047857;
+        --blue-bg:#13284b; --blue-fg:#93c5fd; --blue-border:#1d4ed8;
+        --sky-bg:#0c2c3f; --sky-fg:#7dd3fc; --sky-border:#0369a1;
+        --purple-bg:#271b4f; --purple-fg:#c4b5fd; --purple-border:#6d28d9;
       }
     }
 
@@ -85,6 +118,36 @@
     td, th { color: var(--text) !important; }
     .border-gray-100, .border-gray-200 { border-color: var(--border) !important; }
     .shadow-md, .shadow-lg { box-shadow: var(--shadow) !important; }
+    .impact-story { background: var(--impact-bg) !important; }
+    .executive-nav-card { background: linear-gradient(135deg, var(--purple-bg), var(--surface)) !important; }
+    .bg-white\/60, .bg-white\/70 { background: var(--surface-overlay) !important; }
+    .text-red-600, .text-red-700 { color: var(--red-fg) !important; }
+    .text-orange-600, .text-orange-700, .text-orange-800 { color: var(--orange-fg) !important; }
+    .text-amber-600, .text-amber-700, .text-amber-800 { color: var(--amber-fg) !important; }
+    .text-yellow-600, .text-yellow-700, .text-yellow-800 { color: var(--yellow-fg) !important; }
+    .text-green-600, .text-green-700 { color: var(--green-fg) !important; }
+    .text-emerald-600, .text-emerald-700 { color: var(--emerald-fg) !important; }
+    .text-blue-600, .text-blue-700, .text-blue-800 { color: var(--blue-fg) !important; }
+    .text-sky-600, .text-sky-700 { color: var(--sky-fg) !important; }
+    .text-purple-600, .text-purple-700, .text-purple-800 { color: var(--purple-fg) !important; }
+    .bg-red-50, .bg-red-100 { background: var(--red-bg) !important; }
+    .bg-orange-50, .bg-orange-100 { background: var(--orange-bg) !important; }
+    .bg-amber-50, .bg-amber-100 { background: var(--amber-bg) !important; }
+    .bg-yellow-50, .bg-yellow-100 { background: var(--yellow-bg) !important; }
+    .bg-green-50, .bg-green-100 { background: var(--green-bg) !important; }
+    .bg-emerald-50, .bg-emerald-100 { background: var(--emerald-bg) !important; }
+    .bg-blue-50, .bg-blue-100 { background: var(--blue-bg) !important; }
+    .bg-sky-50, .bg-sky-100 { background: var(--sky-bg) !important; }
+    .bg-purple-50, .bg-purple-100 { background: var(--purple-bg) !important; }
+    .border-red-100, .border-red-200, .border-red-300 { border-color: var(--red-border) !important; }
+    .border-orange-100, .border-orange-200, .border-orange-300 { border-color: var(--orange-border) !important; }
+    .border-amber-100, .border-amber-200, .border-amber-300 { border-color: var(--amber-border) !important; }
+    .border-yellow-100, .border-yellow-200, .border-yellow-300 { border-color: var(--yellow-border) !important; }
+    .border-green-100, .border-green-200, .border-green-300 { border-color: var(--green-border) !important; }
+    .border-emerald-100, .border-emerald-200, .border-emerald-300 { border-color: var(--emerald-border) !important; }
+    .border-blue-100, .border-blue-200, .border-blue-300 { border-color: var(--blue-border) !important; }
+    .border-sky-100, .border-sky-200, .border-sky-300 { border-color: var(--sky-border) !important; }
+    .border-purple-100, .border-purple-200, .border-purple-300 { border-color: var(--purple-border) !important; }
     input, select, textarea {
       background: var(--input-bg) !important;
       color: var(--text) !important;
@@ -166,7 +229,7 @@
 <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
 
   <!-- ── HACKATHON IMPACT STORY ──────────────────────────────── -->
-  <section class="card overflow-hidden border border-red-100" style="background:linear-gradient(135deg,#fff7ed 0%,#ffffff 46%,#ecfeff 100%);">
+  <section class="card impact-story overflow-hidden border border-red-100">
     <div class="px-6 pt-5 pb-4 border-b border-orange-100 flex flex-wrap items-center justify-between gap-3">
       <div>
         <p class="text-xs font-bold uppercase tracking-widest text-orange-600">Live Crisis Scenario</p>
@@ -391,8 +454,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
       <!-- AI Executive — largest / accent -->
-      <div class="card p-6 flex flex-col border-2 border-purple-300 sm:col-span-2 lg:col-span-1"
-           style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);">
+      <div class="card executive-nav-card p-6 flex flex-col border-2 border-purple-300 sm:col-span-2 lg:col-span-1">
         <div class="flex items-center mb-4">
           <div class="bg-purple-600 p-3 rounded-xl">
             <span class="text-white text-xl">🧠</span>
@@ -589,6 +651,7 @@ const CY = new Date().getFullYear();
 const FYS = [CY, CY-1, CY-2];
 let selectedFY = CY;
 let allFYData  = { sales: null, finance: null, operations: null };
+let activeScenario = null;
 // Holds imported KPIs — set by applyCompanyData(), cleared by loadAllFYData() on revert
 // Per-FY imported data: { filename, years: { "2025":{revenue,cash,users,csat}, ... } } | null
 let _importedKPIs = null;
@@ -630,7 +693,12 @@ function setActiveFYTab(fy) {
     b.style.borderColor  = on ? '#7c3aed' : '';
   });
 }
-function selectFY(fy) { selectedFY = fy; setActiveFYTab(fy); renderKPIs(); }
+function selectFY(fy) {
+  selectedFY = fy;
+  setActiveFYTab(fy);
+  if (activeScenario) applyScenario(activeScenario, { preserveStatus: true });
+  else renderKPIs();
+}
 
 // ── Data Load ─────────────────────────────────────────────────────
 async function loadAllFYData() {
@@ -641,6 +709,11 @@ async function loadAllFYData() {
       fetch('/api/v1/metrics/operations/fy').then(r=>r.json()),
     ]);
     allFYData = { sales: s, finance: f, operations: o };
+    if (activeScenario) {
+      applyScenario(activeScenario, { preserveStatus: true });
+      document.getElementById('last-updated').textContent = 'Scenario: ' + activeScenario.title;
+      return;
+    }
     renderKPIs();
     renderFYSnapshot();
     loadAlerts();
@@ -854,11 +927,15 @@ const INVESTIGATION_STEPS = [
 
 let _invTimers = [];
 function replayInvestigation() {
+  replayInvestigationSteps(INVESTIGATION_STEPS);
+}
+
+function replayInvestigationSteps(steps) {
   _invTimers.forEach(t => clearTimeout(t));
   _invTimers = [];
   const el = document.getElementById('investigation-steps');
   el.innerHTML = '';
-  INVESTIGATION_STEPS.forEach(step => {
+  steps.forEach(step => {
     const row = document.createElement('div');
     const bg = step.type==='alert'?'bg-red-50 border-red-200 text-red-700'
               :step.type==='root' ?'bg-yellow-50 border-yellow-200 text-yellow-800'
@@ -1029,12 +1106,126 @@ function renderFindings() {
 
 // ── Demo Scenarios ────────────────────────────────────────────────
 const SCENARIOS = [
-  { label:'💥 Revenue Crash',     signal:'Revenue dropped 18.4%', action:'Activate emergency pricing and freeze hiring immediately.' },
-  { label:'👥 Customer Churn',    signal:'CSAT fell to 3.1/5.0',  action:'Launch retention campaign and offer renewal incentives.' },
-  { label:'💸 Cash Crisis',       signal:'Cash runway 4.2 months', action:'Initiate bridge financing and cut discretionary spend 30%.' },
-  { label:'📦 Supply Chain Delay',signal:'Inventory gap detected', action:'Switch to secondary suppliers and notify delivery teams.' },
-  { label:'🛡 Cyber Attack',      signal:'Security anomaly found', action:'Isolate affected systems and engage incident response.' },
-  { label:'🚀 Product Launch',    signal:'New revenue stream live',action:'Accelerate marketing spend and onboarding capacity.' },
+  {
+    label:'💥 Revenue Crash', title:'Revenue Crash', tone:'red',
+    signal:'Revenue dropped 18.4%', cause:'Root cause: 12 enterprise renewals stalled after delivery delays and competitor discounting.',
+    impact:'-$2.8M', impactSub:'Projected FY revenue exposure', opp:'+$1.6M', save:'$420K', confidence:96,
+    action:'Activate executive save desk, approve tactical discounts, and fast-track delayed enterprise deliveries.',
+    kpis:{ revenue:'$8.6M', cash:'$10.8M', csat:'3.7/5.0', users:'12,420' },
+    actions:['Open CEO-led renewal war room','Approve save offers for top 12 accounts','Reallocate delivery capacity to enterprise deals'],
+    findings:[
+      ['Revenue Exposure','Enterprise revenue is 18.4% below plan after renewals stalled.','High'],
+      ['Deal Velocity','Sales cycle expanded from 89 to 127 days.','High'],
+      ['Recovery Lever','Targeted save offers recover an estimated $1.6M.','Medium'],
+    ],
+    steps:[
+      'Revenue anomaly detected across enterprise segment',
+      'Sales Agent found 12 stalled renewals worth $2.8M',
+      'Operations Agent linked delays to delivery backlog',
+      'Finance Agent quantified FY exposure at $2.8M',
+      'Executive Agent recommends save desk and tactical discounts',
+    ],
+  },
+  {
+    label:'👥 Customer Churn', title:'Customer Churn', tone:'purple',
+    signal:'CSAT fell to 3.1/5.0', cause:'Root cause: support backlog and product quality issues hit high-value accounts.',
+    impact:'$3.2M', impactSub:'ARR at risk over 90 days', opp:'+$1.1M', save:'$860K', confidence:94,
+    action:'Launch retention campaign, assign executive sponsors, and fix the top three ticket categories.',
+    kpis:{ revenue:'$9.4M', cash:'$11.7M', csat:'3.1/5.0', users:'11,980' },
+    actions:['Assign executive sponsors to 47 accounts','Offer renewal incentives to at-risk customers','Deploy support surge for top ticket categories'],
+    findings:[
+      ['Churn Risk','47 accounts representing $3.2M ARR are at risk.','High'],
+      ['Sentiment Drop','NPS fell after repeated delivery and quality complaints.','High'],
+      ['Retention Path','Executive outreach can protect $860K this quarter.','Medium'],
+    ],
+    steps:[
+      'Customer Success Agent detected CSAT collapse',
+      'Support tickets clustered around reliability issues',
+      'Sales Agent matched complaints to renewal risk',
+      'Finance Agent calculated $3.2M ARR exposure',
+      'Executive Agent recommends customer save campaign',
+    ],
+  },
+  {
+    label:'💸 Cash Crisis', title:'Cash Crisis', tone:'amber',
+    signal:'Cash runway 4.2 months', cause:'Root cause: receivables delay combined with rising support and inventory carrying costs.',
+    impact:'4.2 mo', impactSub:'Available cash runway', opp:'+$900K', save:'$1.4M', confidence:95,
+    action:'Accelerate collections, defer non-critical spend, and initiate bridge financing options.',
+    kpis:{ revenue:'$9.1M', cash:'$4.2M', csat:'3.9/5.0', users:'12,180' },
+    actions:['Accelerate collections on top receivables','Freeze discretionary spend for 45 days','Prepare bridge financing packet'],
+    findings:[
+      ['Liquidity Risk','Runway dropped below the 6-month safety threshold.','High'],
+      ['Cost Pressure','Inventory carrying costs and support costs are rising together.','High'],
+      ['Cash Lever','Collections and spend controls can protect $1.4M.','Medium'],
+    ],
+    steps:[
+      'Finance Agent detected runway compression',
+      'Receivables ageing crossed safe threshold',
+      'Operations Agent identified inventory carrying cost spike',
+      'Risk Agent flagged covenant breach probability',
+      'Executive Agent recommends cash protection plan',
+    ],
+  },
+  {
+    label:'📦 Supply Chain Delay', title:'Supply Chain Delay', tone:'orange',
+    signal:'Inventory gap detected', cause:'Root cause: Supplier-X quality failures delayed priority shipments and created excess unusable stock.',
+    impact:'$1.9M', impactSub:'Delivery and inventory exposure', opp:'+$740K', save:'$510K', confidence:93,
+    action:'Switch to secondary suppliers, quarantine defective stock, and notify affected customers.',
+    kpis:{ revenue:'$9.0M', cash:'$10.1M', csat:'3.5/5.0', users:'12,060' },
+    actions:['Shift 40% volume to secondary supplier','Quarantine defective Supplier-X batches','Notify customers with revised delivery promises'],
+    findings:[
+      ['Delivery Risk','On-time delivery dropped to 67%.','High'],
+      ['Inventory Spike','Excess and returned stock increased carrying cost.','High'],
+      ['Recovery Path','Secondary suppliers restore key shipments in 14 days.','Medium'],
+    ],
+    steps:[
+      'Operations Agent detected delivery misses',
+      'Procurement Agent isolated Supplier-X quality issue',
+      'Sales Agent linked shipment delay to stalled deals',
+      'Finance Agent calculated $1.9M exposure',
+      'Executive Agent recommends supplier switch and customer comms',
+    ],
+  },
+  {
+    label:'🛡 Cyber Attack', title:'Cyber Attack', tone:'blue',
+    signal:'Security anomaly found', cause:'Root cause: suspicious login burst against finance systems and unusual data export pattern.',
+    impact:'22/25', impactSub:'Enterprise risk score', opp:'Protected', save:'$2.0M', confidence:92,
+    action:'Isolate affected systems, rotate credentials, and engage incident response protocol.',
+    kpis:{ revenue:'$10.2M', cash:'$12.0M', csat:'4.0/5.0', users:'12,330' },
+    actions:['Isolate affected finance systems','Force credential rotation for privileged users','Start incident response and customer comms review'],
+    findings:[
+      ['Security Risk','Anomalous access pattern detected in finance workflows.','High'],
+      ['Containment','Fast isolation reduces operational blast radius.','High'],
+      ['Business Continuity','Critical dashboards remain read-only during triage.','Medium'],
+    ],
+    steps:[
+      'Risk Agent detected abnormal access burst',
+      'Finance Agent confirmed sensitive workflow exposure',
+      'Operations Agent checked continuity risk',
+      'Executive Agent triggered incident response path',
+      'System recommends isolation and credential rotation',
+    ],
+  },
+  {
+    label:'🚀 Product Launch', title:'Product Launch', tone:'emerald',
+    signal:'New revenue stream live', cause:'Opportunity: launch demand is above forecast, but onboarding capacity is becoming the constraint.',
+    impact:'+$3.4M', impactSub:'Projected FY upside', opp:'+$2.2M', save:'$300K', confidence:97,
+    action:'Accelerate marketing spend, expand onboarding capacity, and protect support SLAs.',
+    kpis:{ revenue:'$13.7M', cash:'$14.4M', csat:'4.6/5.0', users:'18,900' },
+    actions:['Increase launch marketing by 18%','Add onboarding capacity for enterprise customers','Monitor support SLA risk during demand spike'],
+    findings:[
+      ['Growth Signal','Launch pipeline is 31% above forecast.','Low'],
+      ['Capacity Constraint','Onboarding team becomes the limiting factor in 21 days.','Medium'],
+      ['Upside Path','Capacity expansion protects $2.2M upside.','Low'],
+    ],
+    steps:[
+      'Sales Agent detected launch demand above forecast',
+      'Operations Agent checked onboarding capacity',
+      'Finance Agent modelled upside and margin impact',
+      'Risk Agent flagged support SLA risk',
+      'Executive Agent recommends capacity expansion',
+    ],
+  },
 ];
 function renderScenarioBtns() {
   document.getElementById('scenario-btns').innerHTML = SCENARIOS.map((s,i) => `
@@ -1044,16 +1235,94 @@ function renderScenarioBtns() {
     </button>`).join('');
 }
 function runScenario(i) {
-  const s = SCENARIOS[i];
-  // Override exec brief fields directly
+  activeScenario = SCENARIOS[i];
+  applyScenario(activeScenario);
+}
+
+function applyScenario(s, opts = {}) {
+  document.getElementById('eb-fy-badge').textContent = 'Scenario';
   document.getElementById('eb-signal').textContent = s.signal;
   document.getElementById('eb-action').textContent = s.action;
-  document.getElementById('eb-cause').textContent  = `Scenario simulation active. All agents are analysing the ${s.label.replace(/^.+ /,'')} event.`;
+  document.getElementById('eb-cause').textContent  = s.cause;
+  document.getElementById('eb-impact').textContent = s.impact;
+  document.getElementById('eb-impact-sub').textContent = s.impactSub;
+  document.getElementById('eb-opp').textContent = s.opp;
+  document.getElementById('eb-save').textContent = s.save;
+  document.getElementById('eb-confidence').textContent = `AI Confidence ${s.confidence}%`;
+  document.getElementById('eb-rev').textContent = s.kpis.revenue;
+  document.getElementById('eb-cash').textContent = s.kpis.cash;
+  document.getElementById('eb-csat').textContent = s.kpis.csat;
+  document.getElementById('eb-users').textContent = s.kpis.users;
+  document.getElementById('eb-impact').className = s.impact.startsWith('-') || ['amber','orange','blue'].includes(s.tone)
+    ? 'font-bold text-2xl text-red-300'
+    : 'font-bold text-2xl text-emerald-300';
+  document.getElementById('eb-confidence').className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+
+  _actions = s.actions.map((text, idx) => ({
+    text,
+    status: idx === 0 ? 'approved' : idx === 1 ? 'waiting' : 'done',
+    badge: idx === 0 ? 'Approved' : idx === 1 ? 'Awaiting Approval' : 'Completed',
+  })).concat(DEFAULT_ACTIONS.slice(0, 3));
+  renderActions();
+  renderScenarioImpact(s);
+  renderScenarioFindings(s);
+  replayScenarioInvestigation(s);
+
   const st = document.getElementById('scenario-status');
   st.classList.remove('hidden');
-  st.innerHTML = `<strong>${s.label}</strong> scenario activated — Executive Brief and AI Investigation updated. <button onclick="loadAllFYData();this.closest('#scenario-status').classList.add('hidden')" class="ml-2 underline text-purple-500">Reset to live data</button>`;
-  replayInvestigation();
+  st.innerHTML = `<strong>${s.label}</strong> scenario activated — executive brief, investigation, actions, findings, and impact cards updated. <button onclick="resetScenario()" class="ml-2 underline text-purple-500">Reset to live data</button>`;
+  if (!opts.preserveStatus) showToast(`${s.label} scenario activated`);
   window._ebCurrentAction = s.action; window._ebCurrentSignal = s.signal;
+}
+
+function resetScenario() {
+  activeScenario = null;
+  _actions = [...DEFAULT_ACTIONS];
+  document.getElementById('scenario-status').classList.add('hidden');
+  renderActions();
+  loadAllFYData();
+  setTimeout(replayInvestigation, 250);
+}
+
+function renderScenarioImpact(s) {
+  const items = [
+    { label:'Scenario', value:s.title, sub:s.signal, risk:s.tone === 'emerald' ? 'Low' : 'High' },
+    { label:'Financial Impact', value:s.impact, sub:s.impactSub, risk:s.tone === 'emerald' ? 'Low' : 'High' },
+    { label:'AI Opportunity', value:s.opp, sub:'Recovery or upside identified', risk:'Medium' },
+    { label:'Protected Value', value:s.save, sub:'Immediate savings or loss avoided', risk:'Low' },
+  ];
+  const riskColor = {Low:'text-emerald-600 bg-emerald-50',Medium:'text-yellow-700 bg-yellow-50',High:'text-red-600 bg-red-50'};
+  document.getElementById('impact-grid').innerHTML = items.map(it => `
+    <div class="bg-gray-50 rounded-xl p-4">
+      <p class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">${it.label}</p>
+      <p class="text-xl font-bold text-gray-800 mb-1">${it.value}</p>
+      <p class="text-xs text-gray-500 mb-2">${it.sub}</p>
+      <span class="text-xs font-bold px-2 py-0.5 rounded-full ${riskColor[it.risk]}">${it.risk} Risk</span>
+    </div>`).join('');
+}
+
+function renderScenarioFindings(s) {
+  const sevColor = {High:'border-red-300 bg-red-50',Medium:'border-yellow-300 bg-yellow-50',Low:'border-emerald-300 bg-emerald-50'};
+  const sevText  = {High:'text-red-600',Medium:'text-yellow-700',Low:'text-emerald-600'};
+  document.getElementById('findings-list').innerHTML = s.findings.map(f => `
+    <div class="border rounded-xl p-4 ${sevColor[f[2]]||sevColor.Low}">
+      <div class="flex justify-between items-start mb-1">
+        <p class="font-semibold text-gray-800 text-sm">${f[0]}</p>
+        <span class="text-xs font-bold ${sevText[f[2]]||sevText.Low} ml-2 flex-shrink-0">${f[2]}</span>
+      </div>
+      <p class="text-xs text-gray-600">${f[1]}</p>
+    </div>`).join('');
+  document.getElementById('findings-ts').textContent = s.title + ' scenario';
+}
+
+function replayScenarioInvestigation(s) {
+  const steps = s.steps.map((text, idx) => ({
+    icon: idx === 0 ? '🔴' : idx === s.steps.length - 1 ? '💡' : idx === s.steps.length - 2 ? '🧠' : '✓',
+    text,
+    delay: idx * 550,
+    type: idx === 0 ? 'alert' : idx === s.steps.length - 1 ? 'rec' : idx === s.steps.length - 2 ? 'root' : 'ok',
+  }));
+  replayInvestigationSteps(steps);
 }
 
 // ── Workflow ──────────────────────────────────────────────────────
