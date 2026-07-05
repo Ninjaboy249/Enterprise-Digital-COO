@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Enterprise Digital COO — AI Command Center</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/static/assets/edcoo-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -183,6 +185,9 @@
     .wf-arrow { width:2px; height:22px; background:linear-gradient(#7c3aed,#a78bfa); margin:0 auto; }
     .icon-inline { width:1em; height:1em; display:inline-block; vertical-align:-0.14em; }
     .icon-btn { width:1rem; height:1rem; flex-shrink:0; }
+    .brand-lockup { display:flex; align-items:center; gap:.7rem; min-width:0; }
+    .brand-logo { width:42px; height:42px; border-radius:12px; background:#fff; padding:4px; box-shadow:0 8px 20px rgba(0,0,0,.18); flex-shrink:0; }
+    .brand-logo-sm { width:24px; height:24px; border-radius:7px; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,0,0,.15); flex-shrink:0; }
 
     /* Theme toggle button */
     #theme-toggle { cursor:pointer; font-size:16px; background:rgba(255,255,255,.15);
@@ -201,8 +206,13 @@
 <header class="gradient-bg text-white shadow-xl">
   <div class="max-w-screen-xl mx-auto px-5 py-5 flex flex-wrap justify-between items-center gap-3">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2"><i data-lucide="radar" class="w-6 h-6"></i> Enterprise Digital COO</h1>
-      <p class="text-xs opacity-75 mt-0.5">AI Command Center · Multi-Agent Business Intelligence</p>
+      <div class="brand-lockup">
+        <img src="/static/assets/edcoo-logo.svg" alt="Enterprise Digital COO logo" class="brand-logo" />
+        <div class="min-w-0">
+          <h1 class="text-2xl font-bold tracking-tight">Enterprise Digital COO</h1>
+          <p class="text-xs opacity-75 mt-0.5">AI Command Center · Multi-Agent Business Intelligence</p>
+        </div>
+      </div>
     </div>
     <div class="flex items-center gap-3 flex-wrap">
       <!-- FY selector inline in header -->
@@ -329,7 +339,7 @@
 
   <!-- ── 1. ASK COO BAR ──────────────────────────────────────── -->
   <div class="card p-5" style="background:linear-gradient(135deg,#1e1b4b,#312e81);">
-    <p class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-2 flex items-center gap-2"><i data-lucide="bot" class="icon-btn"></i> Ask Enterprise COO</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-2 flex items-center gap-2"><img src="/static/assets/edcoo-logo.svg" alt="" class="brand-logo-sm" /> Ask Enterprise COO</p>
     <div class="flex gap-3">
       <input id="hero-ask-input" type="text" placeholder="What happened to revenue this quarter?"
              class="flex-1 rounded-xl px-4 py-3 text-sm bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"

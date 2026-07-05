@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Enterprise Digital COO logo">
+  <defs>
+    <linearGradient id="brandGradient" x1="18" y1="134" x2="142" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="0.48" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#0f4fc4"/>
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="48" y1="116" x2="116" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d4ed8"/>
+      <stop offset="1" stop-color="#a21caf"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="34" fill="#ffffff"/>
+  <path d="M21 102c0-19 15-34 34-34h26v18H55c-9 0-16 7-16 16s7 16 16 16h28v18H55c-19 0-34-15-34-34Z" fill="url(#brandGradient)"/>
+  <path d="M83 68h22c19 0 34 15 34 34s-15 34-34 34H83v-18h22c9 0 16-7 16-16s-7-16-16-16H83V68Z" fill="url(#brandGradient)"/>
+  <circle cx="80" cy="82" r="47" fill="#fff"/>
+  <circle cx="80" cy="82" r="40" fill="none" stroke="url(#brandGradient)" stroke-width="9"/>
+  <path d="M51 104h12V83H51v21Zm20 0h12V73H71v31Zm20 0h12V63H91v41Z" fill="url(#brandGradient)"/>
+  <path d="M48 93 72 72l17 9 30-34" fill="none" stroke="url(#accentGradient)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m118 47-4 26-20-17 24-9Z" fill="url(#accentGradient)"/>
+  <path d="M60 42c4-13 17-22 32-18 11 3 20 13 21 24 1 12-4 22-14 28" fill="none" stroke="#123ea8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M70 42h15m-15 0-8 11m23-11 7 11m-30 0h30m-30 0 8 12m22-12-9 12m-13 0h13" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="70" cy="42" r="4" fill="#fff"/>
+  <circle cx="85" cy="42" r="4" fill="#fff"/>
+  <circle cx="62" cy="53" r="4" fill="#fff"/>
+  <circle cx="92" cy="53" r="4" fill="#fff"/>
+  <circle cx="70" cy="65" r="4" fill="#fff"/>
+  <circle cx="83" cy="65" r="4" fill="#fff"/>
+</svg>

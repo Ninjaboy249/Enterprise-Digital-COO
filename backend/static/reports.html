@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reports Portal — Enterprise Digital COO</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/static/assets/edcoo-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <style>
@@ -92,6 +94,9 @@
              font-size:13px; opacity:0; transition:opacity .25s, transform .25s;
              pointer-events:none; z-index:9999; white-space:nowrap; }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .brand-lockup { display:flex; align-items:center; gap:.7rem; min-width:0; }
+    .brand-logo { width:42px; height:42px; border-radius:12px; background:#fff; padding:4px; box-shadow:0 8px 20px rgba(0,0,0,.18); flex-shrink:0; }
+    .brand-logo-sm { width:22px; height:22px; border-radius:7px; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,0,0,.12); display:inline-block; vertical-align:middle; }
     @media (forced-colors: active) {
       .rounded-lg, .rounded-xl, table, th, td { border: 1px solid ButtonText !important; }
     }
@@ -102,9 +107,13 @@
 <!-- ════════════════════ HEADER ════════════════════ -->
 <header class="gradient-bg text-white shadow-xl">
   <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">📂 Reports Portal</h1>
-      <p class="text-sm opacity-75 mt-0.5">Upload Power BI (.pbix) or JSON reports — AI reads, summarises &amp; answers questions. For Excel files use the <a href="/static/excel-analysis.html" class="underline opacity-90 hover:opacity-100">Excel AI Analyser →</a></p>
+    <div class="brand-lockup">
+      <img src="/static/assets/edcoo-logo.svg" alt="Enterprise Digital COO logo" class="brand-logo" />
+      <div>
+        <p class="text-xs opacity-75 font-semibold uppercase tracking-widest">Enterprise Digital COO</p>
+        <h1 class="text-2xl font-bold tracking-tight">📂 Reports Portal</h1>
+        <p class="text-sm opacity-75 mt-0.5">Upload Power BI (.pbix) or JSON reports — AI reads, summarises &amp; answers questions. For Excel files use the <a href="/static/excel-analysis.html" class="underline opacity-90 hover:opacity-100">Excel AI Analyser →</a></p>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
@@ -261,7 +270,10 @@
 
 <!-- ════════════════════ FOOTER ════════════════════ -->
 <footer class="mt-16 border-t border-slate-200 bg-white text-center py-5">
-  <p class="text-xs text-slate-400">Enterprise Digital COO · Reports Portal · Powered by OpenAI</p>
+  <p class="text-xs text-slate-400 inline-flex items-center justify-center gap-2">
+    <img src="/static/assets/edcoo-logo.svg" alt="" class="brand-logo-sm" />
+    <span>Enterprise Digital COO · Reports Portal · Powered by OpenAI</span>
+  </p>
 </footer>
 
 

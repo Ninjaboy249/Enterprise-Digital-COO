@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Operations Dashboard - Enterprise Digital COO</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="/static/assets/edcoo-logo.svg" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
@@ -63,6 +65,8 @@
                     border:1px solid rgba(255,255,255,.25); border-radius:8px;
                     padding:5px 9px; color:#fff; transition:background .15s; }
     #theme-toggle:hover { background:rgba(255,255,255,.28); }
+    .brand-lockup { display:flex; align-items:center; gap:.7rem; min-width:0; }
+    .brand-logo { width:42px; height:42px; border-radius:12px; background:#fff; padding:4px; box-shadow:0 8px 20px rgba(0,0,0,.18); flex-shrink:0; }
     @media (forced-colors: active) {
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
@@ -74,9 +78,13 @@
   <!-- Header -->
   <header class="gradient-bg text-white shadow-lg">
     <div class="container mx-auto px-4 py-5 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl font-bold">⚙️ Operations Dashboard</h1>
-        <p class="text-sm opacity-90">System Performance, Customer Experience &amp; FY Comparison</p>
+      <div class="brand-lockup">
+        <img src="/static/assets/edcoo-logo.svg" alt="Enterprise Digital COO logo" class="brand-logo" />
+        <div>
+          <p class="text-xs opacity-75 font-semibold uppercase tracking-widest">Enterprise Digital COO</p>
+          <h1 class="text-3xl font-bold">⚙️ Operations Dashboard</h1>
+          <p class="text-sm opacity-90">System Performance, Customer Experience &amp; FY Comparison</p>
+        </div>
       </div>
       <div class="flex items-center gap-3">
         <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
