@@ -107,6 +107,13 @@ async def root():
     }
 
 
+@app.get("/googlecb411ad1aca4954f.html")
+async def google_site_verification():
+    """Serve Google Search Console ownership verification."""
+    verification_file = static_dir / "googlecb411ad1aca4954f.html"
+    return FileResponse(str(verification_file), media_type="text/html")
+
+
 @app.get("/health")
 async def health():
     return {"status": "healthy", "version": settings.APP_VERSION}
