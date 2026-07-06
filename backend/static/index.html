@@ -188,6 +188,71 @@
     .brand-lockup { display:flex; align-items:center; gap:.7rem; min-width:0; }
     .brand-logo { width:42px; height:42px; border-radius:12px; background:#fff; padding:4px; box-shadow:0 8px 20px rgba(0,0,0,.18); flex-shrink:0; }
     .brand-logo-sm { width:24px; height:24px; border-radius:7px; background:#fff; padding:2px; box-shadow:0 3px 10px rgba(0,0,0,.15); flex-shrink:0; }
+    .sparkle-generate-btn, .shine-sweep-btn, .trianglify-btn { position:relative; isolation:isolate; overflow:hidden; transform:translateZ(0); }
+    .sparkle-generate-btn {
+      border:1px solid rgba(255,255,255,.28) !important;
+      background:
+        radial-gradient(circle at 14% 22%, rgba(255,255,255,.95) 0 1px, transparent 2px),
+        radial-gradient(circle at 78% 28%, rgba(255,255,255,.85) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 42% 78%, rgba(216,180,254,.95) 0 1px, transparent 3px),
+        linear-gradient(135deg,#7c3aed 0%,#2563eb 48%,#06b6d4 100%) !important;
+      box-shadow:0 12px 28px rgba(37,99,235,.32), inset 0 1px 0 rgba(255,255,255,.28) !important;
+      color:#fff !important;
+      transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+    .sparkle-generate-btn:hover { transform:translateY(-1px); filter:saturate(1.08); box-shadow:0 16px 34px rgba(37,99,235,.42), 0 0 0 1px rgba(255,255,255,.18) inset !important; }
+    .sparkle-generate-btn::before {
+      content:""; position:absolute; inset:-35% -20%; z-index:-1;
+      background:conic-gradient(from 180deg, transparent, rgba(255,255,255,.42), transparent 32%);
+      animation:sparkleRotate 3.8s linear infinite;
+    }
+    .sparkle-generate-btn::after {
+      content:""; position:absolute; inset:0; z-index:-1;
+      background:linear-gradient(110deg, transparent 28%, rgba(255,255,255,.48) 44%, transparent 58%);
+      transform:translateX(-130%); transition:transform .7s ease;
+    }
+    .sparkle-generate-btn:hover::after { transform:translateX(130%); }
+    @keyframes sparkleRotate { to { transform:rotate(360deg); } }
+    .shine-sweep-btn::before {
+      content:""; position:absolute; inset:-2px auto -2px -55%; width:42%;
+      background:linear-gradient(110deg, transparent, rgba(255,255,255,.62), transparent);
+      transform:skewX(-18deg); transition:left .65s ease; pointer-events:none;
+    }
+    .shine-sweep-btn:hover::before { left:120%; }
+    .shine-sweep-btn { transition:transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+    .shine-sweep-btn:hover { transform:translateY(-1px); filter:saturate(1.07); box-shadow:0 14px 28px rgba(15,23,42,.18) !important; }
+    .trianglify-btn {
+      border:1px solid rgba(255,255,255,.18) !important;
+      background-color:#4c1d95 !important;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='72' viewBox='0 0 180 72'%3E%3Cpolygon points='0,0 58,0 26,38' fill='%238b5cf6' fill-opacity='.55'/%3E%3Cpolygon points='58,0 112,0 82,48 26,38' fill='%232563eb' fill-opacity='.34'/%3E%3Cpolygon points='112,0 180,0 150,42 82,48' fill='%2306b6d4' fill-opacity='.28'/%3E%3Cpolygon points='0,72 26,38 82,48 42,72' fill='%23a78bfa' fill-opacity='.36'/%3E%3Cpolygon points='42,72 82,48 150,42 118,72' fill='%237c3aed' fill-opacity='.42'/%3E%3Cpolygon points='118,72 150,42 180,72' fill='%2322d3ee' fill-opacity='.3'/%3E%3C/svg%3E"),
+        linear-gradient(135deg, rgba(76,29,149,.95), rgba(30,64,175,.92)) !important;
+      background-size:180px 72px, 100% 100% !important;
+      color:#fff !important;
+      box-shadow:0 10px 24px rgba(76,29,149,.28) !important;
+      transition:transform .18s ease, box-shadow .18s ease, background-position .55s ease;
+    }
+    .trianglify-btn:hover { transform:translateY(-1px); background-position:32px 0, 0 0 !important; box-shadow:0 14px 30px rgba(76,29,149,.36) !important; }
+    .electric-glow { position:relative; border-color:rgba(34,211,238,.8) !important; animation:electricPulse 2.4s ease-in-out infinite; }
+    .electric-glow::before {
+      content:""; position:absolute; inset:0; border-radius:14px; pointer-events:none; z-index:1;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(34,211,238,.85) 16%, transparent 30%),
+        linear-gradient(180deg, transparent 0%, rgba(168,85,247,.7) 18%, transparent 32%);
+      background-size:220% 100%, 100% 220%;
+      background-position:-120% 0, 0 -120%;
+      mix-blend-mode:screen; opacity:.7; animation:electricTrace 2.1s linear infinite;
+    }
+    .electric-glow > * { position:relative; z-index:2; }
+    @keyframes electricPulse {
+      0%,100% { box-shadow:0 0 0 1px rgba(34,211,238,.35), 0 0 18px rgba(34,211,238,.22), 0 0 34px rgba(124,58,237,.18); }
+      50% { box-shadow:0 0 0 1px rgba(34,211,238,.8), 0 0 28px rgba(34,211,238,.42), 0 0 52px rgba(124,58,237,.32); }
+    }
+    @keyframes electricTrace {
+      0% { background-position:-120% 0, 0 -120%; }
+      55% { background-position:140% 0, 0 130%; }
+      100% { background-position:140% 0, 0 130%; }
+    }
 
     /* Theme toggle button */
     #theme-toggle { cursor:pointer; font-size:16px; background:rgba(255,255,255,.15);
@@ -200,7 +265,7 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body id="top" class="bg-gray-100 min-h-screen">
 
 <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
 <header class="gradient-bg text-white shadow-xl">
@@ -223,7 +288,7 @@
       </div>
       <span id="last-updated" class="text-xs opacity-60 hidden md:block"></span>
       <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
-      <button id="chat-toggle" class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+      <button id="chat-toggle" class="trianglify-btn text-white text-sm font-semibold px-4 py-2 rounded-lg">
         <span class="inline-flex items-center gap-2"><i data-lucide="message-circle" class="icon-btn"></i> Ask COO</span>
       </button>
     </div>
@@ -285,7 +350,7 @@
   </section>
 
   <!-- ── HACKATHON IMPACT STORY ──────────────────────────────── -->
-  <section class="card impact-story overflow-hidden border border-red-100">
+  <section class="card impact-story electric-glow overflow-hidden border border-red-100">
     <div class="px-6 pt-5 pb-4 border-b border-orange-100 flex flex-wrap items-center justify-between gap-3">
       <div>
         <p class="text-xs font-bold uppercase tracking-widest text-orange-600">Live Crisis Scenario</p>
@@ -345,17 +410,17 @@
              class="flex-1 rounded-xl px-4 py-3 text-sm bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
              onkeydown="if(event.key==='Enter') heroAsk()" />
       <button onclick="heroAsk()"
-              class="bg-purple-500 hover:bg-purple-400 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors whitespace-nowrap">
-        Ask AI
+              class="sparkle-generate-btn text-white font-bold px-6 py-3 rounded-xl text-sm whitespace-nowrap inline-flex items-center gap-2">
+        <i data-lucide="sparkles" class="icon-btn"></i> Generate
       </button>
     </div>
     <div id="hero-answer" class="hidden mt-4 text-sm text-purple-100 bg-white/10 rounded-xl px-4 py-3 leading-relaxed"></div>
     <div class="flex flex-wrap gap-2 mt-3">
-      <button onclick="heroQuick('What happened to revenue?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Revenue drop?</button>
-      <button onclick="heroQuick('What are the top risks right now?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Top risks</button>
-      <button onclick="heroQuick('Give me a full executive summary')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Executive summary</button>
-      <button onclick="heroQuick('What should we do about cash flow?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Cash flow</button>
-      <button onclick="heroQuick('Which customers are at churn risk?')" class="text-xs bg-white/10 hover:bg-white/20 text-purple-200 px-3 py-1 rounded-full transition-colors">Churn risk</button>
+      <button onclick="heroQuick('What happened to revenue?')" class="trianglify-btn text-xs px-3 py-1 rounded-full">Revenue drop?</button>
+      <button onclick="heroQuick('What are the top risks right now?')" class="trianglify-btn text-xs px-3 py-1 rounded-full">Top risks</button>
+      <button onclick="heroQuick('Give me a full executive summary')" class="trianglify-btn text-xs px-3 py-1 rounded-full">Executive summary</button>
+      <button onclick="heroQuick('What should we do about cash flow?')" class="trianglify-btn text-xs px-3 py-1 rounded-full">Cash flow</button>
+      <button onclick="heroQuick('Which customers are at churn risk?')" class="trianglify-btn text-xs px-3 py-1 rounded-full">Churn risk</button>
     </div>
   </div>
 
@@ -522,7 +587,7 @@
         </div>
         <p class="text-purple-700 text-sm mb-3">Full AI investigation, agent workforce status, executive brief &amp; action center</p>
         <button onclick="window.scrollTo({top:0,behavior:'smooth'})"
-                class="mt-auto w-full bg-purple-600 text-white py-2.5 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-bold">
+                class="shine-sweep-btn mt-auto w-full bg-purple-600 text-white py-2.5 px-4 rounded-xl text-center text-sm font-bold">
           ↑ Back to Top
         </button>
       </div>
@@ -536,7 +601,7 @@
           <h3 class="ml-3 text-base font-semibold text-gray-800">Sales</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">Revenue · Pipeline · Regional breakdown · FY comparison · AI chat</p>
-        <a href="/static/sales.html" class="mt-auto block w-full bg-blue-600 text-white py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors text-center text-sm font-medium">View Sales →</a>
+        <a href="/static/sales.html" class="shine-sweep-btn mt-auto block w-full bg-blue-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">View Sales →</a>
       </div>
 
       <!-- Finance -->
@@ -548,7 +613,7 @@
           <h3 class="ml-3 text-base font-semibold text-gray-800">Finance</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">Cash · Margins · EBITDA · Runway · FY trends · AI chat</p>
-        <a href="/static/finance.html" class="mt-auto block w-full bg-green-600 text-white py-2 px-4 rounded-xl hover:bg-green-700 transition-colors text-center text-sm font-medium">View Finance →</a>
+        <a href="/static/finance.html" class="shine-sweep-btn mt-auto block w-full bg-green-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">View Finance →</a>
       </div>
 
       <!-- Operations -->
@@ -560,7 +625,7 @@
           <h3 class="ml-3 text-base font-semibold text-gray-800">Operations</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">Uptime · CSAT · NPS · Support tickets · 3-year trends</p>
-        <a href="/static/operations.html" class="mt-auto block w-full bg-purple-600 text-white py-2 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-medium">View Operations →</a>
+        <a href="/static/operations.html" class="shine-sweep-btn mt-auto block w-full bg-purple-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">View Operations →</a>
       </div>
 
       <!-- Reports -->
@@ -572,7 +637,7 @@
           <h3 class="ml-3 text-base font-semibold text-gray-800">Reports Portal</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">.pbix / .json · AI executive summary · Ask questions</p>
-        <a href="/static/reports.html" class="mt-auto block w-full bg-sky-600 text-white py-2 px-4 rounded-xl hover:bg-sky-700 transition-colors text-center text-sm font-medium">Open Reports →</a>
+        <a href="/static/reports.html" class="shine-sweep-btn mt-auto block w-full bg-sky-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">Open Reports →</a>
       </div>
 
       <!-- Excel AI -->
@@ -584,7 +649,7 @@
           <h3 class="ml-3 text-base font-semibold text-gray-800">Excel AI Analysis</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">.xlsx / .xls · Power BI-style AI report · KPI stats</p>
-        <a href="/static/excel-analysis.html" class="mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded-xl hover:bg-emerald-700 transition-colors text-center text-sm font-medium">Open Analyser →</a>
+        <a href="/static/excel-analysis.html" class="shine-sweep-btn mt-auto block w-full bg-emerald-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">Open Analyser →</a>
       </div>
 
       <!-- Import Company Data -->
@@ -596,7 +661,7 @@
           <h3 class="ml-3 text-base font-semibold text-purple-700">Company Data</h3>
         </div>
         <p class="text-gray-500 text-xs mb-4">Upload Excel / .pbix or describe data via AI to replace all demo KPIs</p>
-        <button onclick="openImportModal()" class="mt-auto w-full bg-purple-600 text-white py-2 px-4 rounded-xl hover:bg-purple-700 transition-colors text-center text-sm font-medium">Import My Data →</button>
+        <button onclick="openImportModal()" class="shine-sweep-btn mt-auto w-full bg-purple-600 text-white py-2 px-4 rounded-xl text-center text-sm font-medium">Import My Data →</button>
       </div>
 
     </div>
@@ -620,16 +685,16 @@
   </div>
   <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
   <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
-    <button onclick="quickAsk('Give me an overall summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
-    <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
-    <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
-    <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
+    <button onclick="quickAsk('Give me an overall summary')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Summary</button>
+    <button onclick="quickAsk('What are the key risks?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Risks</button>
+    <button onclick="quickAsk('What do you recommend?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Recommend</button>
+    <button onclick="quickAsk('How are trends looking?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Trends</button>
   </div>
   <div class="p-3 border-t border-gray-200 flex gap-2">
     <input id="chat-input" type="text" placeholder="Ask about any domain…"
            class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
            onkeydown="if(event.key==='Enter') sendChat()" />
-    <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+    <button onclick="sendChat()" class="trianglify-btn text-white px-3 py-2 rounded-lg text-sm font-medium">Send</button>
   </div>
 </aside>
 
@@ -642,7 +707,7 @@
     </div>
     <div class="flex border border-gray-200 rounded-lg overflow-hidden mb-4 text-sm font-medium">
       <button id="import-tab-file" onclick="switchImportTab('file')" class="flex-1 py-2 bg-purple-600 text-white transition-colors">📁 Upload File</button>
-      <button id="import-tab-ai"   onclick="switchImportTab('ai')"   class="flex-1 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="sparkles" class="icon-btn"></i> Ask AI</button>
+      <button id="import-tab-ai"   onclick="switchImportTab('ai')"   class="sparkle-generate-btn flex-1 py-2 text-white inline-flex items-center justify-center gap-2"><i data-lucide="sparkles" class="icon-btn"></i> Ask AI</button>
     </div>
 
     <!-- Import progress steps (shown during upload) -->
@@ -685,7 +750,7 @@
       <textarea id="ai-import-prompt" rows="5"
                 placeholder="Describe your company data here — include FY labels for multi-year support…"
                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
-      <button onclick="submitAIImport()" class="w-full mt-3 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center justify-center gap-2">
+      <button onclick="submitAIImport()" class="sparkle-generate-btn w-full mt-3 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
         <span id="ai-import-btn-text" class="inline-flex items-center justify-center gap-2"><i data-lucide="sparkles" class="icon-btn"></i> Import with AI</span>
       </button>
     </div>
@@ -1586,7 +1651,7 @@ function switchImportTab(tab) {
   document.getElementById('import-section-ai').classList.toggle('hidden',isFile);
   document.getElementById('import-submit-btn').classList.toggle('hidden',!isFile);
   document.getElementById('import-tab-file').className=`flex-1 py-2 transition-colors ${isFile?'bg-purple-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
-  document.getElementById('import-tab-ai').className=`flex-1 py-2 transition-colors ${!isFile?'bg-purple-600 text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
+  document.getElementById('import-tab-ai').className=`flex-1 py-2 inline-flex items-center justify-center gap-2 transition-colors ${!isFile?'sparkle-generate-btn text-white':'bg-gray-100 text-gray-600 hover:bg-gray-200'}`;
   document.getElementById('import-status').innerHTML='';
 }
 

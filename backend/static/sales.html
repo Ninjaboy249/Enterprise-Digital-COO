@@ -69,6 +69,13 @@
     #theme-toggle:hover { background:rgba(255,255,255,.28); }
     .brand-lockup { display:flex; align-items:center; gap:.7rem; min-width:0; }
     .brand-logo { width:42px; height:42px; border-radius:12px; background:#fff; padding:4px; box-shadow:0 8px 20px rgba(0,0,0,.18); flex-shrink:0; }
+    .shine-sweep-btn, .trianglify-btn { position:relative; isolation:isolate; overflow:hidden; transform:translateZ(0); }
+    .shine-sweep-btn::before { content:""; position:absolute; inset:-2px auto -2px -55%; width:42%; background:linear-gradient(110deg, transparent, rgba(255,255,255,.62), transparent); transform:skewX(-18deg); transition:left .65s ease; pointer-events:none; }
+    .shine-sweep-btn:hover::before { left:120%; }
+    .shine-sweep-btn { transition:transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+    .shine-sweep-btn:hover { transform:translateY(-1px); filter:saturate(1.07); box-shadow:0 14px 28px rgba(15,23,42,.18) !important; }
+    .trianglify-btn { border:1px solid rgba(255,255,255,.18) !important; background-color:#4c1d95 !important; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='72' viewBox='0 0 180 72'%3E%3Cpolygon points='0,0 58,0 26,38' fill='%238b5cf6' fill-opacity='.55'/%3E%3Cpolygon points='58,0 112,0 82,48 26,38' fill='%232563eb' fill-opacity='.34'/%3E%3Cpolygon points='112,0 180,0 150,42 82,48' fill='%2306b6d4' fill-opacity='.28'/%3E%3Cpolygon points='0,72 26,38 82,48 42,72' fill='%23a78bfa' fill-opacity='.36'/%3E%3Cpolygon points='42,72 82,48 150,42 118,72' fill='%237c3aed' fill-opacity='.42'/%3E%3Cpolygon points='118,72 150,42 180,72' fill='%2322d3ee' fill-opacity='.3'/%3E%3C/svg%3E"),linear-gradient(135deg,rgba(76,29,149,.95),rgba(30,64,175,.92)) !important; background-size:180px 72px,100% 100% !important; color:#fff !important; box-shadow:0 10px 24px rgba(76,29,149,.28) !important; transition:transform .18s ease, box-shadow .18s ease, background-position .55s ease; }
+    .trianglify-btn:hover { transform:translateY(-1px); background-position:32px 0,0 0 !important; box-shadow:0 14px 30px rgba(76,29,149,.36) !important; }
     @media (forced-colors: active) {
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
@@ -90,10 +97,10 @@
       </div>
       <div class="flex items-center gap-3">
         <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
-        <button id="chat-toggle" class="bg-white text-purple-700 font-semibold px-4 py-2 rounded-lg shadow hover:bg-purple-50 transition-colors">
+        <button id="chat-toggle" class="trianglify-btn font-semibold px-4 py-2 rounded-lg">
           💬 AI Insights
         </button>
-        <a href="/" class="bg-white text-purple-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors">← Back</a>
+        <a href="/#top" class="shine-sweep-btn bg-white text-purple-600 px-4 py-2 rounded">← Back</a>
       </div>
     </div>
   </header>
@@ -128,7 +135,7 @@
         <select id="compare-fy1" class="border rounded px-2 py-1 text-sm"></select>
         <span class="text-gray-400">vs</span>
         <select id="compare-fy2" class="border rounded px-2 py-1 text-sm"></select>
-        <button onclick="loadComparison()" class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">Compare</button>
+        <button onclick="loadComparison()" class="shine-sweep-btn bg-purple-600 text-white px-3 py-1 rounded text-sm">Compare</button>
       </div>
 
       <!-- Loading -->
@@ -201,8 +208,8 @@
             <div id="status-alert" class="mb-3"></div>
             <ul id="trends-list" class="space-y-2 text-sm"></ul>
             <div class="mt-4 space-y-2">
-              <button onclick="refreshData()" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 text-sm">🔄 Refresh</button>
-              <button onclick="exportData()" class="w-full bg-gray-600 text-white py-2 rounded hover:bg-gray-700 text-sm">📥 Export JSON</button>
+              <button onclick="refreshData()" class="shine-sweep-btn w-full bg-purple-600 text-white py-2 rounded text-sm">🔄 Refresh</button>
+              <button onclick="exportData()" class="shine-sweep-btn w-full bg-gray-600 text-white py-2 rounded text-sm">📥 Export JSON</button>
             </div>
           </div>
         </div>
@@ -219,16 +226,16 @@
       <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm"></div>
       <!-- Quick prompts -->
       <div class="px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1">
-        <button onclick="quickAsk('Show me a summary')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Summary</button>
-        <button onclick="quickAsk('What are the key risks?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Risks</button>
-        <button onclick="quickAsk('How are trends looking?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Trends</button>
-        <button onclick="quickAsk('What do you recommend?')" class="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full hover:bg-purple-100">Recommend</button>
+        <button onclick="quickAsk('Show me a summary')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Summary</button>
+        <button onclick="quickAsk('What are the key risks?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Risks</button>
+        <button onclick="quickAsk('How are trends looking?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Trends</button>
+        <button onclick="quickAsk('What do you recommend?')" class="trianglify-btn text-xs px-2 py-1 rounded-full">Recommend</button>
       </div>
       <div class="p-3 border-t border-gray-200 flex gap-2">
         <input id="chat-input" type="text" placeholder="Ask about sales data…"
                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
                onkeydown="if(event.key==='Enter') sendChat()" />
-        <button onclick="sendChat()" class="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 text-sm font-medium">Send</button>
+        <button onclick="sendChat()" class="trianglify-btn px-3 py-2 rounded-lg text-sm font-medium">Send</button>
       </div>
     </aside>
   </div><!-- /flex -->
@@ -279,7 +286,7 @@ function buildFYButtons() {
     const btn = document.createElement('button');
     btn.textContent = `FY ${fy}`;
     btn.dataset.fy = fy;
-    btn.className = 'fy-btn px-4 py-1 rounded-full border border-purple-300 text-sm font-medium hover:bg-purple-100 transition-colors' + (fy === currentFY ? ' active' : '');
+    btn.className = 'shine-sweep-btn fy-btn px-4 py-1 rounded-full border border-purple-300 text-sm font-medium hover:bg-purple-100 transition-colors' + (fy === currentFY ? ' active' : '');
     btn.onclick = () => selectFY(fy);
     container.appendChild(btn);
   });
