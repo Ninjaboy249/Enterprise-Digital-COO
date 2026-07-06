@@ -39,10 +39,15 @@
     body, .bg-gray-100 { background: var(--bg) !important; color: var(--text); }
     .bg-white          { background: var(--surface) !important; }
     .bg-gray-50        { background: var(--surface-2) !important; }
-    .text-gray-800, .text-gray-700 { color: var(--text) !important; }
-    .text-gray-600, .text-gray-500 { color: var(--text-muted) !important; }
-    .text-gray-400     { color: var(--text-faint) !important; }
+    .text-gray-800, .text-gray-700, .text-slate-800, .text-slate-700 { color: var(--text) !important; }
+    .text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500 { color: var(--text-muted) !important; }
+    .text-gray-400, .text-slate-400 { color: var(--text-faint) !important; }
     td, th             { color: var(--text) !important; }
+    .hover\:bg-gray-50:hover, .hover\:bg-slate-50:hover { background: var(--surface-2) !important; }
+    tr:hover td, tr:hover th { color: var(--text) !important; }
+    tr:hover .text-gray-800, tr:hover .text-gray-700, tr:hover .text-slate-800, tr:hover .text-slate-700 { color: var(--text) !important; }
+    tr:hover .text-gray-600, tr:hover .text-gray-500, tr:hover .text-slate-600, tr:hover .text-slate-500 { color: var(--text-muted) !important; }
+    tr:hover .text-gray-400, tr:hover .text-slate-400 { color: var(--text-muted) !important; }
     .border-gray-100, .border-gray-200, .border-gray-300 { border-color: var(--border) !important; }
     .shadow-md, .shadow-lg { box-shadow: var(--shadow) !important; }
     input, select, textarea { background: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }

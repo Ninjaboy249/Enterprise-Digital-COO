@@ -57,6 +57,10 @@
     .text-slate-600, .text-slate-500 { color: var(--text-muted) !important; }
     .text-slate-400     { color: var(--text-faint) !important; }
     td, th              { color: var(--text) !important; }
+    .hover\:bg-gray-50:hover, .hover\:bg-slate-50:hover { background: var(--row-hover) !important; }
+    tr:hover td, tr:hover th { color: var(--text) !important; }
+    tr:hover .text-slate-800, tr:hover .text-slate-700 { color: var(--text) !important; }
+    tr:hover .text-slate-600, tr:hover .text-slate-500, tr:hover .text-slate-400 { color: var(--text-muted) !important; }
     .border-slate-100, .border-slate-200 { border-color: var(--border) !important; }
     .shadow-md          { box-shadow: var(--shadow) !important; }
     input, select, textarea { background: var(--input-bg) !important; color: var(--text) !important; border-color: var(--input-border) !important; }
@@ -78,6 +82,8 @@
     .prose code { background:var(--prose-code-bg); color:var(--prose-code-fg); padding:0 4px; border-radius:3px; font-size:.85em; }
     .prose pre  { background:#0f172a; color:#e2e8f0; padding:1em; border-radius:6px; overflow-x:auto; font-size:.82em; }
     .report-row:hover { background:var(--row-hover); }
+    .report-row:hover td, .report-row:hover th { color:var(--text) !important; }
+    .report-row:hover .text-slate-500, .report-row:hover .text-slate-400 { color:var(--text-muted) !important; }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .section { animation: fadeIn .3s ease; }
