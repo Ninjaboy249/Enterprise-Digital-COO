@@ -185,7 +185,7 @@ Microsoft Teams is optional. Set an incoming webhook URL:
 TEAMS_WEBHOOK_URL=https://...
 ```
 
-The dashboard Approve button automatically sends the approved action notification to `Shivam.roy@hcltech.com`. Without SMTP settings, the backend captures the approval email as a demo preview; with SMTP settings, it sends a real email:
+The dashboard Approve button marks the current executive action as approved, shows a glowing approved state, and keeps that state after refresh. The Undo button returns it to the review state. The backend still supports approval email delivery for future flows; without SMTP settings, the backend captures approval email as a demo preview, and with SMTP settings it sends a real email:
 
 ```env
 SMTP_HOST=smtp.example.com
