@@ -28,6 +28,28 @@ class Settings(BaseSettings):
             return False
         return value
 
+    @field_validator("SMTP_PORT", mode="before")
+    @classmethod
+    def parse_smtp_port(cls, value):
+        """Allow blank demo SMTP env values without failing app startup."""
+        if isinstance(value, str) and not value.strip():
+            return 587
+        return value
+
+    @field_validator("SMTP_USE_TLS", mode="before")
+    @classmethod
+    def parse_smtp_use_tls(cls, value):
+        """Allow blank demo SMTP env values without failing app startup."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized == "":
+                return True
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off"}:
+                return False
+        return value
+
     # API
     API_V1_PREFIX: str = "/api/v1"
     HOST: str = "0.0.0.0"
