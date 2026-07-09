@@ -81,6 +81,17 @@
     .shine-sweep-btn:hover { transform:translateY(-1px); filter:saturate(1.07); box-shadow:0 14px 28px rgba(15,23,42,.18) !important; }
     .trianglify-btn { border:1px solid rgba(255,255,255,.18) !important; background-color:#4c1d95 !important; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='72' viewBox='0 0 180 72'%3E%3Cpolygon points='0,0 58,0 26,38' fill='%238b5cf6' fill-opacity='.55'/%3E%3Cpolygon points='58,0 112,0 82,48 26,38' fill='%232563eb' fill-opacity='.34'/%3E%3Cpolygon points='112,0 180,0 150,42 82,48' fill='%2306b6d4' fill-opacity='.28'/%3E%3Cpolygon points='0,72 26,38 82,48 42,72' fill='%23a78bfa' fill-opacity='.36'/%3E%3Cpolygon points='42,72 82,48 150,42 118,72' fill='%237c3aed' fill-opacity='.42'/%3E%3Cpolygon points='118,72 150,42 180,72' fill='%2322d3ee' fill-opacity='.3'/%3E%3C/svg%3E"),linear-gradient(135deg,rgba(76,29,149,.95),rgba(30,64,175,.92)) !important; background-size:180px 72px,100% 100% !important; color:#fff !important; box-shadow:0 10px 24px rgba(76,29,149,.28) !important; transition:transform .18s ease, box-shadow .18s ease, background-position .55s ease; }
     .trianglify-btn:hover { transform:translateY(-1px); background-position:32px 0,0 0 !important; box-shadow:0 14px 30px rgba(76,29,149,.36) !important; }
+    @media (max-width: 640px) {
+      header .container { flex-direction:column; align-items:stretch; gap:1rem; }
+      header .brand-lockup { align-items:flex-start; }
+      header .brand-lockup > div { min-width:0; }
+      header h1 { font-size:1.55rem !important; line-height:1.15; overflow-wrap:anywhere; }
+      header p { overflow-wrap:anywhere; }
+      header .container > .flex:last-child { width:100%; flex-wrap:wrap; justify-content:flex-start; gap:.5rem; }
+      header .container > .flex:last-child .trianglify-btn,
+      header .container > .flex:last-child a { flex:1 1 calc(50% - .25rem); text-align:center; white-space:nowrap; }
+      #theme-toggle { flex:0 0 auto; }
+    }
     @media (forced-colors: active) {
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
