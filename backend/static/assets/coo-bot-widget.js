@@ -25,7 +25,7 @@
         <span class="story-bot-leg right"></span>
       </span>
       <span class="story-bot-copy"><strong>Hi, I'm COO Bot!</strong> I help businesses run smarter, faster and better.</span>
-      <span class="story-bot-chip">Ask COO<span>AI Insights</span></span>
+      <span class="story-bot-chip">COO Bot<span>AI Insights</span></span>
     `;
     return bot;
   }
