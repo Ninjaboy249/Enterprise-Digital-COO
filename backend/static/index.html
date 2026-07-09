@@ -183,8 +183,35 @@
     #import-modal { display:none; position:fixed; inset:0; background:var(--modal-overlay);
                     z-index:10000; align-items:center; justify-content:center; }
     #import-modal.open { display:flex; }
+    #approval-modal { display:none; position:fixed; inset:0; background:var(--modal-overlay);
+                    z-index:10001; align-items:center; justify-content:center; padding:18px; }
+    #approval-modal.open { display:flex; }
     #import-box { background:var(--import-bg); border-radius:16px; padding:28px; width:min(480px,92vw);
                   box-shadow:var(--shadow-lg); color:var(--text); }
+    #approval-box {
+      position:relative; overflow:hidden; background:var(--import-bg); color:var(--text);
+      border:2px solid transparent; border-radius:18px; padding:26px; width:min(560px,94vw);
+      background:
+        linear-gradient(var(--import-bg), var(--import-bg)) padding-box,
+        linear-gradient(135deg,#22d3ee,#a78bfa,#34d399,#facc15) border-box;
+      box-shadow:0 22px 70px rgba(15,23,42,.34), 0 0 34px rgba(34,211,238,.25);
+      animation:approvalModalGlow 2.4s ease-in-out infinite;
+    }
+    .approval-timer-btn {
+      border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-size:12px;
+      font-weight:800; color:var(--text); background:var(--surface-2);
+      transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    .approval-timer-btn:hover { transform:translateY(-1px); border-color:#22d3ee; box-shadow:0 10px 24px rgba(34,211,238,.18); }
+    .approval-countdown {
+      color:#a7f3d0; border:1px solid rgba(110,231,183,.36);
+      background:rgba(6,78,59,.28); border-radius:9999px; padding:4px 8px;
+      font-weight:800; font-size:11px; white-space:nowrap;
+    }
+    @keyframes approvalModalGlow {
+      0%,100% { box-shadow:0 22px 70px rgba(15,23,42,.34), 0 0 26px rgba(34,211,238,.2); }
+      50% { box-shadow:0 24px 78px rgba(15,23,42,.42), 0 0 46px rgba(167,139,250,.34); }
+    }
     .chat-msg-user { background:var(--chat-user-bg); border-radius:12px 12px 2px 12px; color:var(--chat-user-fg); }
     .chat-msg-bot  { background:var(--chat-bot-bg);  border-radius:12px 12px 12px 2px; color:var(--chat-bot-fg); }
     .wf-arrow { width:2px; height:22px; background:linear-gradient(#7c3aed,#a78bfa); margin:0 auto; }
@@ -485,7 +512,7 @@
           <p id="eb-action" class="text-white text-sm font-medium leading-snug">–</p>
         </div>
         <div class="flex gap-2 mt-4">
-          <button onclick="ebApprove()" id="eb-approve-btn"
+          <button onclick="openApprovalModal()" id="eb-approve-btn"
                   class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-colors">
             ✓ Approve
           </button>
@@ -722,6 +749,37 @@
     <button onclick="sendChat()" class="trianglify-btn text-white px-3 py-2 rounded-lg text-sm font-medium">Send</button>
   </div>
 </aside>
+
+<!-- ═══════════════════════════ APPROVAL MODAL ═══════════════════════════ -->
+<div id="approval-modal" onclick="if(event.target===this) closeApprovalModal()">
+  <div id="approval-box">
+    <div class="flex justify-between items-start gap-4 mb-4">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-1">Executive Approval</p>
+        <h2 class="text-xl font-black text-gray-800">Confirm the COO action</h2>
+      </div>
+      <button onclick="closeApprovalModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    </div>
+    <p id="approval-modal-action" class="text-sm text-gray-600 leading-relaxed bg-gray-50 border border-gray-200 rounded-xl p-3 mb-4"></p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <button onclick="confirmApprovalNow()" class="shine-sweep-btn bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-4 py-3 text-sm font-black">
+        Approve Immediately
+      </button>
+      <button onclick="closeApprovalModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl px-4 py-3 text-sm font-black">
+        Keep Reviewing
+      </button>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Approve with undo window</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button class="approval-timer-btn" onclick="confirmApprovalWithTimer(15)">15 seconds</button>
+        <button class="approval-timer-btn" onclick="confirmApprovalWithTimer(60)">1 minute</button>
+        <button class="approval-timer-btn" onclick="confirmApprovalWithTimer(180)">3 minutes</button>
+        <button class="approval-timer-btn" onclick="confirmApprovalWithTimer(300)">5 minutes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════ IMPORT MODAL ═══════════════════════════ -->
 <div id="import-modal">
@@ -1055,6 +1113,7 @@ function renderExecutiveBrief() {
 }
 
 const APPROVAL_STORAGE_KEY = 'coo-approved-actions';
+let _approvalCountdownTimer = null;
 
 function _approvalKey() {
   return `${window._ebCurrentSignal || ''}::${window._ebCurrentAction || ''}`;
@@ -1070,7 +1129,7 @@ function _setApprovedState(isApproved) {
   const key = _approvalKey();
   if (!key || key === '::') return;
   const approved = _approvedActions();
-  if (isApproved) approved[key] = { action: window._ebCurrentAction, signal: window._ebCurrentSignal, at: new Date().toISOString() };
+  if (isApproved) approved[key] = { action: window._ebCurrentAction, signal: window._ebCurrentSignal, at: new Date().toISOString(), undoUntil: null };
   else delete approved[key];
   try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
 }
@@ -1079,25 +1138,93 @@ function _isCurrentActionApproved() {
   return !!_approvedActions()[_approvalKey()];
 }
 
+function _currentApprovalRecord() {
+  return _approvedActions()[_approvalKey()] || null;
+}
+
+function _formatApprovalTime(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const min = Math.floor(total / 60);
+  const sec = total % 60;
+  return min > 0 ? `${min}:${String(sec).padStart(2, '0')}` : `${sec}s`;
+}
+
+function _setApprovedWithUndoWindow(seconds) {
+  const key = _approvalKey();
+  if (!key || key === '::') return;
+  const approved = _approvedActions();
+  approved[key] = {
+    action: window._ebCurrentAction,
+    signal: window._ebCurrentSignal,
+    at: new Date().toISOString(),
+    undoUntil: Date.now() + seconds * 1000,
+  };
+  try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
+}
+
 function syncApprovalButton() {
   const approveBtn = document.getElementById('eb-approve-btn');
   const undoBtn = document.getElementById('eb-undo-btn');
   if (!approveBtn || !undoBtn) return;
-  const approved = _isCurrentActionApproved();
+  if (_approvalCountdownTimer) {
+    clearInterval(_approvalCountdownTimer);
+    _approvalCountdownTimer = null;
+  }
+  const record = _currentApprovalRecord();
+  const approved = !!record;
+  const undoUntil = Number(record?.undoUntil || 0);
+  const canUndo = approved && undoUntil > Date.now();
   approveBtn.textContent = approved ? '✓ Approved' : '✓ Approve';
-  approveBtn.onclick = approved ? null : ebApprove;
+  approveBtn.onclick = approved ? null : openApprovalModal;
   if (approved) approveBtn.removeAttribute('onclick');
-  else approveBtn.setAttribute('onclick', 'ebApprove()');
+  else approveBtn.setAttribute('onclick', 'openApprovalModal()');
   approveBtn.className = approved
     ? 'flex-1 approved-action-glow text-white text-xs font-bold py-2.5 px-3 rounded-xl cursor-default'
     : 'flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-colors';
-  undoBtn.classList.toggle('hidden', !approved);
+  undoBtn.classList.toggle('hidden', !canUndo);
+  if (canUndo) {
+    const updateUndo = () => {
+      const remaining = undoUntil - Date.now();
+      if (remaining <= 0) {
+        undoBtn.classList.add('hidden');
+        clearInterval(_approvalCountdownTimer);
+        _approvalCountdownTimer = null;
+        showToast('Review window closed. Approval locked.');
+        return;
+      }
+      undoBtn.innerHTML = `↺ Undo <span class="approval-countdown">${_formatApprovalTime(remaining)}</span>`;
+    };
+    updateUndo();
+    _approvalCountdownTimer = setInterval(updateUndo, 1000);
+  } else {
+    undoBtn.textContent = '↺ Undo';
+  }
 }
 
-function ebApprove() {
+function openApprovalModal() {
+  const modal = document.getElementById('approval-modal');
+  const action = document.getElementById('approval-modal-action');
+  if (action) action.textContent = window._ebCurrentAction || 'Approve the recommended executive action.';
+  modal.classList.add('open');
+}
+
+function closeApprovalModal() {
+  document.getElementById('approval-modal').classList.remove('open');
+}
+
+function confirmApprovalNow() {
   _setApprovedState(true);
+  closeApprovalModal();
   syncApprovalButton();
   showToast(`✓ Action approved: "${window._ebCurrentAction}"`);
+  addTodayAction(window._ebCurrentSignal, 'Approved');
+}
+
+function confirmApprovalWithTimer(seconds) {
+  _setApprovedWithUndoWindow(seconds);
+  closeApprovalModal();
+  syncApprovalButton();
+  showToast(`Approved. Undo available for ${seconds < 60 ? `${seconds}s` : `${seconds / 60} min`}.`);
   addTodayAction(window._ebCurrentSignal, 'Approved');
 }
 

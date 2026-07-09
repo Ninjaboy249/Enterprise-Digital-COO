@@ -185,7 +185,7 @@ Microsoft Teams is optional. Set an incoming webhook URL:
 TEAMS_WEBHOOK_URL=https://...
 ```
 
-The dashboard Approve button marks the current executive action as approved, shows a glowing approved state, and keeps that state after refresh. The Undo button returns it to the review state. The backend still supports approval email delivery for future flows; without SMTP settings, the backend captures approval email as a demo preview, and with SMTP settings it sends a real email:
+The dashboard Approve button opens a confirmation popup. Leaders can approve immediately, keep reviewing, or approve with a timed undo window of 15 seconds, 1 minute, 3 minutes, or 5 minutes. Approved actions keep their glowing state after refresh; the Undo option appears only during the selected review window. The backend still supports approval email delivery for future flows; without SMTP settings, the backend captures approval email as a demo preview, and with SMTP settings it sends a real email:
 
 ```env
 SMTP_HOST=smtp.example.com
