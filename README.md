@@ -185,7 +185,7 @@ Microsoft Teams is optional. Set an incoming webhook URL:
 TEAMS_WEBHOOK_URL=https://...
 ```
 
-The dashboard includes demo approval notification options for Slack, Teams, and email. The user can enter an email address before approving an executive action. Without SMTP settings, the backend captures the approval email as a demo preview; with SMTP settings, it sends a real email:
+The dashboard Approve button automatically sends the approved action notification to `Shivam.roy@hcltech.com`. Without SMTP settings, the backend captures the approval email as a demo preview; with SMTP settings, it sends a real email:
 
 ```env
 SMTP_HOST=smtp.example.com

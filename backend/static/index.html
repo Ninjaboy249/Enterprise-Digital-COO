@@ -249,6 +249,22 @@
       mix-blend-mode:screen; opacity:.7; animation:electricTrace 2.1s linear infinite;
     }
     .electric-glow > * { position:relative; z-index:2; }
+    .approved-action-glow {
+      position:relative;
+      isolation:isolate;
+      border:2px solid transparent !important;
+      background:
+        linear-gradient(135deg,#059669,#10b981) padding-box,
+        linear-gradient(135deg,#22d3ee,#a78bfa,#34d399,#facc15) border-box !important;
+      box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,
+                 0 0 22px rgba(34,211,238,.55),
+                 0 0 38px rgba(52,211,153,.34) !important;
+      animation:approvedGlow 2.2s ease-in-out infinite;
+    }
+    @keyframes approvedGlow {
+      0%,100% { filter:saturate(1); box-shadow:0 0 0 1px rgba(255,255,255,.18) inset, 0 0 18px rgba(34,211,238,.42), 0 0 32px rgba(52,211,153,.26); }
+      50% { filter:saturate(1.2); box-shadow:0 0 0 1px rgba(255,255,255,.32) inset, 0 0 30px rgba(34,211,238,.72), 0 0 52px rgba(52,211,153,.44); }
+    }
     @keyframes electricPulse {
       0%,100% { box-shadow:0 0 0 1px rgba(34,211,238,.35), 0 0 18px rgba(34,211,238,.22), 0 0 34px rgba(124,58,237,.18); }
       50% { box-shadow:0 0 0 1px rgba(34,211,238,.8), 0 0 28px rgba(34,211,238,.42), 0 0 52px rgba(124,58,237,.32); }
@@ -479,41 +495,6 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ── 2B. APPROVAL INTEGRATIONS ─────────────────────────────── -->
-  <div class="card p-5">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <h2 class="font-bold text-gray-800 flex items-center gap-2">
-        <i data-lucide="send" class="icon-btn text-purple-600"></i>
-        Approval Integrations
-      </h2>
-      <span id="integration-status" class="text-xs text-gray-500">Checking…</span>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <label class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <input id="integration-slack" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-purple-600" />
-        <span class="min-w-0">
-          <span class="block text-sm font-bold text-gray-800">Slack</span>
-          <span id="integration-slack-state" class="block text-xs text-gray-500">Not checked</span>
-        </span>
-      </label>
-      <label class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <input id="integration-teams" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-purple-600" />
-        <span class="min-w-0">
-          <span class="block text-sm font-bold text-gray-800">Microsoft Teams</span>
-          <span id="integration-teams-state" class="block text-xs text-gray-500">Not checked</span>
-        </span>
-      </label>
-      <label class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <span class="flex items-center gap-3">
-          <input id="integration-email" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-purple-600" />
-          <span class="text-sm font-bold text-gray-800">Approval Email</span>
-        </span>
-        <input id="integration-email-input" type="email" placeholder="name@company.com"
-               class="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
-      </label>
     </div>
   </div>
 
@@ -834,7 +815,6 @@ function _impFY(fy) {
 // ── Init ──────────────────────────────────────────────────────────
 async function init() {
   buildFYTabs();
-  initIntegrationSettings();
   checkStatus();
   renderAgentGrid();
   renderWorkflow();
@@ -1069,85 +1049,7 @@ function renderExecutiveBrief() {
   window._ebCurrentAction = action; window._ebCurrentSignal = signal;
 }
 
-const INTEGRATION_STORAGE_KEY = 'coo-approval-integrations';
-
-function _integrationEls() {
-  return {
-    slack: document.getElementById('integration-slack'),
-    teams: document.getElementById('integration-teams'),
-    email: document.getElementById('integration-email'),
-    emailInput: document.getElementById('integration-email-input'),
-    status: document.getElementById('integration-status'),
-    slackState: document.getElementById('integration-slack-state'),
-    teamsState: document.getElementById('integration-teams-state'),
-  };
-}
-
-function getIntegrationPrefs() {
-  const el = _integrationEls();
-  return {
-    send_slack: !!el.slack?.checked,
-    send_teams: !!el.teams?.checked,
-    send_email: !!el.email?.checked,
-    email: el.emailInput?.value.trim() || '',
-  };
-}
-
-function saveIntegrationPrefs() {
-  try { localStorage.setItem(INTEGRATION_STORAGE_KEY, JSON.stringify(getIntegrationPrefs())); } catch {}
-}
-
-function initIntegrationSettings() {
-  const el = _integrationEls();
-  try {
-    const saved = JSON.parse(localStorage.getItem(INTEGRATION_STORAGE_KEY) || '{}');
-    if (el.slack) el.slack.checked = !!saved.send_slack;
-    if (el.teams) el.teams.checked = !!saved.send_teams;
-    if (el.email) el.email.checked = !!saved.send_email;
-    if (el.emailInput && saved.email) el.emailInput.value = saved.email;
-  } catch {}
-  [el.slack, el.teams, el.email, el.emailInput].forEach(node => {
-    if (node) node.addEventListener('change', saveIntegrationPrefs);
-    if (node?.tagName === 'INPUT') node.addEventListener('input', saveIntegrationPrefs);
-  });
-  loadIntegrationStatus();
-}
-
-async function loadIntegrationStatus() {
-  const el = _integrationEls();
-  if (!el.status) return;
-  try {
-    const r = await fetch('/api/v1/notifications/integrations/status');
-    const d = await r.json();
-    const slackReady = !!d.slack?.configured;
-    const teamsReady = !!d.teams?.configured;
-    el.slackState.textContent = slackReady ? 'Configured' : 'Needs env var';
-    el.teamsState.textContent = teamsReady ? 'Configured' : 'Needs webhook';
-    el.slackState.className = `block text-xs ${slackReady ? 'text-emerald-600' : 'text-amber-600'}`;
-    el.teamsState.className = `block text-xs ${teamsReady ? 'text-emerald-600' : 'text-amber-600'}`;
-    el.status.textContent = d.email?.mode === 'smtp' ? 'Email: SMTP ready' : 'Email: demo capture';
-  } catch {
-    el.status.textContent = 'Integration status unavailable';
-  }
-}
-
-function _summariseNotificationResults(results) {
-  const parts = [];
-  if (results.slack) parts.push(results.slack.ok ? 'Slack sent' : 'Slack not sent');
-  if (results.teams) parts.push(results.teams.ok ? 'Teams sent' : 'Teams not sent');
-  if (results.email) {
-    parts.push(results.email.delivered ? 'email sent' : 'email captured');
-  }
-  return parts.join(' · ') || 'No notifications selected';
-}
-
 async function sendApprovalNotification() {
-  const prefs = getIntegrationPrefs();
-  if (!prefs.send_slack && !prefs.send_teams && !prefs.send_email) return;
-  if (prefs.send_email && !prefs.email) {
-    showToast('Add an email address for approval mail.');
-    return;
-  }
   try {
     const r = await fetch('/api/v1/notifications/approval', {
       method: 'POST',
@@ -1155,15 +1057,14 @@ async function sendApprovalNotification() {
       body: JSON.stringify({
         action: window._ebCurrentAction || 'Executive action approved',
         signal: window._ebCurrentSignal || '',
-        email: prefs.email || null,
-        send_slack: prefs.send_slack,
-        send_teams: prefs.send_teams,
-        send_email: prefs.send_email,
+        email: 'Shivam.roy@hcltech.com',
+        send_email: true,
       })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.detail || 'Notification failed.');
-    showToast(_summariseNotificationResults(d.results || {}));
+    const email = d.results?.email;
+    showToast(email?.delivered ? 'Approval email sent to Shivam.roy@hcltech.com' : 'Approval email captured for Shivam.roy@hcltech.com');
   } catch (e) {
     showToast(e.message || 'Approval notification failed.');
   }
@@ -1172,7 +1073,7 @@ async function sendApprovalNotification() {
 async function ebApprove() {
   const btn = document.getElementById('eb-approve-btn');
   btn.textContent = '✓ Approved'; btn.onclick = null;
-  btn.className = 'flex-1 bg-emerald-600 text-white text-xs font-bold py-2.5 px-3 rounded-xl cursor-default';
+  btn.className = 'flex-1 approved-action-glow text-white text-xs font-bold py-2.5 px-3 rounded-xl cursor-default';
   showToast(`✓ Action approved: "${window._ebCurrentAction}"`);
   // Add to today's actions
   addTodayAction(window._ebCurrentSignal, 'Approved');
