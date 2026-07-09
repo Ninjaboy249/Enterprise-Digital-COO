@@ -179,15 +179,6 @@ Slack is optional. For the simplest setup, create a Slack incoming webhook and s
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
 ```
 
-For bot-token based posting with channel selection, set:
-
-```env
-SLACK_BOT_TOKEN=xoxb-...
-SLACK_DEFAULT_CHANNEL=C1234567890
-```
-
-`SLACK_SIGNING_SECRET` is reserved for future inbound Slack slash commands or events.
-
 Microsoft Teams is optional. Set an incoming webhook URL:
 
 ```env

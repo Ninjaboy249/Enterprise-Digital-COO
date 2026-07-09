@@ -112,9 +112,6 @@ class Settings(BaseSettings):
 
     # Slack
     SLACK_WEBHOOK_URL: Optional[str] = None
-    SLACK_BOT_TOKEN: Optional[str] = None
-    SLACK_DEFAULT_CHANNEL: Optional[str] = None
-    SLACK_SIGNING_SECRET: Optional[str] = None
 
     # Microsoft Teams
     TEAMS_WEBHOOK_URL: Optional[str] = None
@@ -171,7 +168,7 @@ class Settings(BaseSettings):
         "case_sensitive": True,
         # Ignore env vars whose values cannot be coerced to the field type
         # (e.g. Windows system var DEBUG=release).  The .env file value wins.
-        "env_ignore_empty": False,
+        "env_ignore_empty": True,
         "extra": "ignore",
     }
 

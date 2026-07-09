@@ -94,8 +94,6 @@ async def integrations_status() -> Dict[str, Any]:
         "slack": {
             "configured": slack_service.is_configured,
             "has_webhook": bool(slack_service.webhook_url),
-            "has_bot_token": bool(slack_service.bot_token),
-            "has_default_channel": bool(slack_service.default_channel),
         },
         "teams": {
             "configured": teams_service.is_configured,
@@ -115,8 +113,6 @@ async def slack_status() -> Dict[str, Any]:
     return {
         "configured": slack_service.is_configured,
         "has_webhook": bool(slack_service.webhook_url),
-        "has_bot_token": bool(slack_service.bot_token),
-        "has_default_channel": bool(slack_service.default_channel),
         "timestamp": datetime.now().isoformat(),
     }
 
