@@ -104,6 +104,7 @@
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
   </style>
+  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css" />
 </head>
 <body class="bg-gray-100">
 <div class="min-h-screen">
@@ -121,7 +122,7 @@
       </div>
       <div class="flex items-center gap-3">
         <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
-        <button id="chat-toggle" class="trianglify-btn font-semibold px-4 py-2 rounded-lg">
+        <button id="chat-toggle" class="trianglify-btn font-semibold px-4 py-2 rounded-lg" hidden aria-hidden="true" tabindex="-1">
           💬 AI Insights
         </button>
         <a href="/#top" class="shine-sweep-btn bg-white text-green-600 px-4 py-2 rounded">← Back</a>
@@ -609,9 +610,9 @@ function toggleChat() {
   const hidden = panel.classList.contains('hidden');
   panel.classList.toggle('hidden',!hidden);
   if (hidden && document.getElementById('chat-messages').children.length===0)
-    appendBotMsg("Hi! I'm your Finance AI assistant. Ask me about cash flow, margins, runway, EBITDA, or FY comparisons.");
+    appendBotMsg("Hi, I'm COO Bot. Tell me the finance question and I'll narrate the cash, margin, and runway story with the next best move.");
 }
-document.getElementById('chat-toggle').addEventListener('click', toggleChat);
+document.getElementById('chat-toggle')?.addEventListener('click', toggleChat);
 
 function appendUserMsg(t){const d=document.createElement('div');d.className='chat-msg-user self-end ml-6 p-3 text-gray-800 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
 function appendBotMsg(t){const d=document.createElement('div');d.className='chat-msg-bot mr-6 p-3 text-gray-700 text-sm';d.textContent=t;document.getElementById('chat-messages').appendChild(d);scrollChat();}
@@ -639,5 +640,6 @@ init();
 setInterval(()=>{loadFYData();loadFinanceData(currentFY);},60000);
 </script>
 <div id="toast"></div>
+<script src="/static/assets/coo-bot-widget.js"></script>
 </body>
 </html>
