@@ -36,10 +36,50 @@
     window.appendBotMsg(STORY_MESSAGE);
   }
 
+  function openEmbeddedChat(bot) {
+    const chatTab = document.getElementById('tab-chat');
+    const detailPanel = document.getElementById('detail-panel');
+    if (!chatTab) return false;
+
+    if (detailPanel && detailPanel.classList.contains('hidden')) {
+      const target = document.getElementById('drop-zone') || detailPanel;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof window.showToast === 'function') {
+        window.showToast('Upload or open a report first, then COO Bot can answer questions about it.');
+      }
+      return true;
+    }
+
+    const chatButton = Array.from(document.querySelectorAll('.tab-btn'))
+      .find(btn => (btn.getAttribute('onclick') || '').includes("switchTab('chat'"));
+
+    if (typeof window.switchTab === 'function') {
+      window.switchTab('chat', chatButton || null);
+    } else {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      chatTab.classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      chatButton?.classList.add('active');
+    }
+
+    chatTab.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const input = document.getElementById('chat-input');
+    if (input) {
+      setTimeout(() => input.focus(), 120);
+    }
+
+    syncChatState(bot);
+    return true;
+  }
+
   function openChat() {
     const panel = document.getElementById('chat-panel');
     const bot = document.getElementById('story-coo-bot');
-    if (!panel) return;
+    if (!panel) {
+      openEmbeddedChat(bot);
+      return;
+    }
 
     if (panel.classList.contains('hidden') && typeof window.toggleChat === 'function') {
       window.toggleChat();
@@ -67,12 +107,18 @@
 
   function syncChatState(bot) {
     const panel = document.getElementById('chat-panel');
-    if (!bot || !panel) return;
-    bot.classList.toggle('is-chat-open', !panel.classList.contains('hidden'));
+    if (!bot) return;
+
+    if (panel) {
+      bot.classList.toggle('is-chat-open', !panel.classList.contains('hidden'));
+      return;
+    }
+
+    bot.classList.remove('is-chat-open');
   }
 
   function watchChatPanel(bot) {
-    const panel = document.getElementById('chat-panel');
+    const panel = document.getElementById('chat-panel') || document.getElementById('tab-chat');
     if (!panel || !window.MutationObserver) return;
     syncChatState(bot);
     new MutationObserver(() => syncChatState(bot)).observe(panel, {
