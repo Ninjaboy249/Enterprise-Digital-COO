@@ -39,6 +39,7 @@ def _load_backend_module(module_name: str, relative_path: str):
 
 metrics = _load_backend_module("enterprise_coo_metrics", "api/v1/endpoints/metrics.py")
 reports = _load_backend_module("enterprise_coo_reports", "api/v1/endpoints/reports.py")
+notifications = _load_backend_module("enterprise_coo_notifications", "api/v1/endpoints/notifications.py")
 
 # ── App ──────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -90,6 +91,7 @@ if static_dir.exists():
 # ── API routes ───────────────────────────────────────────────────────
 app.include_router(metrics.router, prefix="/api/v1/metrics", tags=["metrics"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["notifications"])
 
 
 # ── Root & health ────────────────────────────────────────────────────

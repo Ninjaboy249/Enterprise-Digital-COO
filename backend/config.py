@@ -87,6 +87,23 @@ class Settings(BaseSettings):
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-ada-002"
     OPENAI_TEMPERATURE: float = 0.7
     OPENAI_MAX_TOKENS: int = 2000
+
+    # Slack
+    SLACK_WEBHOOK_URL: Optional[str] = None
+    SLACK_BOT_TOKEN: Optional[str] = None
+    SLACK_DEFAULT_CHANNEL: Optional[str] = None
+    SLACK_SIGNING_SECRET: Optional[str] = None
+
+    # Microsoft Teams
+    TEAMS_WEBHOOK_URL: Optional[str] = None
+
+    # Demo approval email
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_USE_TLS: bool = True
+    EMAIL_FROM: Optional[str] = None
     
     # LangSmith (Optional - for tracing)
     LANGCHAIN_TRACING_V2: bool = False

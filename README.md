@@ -22,9 +22,12 @@ This repository currently ships a working FastAPI + static dashboard prototype:
 - Executive dashboard served from `backend/static/index.html`
 - Sales, finance, operations, and summary APIs under `/api/v1/metrics`
 - Report upload, AI import, and report chat APIs under `/api/v1/reports`
+- Slack, Microsoft Teams, and approval email notification APIs under `/api/v1/notifications`
 - Static pages for sales, finance, operations, reports, and Excel analysis
 - Vercel-compatible serverless entrypoint at `api/index.py`
 - Optional OpenAI-powered chat and report analysis when `OPENAI_API_KEY` is configured
+- Optional Slack and Teams alerts when notification credentials are configured
+- Demo approval email capture, with real email delivery when SMTP settings are configured
 - Architecture docs for the larger multi-agent vision using LangGraph, ChromaDB, PostgreSQL, Redis, and WebSockets
 
 The production vision includes multi-agent orchestration, memory, and persistent infrastructure. The hackathon demo surface is intentionally lighter so judges can run and inspect it quickly.
@@ -51,8 +54,12 @@ FastAPI
   |
   | /api/v1/metrics
   | /api/v1/reports
+  | /api/v1/notifications
   v
 Deterministic demo data + optional OpenAI analysis
+  |
+  v
+Optional Slack, Teams, and approval email notifications
 ```
 
 ### Larger System Vision
@@ -77,6 +84,7 @@ PostgreSQL + ChromaDB + Redis + OpenAI
 - **Cross-domain metrics**: sales, finance, and operations endpoints expose fiscal-year data and comparisons.
 - **AI COO assistant**: dashboard chat summarizes risks and recommends next steps.
 - **Report intelligence**: upload JSON, Excel, or Power BI-style files and ask questions about them.
+- **Notification integrations**: send approved actions and COO summary alerts to Slack, Microsoft Teams, and demo approval email.
 - **Deployment-friendly prototype**: `api/index.py` excludes persistent database startup so the demo can run serverlessly.
 
 ## Project Structure
@@ -91,7 +99,7 @@ enterprise-digital-coo/
 │   ├── database/                 # PostgreSQL session/models for full-stack vision
 │   ├── memory/                   # ChromaDB client for full-stack vision
 │   ├── orchestration/            # Workflow prototypes
-│   ├── services/                 # Shared services
+│   ├── services/                 # Shared services, including notification integrations
 │   ├── static/                   # Working dashboard and demo pages
 │   ├── config.py                 # App configuration
 │   └── main.py                   # Full backend entrypoint
@@ -146,6 +154,17 @@ POST /api/v1/metrics/chat
 POST /api/v1/reports/upload
 POST /api/v1/reports/chat
 POST /api/v1/reports/ai-import
+GET  /api/v1/notifications/integrations/status
+GET  /api/v1/notifications/slack/status
+POST /api/v1/notifications/slack/test
+POST /api/v1/notifications/slack/message
+POST /api/v1/notifications/slack/coo-summary
+GET  /api/v1/notifications/teams/status
+POST /api/v1/notifications/teams/test
+POST /api/v1/notifications/teams/message
+POST /api/v1/notifications/teams/coo-summary
+GET  /api/v1/notifications/email/status
+POST /api/v1/notifications/approval
 ```
 
 ## Environment
@@ -153,6 +172,40 @@ POST /api/v1/reports/ai-import
 Copy `backend/.env.example` to `backend/.env` for local full-backend runs.
 
 For the demo, `OPENAI_API_KEY` is optional. Without it, the deterministic dashboard and metrics still work; OpenAI-backed chat/report analysis requires a valid key.
+
+Slack is optional. For the simplest setup, create a Slack incoming webhook and set:
+
+```env
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
+
+For bot-token based posting with channel selection, set:
+
+```env
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_DEFAULT_CHANNEL=C1234567890
+```
+
+`SLACK_SIGNING_SECRET` is reserved for future inbound Slack slash commands or events.
+
+Microsoft Teams is optional. Set an incoming webhook URL:
+
+```env
+TEAMS_WEBHOOK_URL=https://...
+```
+
+The dashboard includes demo approval notification options for Slack, Teams, and email. The user can enter an email address before approving an executive action. Without SMTP settings, the backend captures the approval email as a demo preview; with SMTP settings, it sends a real email:
+
+```env
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-user
+SMTP_PASSWORD=your-smtp-password
+SMTP_USE_TLS=true
+EMAIL_FROM=coo@example.com
+```
+
+When deploying on Vercel, add the same Slack, Teams, and SMTP variables in the Vercel project environment settings. The serverless entrypoint at `api/index.py` includes the notification routes.
 
 ## Validation
 
@@ -162,7 +215,19 @@ From `backend/`:
 python test_routes.py
 ```
 
-Expected result: health, API health, sales, finance, operations, and summary routes return `200`.
+Expected result: health, API health, sales, finance, operations, summary, and notification status routes return `200`.
+
+To verify notification configuration without posting a message:
+
+```text
+GET /api/v1/notifications/integrations/status
+```
+
+To send a Slack smoke-test message after configuring Slack:
+
+```text
+POST /api/v1/notifications/slack/test
+```
 
 ## Node.js Developer Tooling
 
