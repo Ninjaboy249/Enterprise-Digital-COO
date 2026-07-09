@@ -61,6 +61,8 @@
     #chat-panel { transition: transform .3s ease; }
     .chat-msg-user { background:var(--chat-user-bg); border-radius:12px 12px 2px 12px; color:var(--chat-user-fg); }
     .chat-msg-bot  { background:var(--chat-bot-bg);  border-radius:12px 12px 12px 2px; color:var(--chat-bot-fg); }
+    #chat-panel { height:var(--app-vh, calc(100vh - 73px)) !important; }
+    #chat-messages { min-height:0; }
     .fy-btn { transition: background .15s, color .15s, border-color .15s; }
     .fy-btn.active { background:#7c3aed !important; color:#fff !important; border-color:#7c3aed !important; }
     #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -91,6 +93,14 @@
       header .container > .flex:last-child .trianglify-btn,
       header .container > .flex:last-child a { flex:1 1 calc(50% - .25rem); text-align:center; white-space:nowrap; }
       #theme-toggle { flex:0 0 auto; }
+      #chat-panel {
+        position:fixed !important; inset:0; top:0 !important; width:100vw !important; max-width:100vw;
+        height:var(--app-vh, 100dvh) !important; z-index:60; padding-bottom:env(safe-area-inset-bottom);
+      }
+      #chat-panel > div:last-child {
+        flex-shrink:0; background:var(--surface); padding-bottom:calc(.75rem + env(safe-area-inset-bottom));
+      }
+      #chat-panel input { min-width:0; }
     }
     @media (forced-colors: active) {
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
@@ -264,6 +274,18 @@ let fyData    = null;
 let currentFY = new Date().getFullYear();
 let availableFYs = [currentFY, currentFY-1, currentFY-2];
 let _importedKPIs = null;
+
+function installMobileViewportFix() {
+  const setViewportHeight = () => {
+    const h = window.visualViewport?.height || window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', `${h}px`);
+  };
+  setViewportHeight();
+  window.addEventListener('resize', setViewportHeight);
+  window.visualViewport?.addEventListener('resize', setViewportHeight);
+  window.visualViewport?.addEventListener('scroll', setViewportHeight);
+}
+installMobileViewportFix();
 
 let revenueChart = null;
 let regionalChart = null;

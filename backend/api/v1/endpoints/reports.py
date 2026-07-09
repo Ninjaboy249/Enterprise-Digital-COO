@@ -460,6 +460,33 @@ class ReportChatRequest(BaseModel):
     message: str
     history: Optional[List[Dict[str, str]]] = None   # [{role, content}, ...]
 
+_DEFAULT_HELP_LINE = (
+    "You can also ask me about Sales, Finance, Operations, trends, risks, or recommendations."
+)
+_CREATOR_RESPONSE = (
+    "I was created by Shivam Roy (Regression Team). "
+    "I'm your Enterprise Digital COO AI Assistant, built to help with business insight and quick questions. "
+    f"{_DEFAULT_HELP_LINE}"
+)
+
+def _is_creator_query(msg: str) -> bool:
+    m = msg.lower().strip()
+    subject_hit = any(term in m for term in ["you", "this", "assistant", "coo", "dashboard", "app", "project", "system"])
+    creator_hit = any(term in m for term in ["created", "creator", "made", "built", "developed", "author", "owner", "invented"])
+    if subject_hit and creator_hit:
+        return True
+    return any(
+        phrase in m
+        for phrase in [
+            "who made you",
+            "who built you",
+            "who created you",
+            "who developed you",
+            "who is your creator",
+            "who owns you",
+        ]
+    )
+
 
 @router.post("/chat")
 async def report_chat(req: ReportChatRequest) -> Dict[str, Any]:
@@ -471,12 +498,23 @@ async def report_chat(req: ReportChatRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail="Report not found. Please upload it first.")
 
     rec = _report_store[req.report_id]
+
+    if _is_creator_query(req.message):
+        return {
+            "answer": _CREATOR_RESPONSE,
+            "report_id": req.report_id,
+            "timestamp": datetime.now().isoformat(),
+        }
+
     client = _openai_client()
 
     system_prompt = (
         "You are an expert business analyst assistant. "
+        "If asked who created, built, made, developed, owns, or authored you, answer exactly that you were created by Shivam Roy (Regression Team). "
         "The user is asking questions about the following report. "
         "Answer concisely and precisely, citing specific data from the report where available. "
+        "For general or random questions, answer correctly and briefly, then add this exact line: "
+        f"\"{_DEFAULT_HELP_LINE}\" "
         f"\n\n=== REPORT: {rec['filename']} ===\n{rec['text']}\n\n"
         f"=== EXECUTIVE SUMMARY ===\n{rec['summary']}"
     )

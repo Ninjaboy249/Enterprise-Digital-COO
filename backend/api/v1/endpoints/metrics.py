@@ -362,6 +362,15 @@ _INVALID_QUERY_RESPONSE = {
     ],
 }
 
+_DEFAULT_HELP_LINE = (
+    "You can also ask me about Sales, Finance, Operations, trends, risks, or recommendations."
+)
+_CREATOR_RESPONSE = (
+    "I was created by Shivam Roy (Regression Team). "
+    "I'm your Enterprise Digital COO AI Assistant, built to help with business insight and quick questions. "
+    f"{_DEFAULT_HELP_LINE}"
+)
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -435,10 +444,29 @@ _GREETING_REPLIES: Dict[str, List[str]] = {
         "Take care! 🚀 Your dashboards will keep running smoothly.",
     ],
     "who": [
-        "I'm the Enterprise Digital COO AI Assistant — built to help you understand your business data across Sales, Finance, and Operations. Ask me about KPIs, trends, risks, or recommendations.",
-        "I'm an AI assistant specialised in enterprise business intelligence. I can analyse Sales performance, Financial health, and Operational metrics. How can I help?",
+        "I'm the Enterprise Digital COO AI Assistant, created by Shivam Roy (Regression Team). I help you understand business data across Sales, Finance, and Operations. Ask me about KPIs, trends, risks, or recommendations.",
+        "I'm an AI assistant created by Shivam Roy (Regression Team), specialised in enterprise business intelligence. I can analyse Sales performance, Financial health, and Operational metrics. How can I help?",
     ],
 }
+
+def _is_creator_query(msg: str) -> bool:
+    """Detect creator/owner/build-origin questions before model routing."""
+    m = msg.lower().strip()
+    subject_hit = any(term in m for term in ["you", "this", "assistant", "coo", "dashboard", "app", "project", "system"])
+    creator_hit = any(term in m for term in ["created", "creator", "made", "built", "developed", "author", "owner", "invented"])
+    if subject_hit and creator_hit:
+        return True
+    return any(
+        phrase in m
+        for phrase in [
+            "who made you",
+            "who built you",
+            "who created you",
+            "who developed you",
+            "who is your creator",
+            "who owns you",
+        ]
+    )
 
 def _detect_greeting(msg: str) -> Optional[str]:
     """Return greeting category if the message is a greeting/small-talk, else None."""
@@ -571,11 +599,12 @@ async def _openai_answer(message: str, ctx: str, data_brief: str, req: "ChatRequ
 
     system_prompt = (
         "You are the Enterprise Digital COO AI Assistant — a concise, data-driven executive advisor. "
+        "If asked who created, built, made, developed, owns, or authored you, answer exactly that you were created by Shivam Roy (Regression Team). "
         "You help business leaders understand their company's Sales, Finance, and Operations performance. "
-        "Always answer using the LIVE DATA provided below — do NOT say you lack real-time data. "
-        "Quote specific numbers from the data. Keep answers focused, professional, and actionable (3–5 sentences). "
-        "If a question is completely outside the business domain (e.g. recipes, coding tutorials), "
-        "politely redirect the user to ask about business metrics instead.\n\n"
+        "For business questions, use the LIVE DATA provided below and quote specific numbers. "
+        "For general or random questions, answer correctly and briefly in 1–3 sentences, then add this exact line: "
+        f"\"{_DEFAULT_HELP_LINE}\" "
+        "Keep business answers focused, professional, and actionable (3–5 sentences).\n\n"
     )
 
     if data_brief:
@@ -637,6 +666,19 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     msg_lower = req.message.lower()
 
     # ── 1. Greeting / small-talk detection (highest priority) ──────────────
+    if _is_creator_query(req.message):
+        return {
+            "answer": _CREATOR_RESPONSE,
+            "context": "creator",
+            "timestamp": datetime.now().isoformat(),
+            "suggestions": [
+                "Show me a summary",
+                "What are the key risks?",
+                "What do you recommend?",
+                "How are trends looking?",
+            ],
+        }
+
     greeting_cat = _detect_greeting(req.message)
     if greeting_cat:
         replies = _GREETING_REPLIES[greeting_cat]

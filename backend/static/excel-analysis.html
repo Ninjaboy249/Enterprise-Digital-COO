@@ -138,6 +138,15 @@
       header .max-w-7xl > .flex:last-child a { flex:1 1 calc(50% - .25rem); text-align:center; white-space:nowrap; }
       #openai-badge { flex:1 1 auto; text-align:center; white-space:normal; }
       #theme-toggle { flex:0 0 auto; }
+      #tab-chat > .bg-white {
+        height:calc(var(--app-vh, 100dvh) - 130px) !important;
+        min-height:420px;
+      }
+      #chat-log { min-height:0; max-height:none; }
+      #tab-chat .p-4.border-t {
+        flex-shrink:0; background:var(--surface); padding-bottom:calc(1rem + env(safe-area-inset-bottom));
+      }
+      #tab-chat input { min-width:0; }
     }
   </style>
 </head>
@@ -319,6 +328,18 @@ const _THEMES=['auto','light','dark'],_THEME_ICONS={auto:'🌙',light:'☀️',d
 function _applyTheme(t){document.documentElement.setAttribute('data-theme',t);const b=document.getElementById('theme-toggle');if(b)b.textContent=_THEME_ICONS[t]||'🌙';try{localStorage.setItem('coo-theme',t);}catch{}}
 function cycleTheme(){const c=document.documentElement.getAttribute('data-theme')||'auto';_applyTheme(_THEMES[(_THEMES.indexOf(c)+1)%_THEMES.length]);}
 (function(){try{const s=localStorage.getItem('coo-theme');if(s)_applyTheme(s);}catch{}})();
+
+function installMobileViewportFix() {
+  const setViewportHeight = () => {
+    const h = window.visualViewport?.height || window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', `${h}px`);
+  };
+  setViewportHeight();
+  window.addEventListener('resize', setViewportHeight);
+  window.visualViewport?.addEventListener('resize', setViewportHeight);
+  window.visualViewport?.addEventListener('scroll', setViewportHeight);
+}
+installMobileViewportFix();
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
