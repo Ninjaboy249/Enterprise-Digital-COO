@@ -19391,14 +19391,14 @@ var r = /* @__PURE__ */ e(((e) => {
 	signature: "Enterprise Digital COO\nAI Command Center"
 };
 function v() {
-	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)(!1), [i, a] = (0, f.useState)(_), [o, s] = (0, f.useState)(!1), [c, l] = (0, f.useState)("");
+	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)(!1), [i, a] = (0, f.useState)(_), [o, s] = (0, f.useState)(!1), [c, l] = (0, f.useState)(!1), [u, d] = (0, f.useState)(!1), [p, m] = (0, f.useState)("");
 	(0, f.useEffect)(() => {
 		let e = (e) => {
 			let n = {
 				..._,
 				...e
 			};
-			a(n), r(!n.recipient || !!n.needs_details), l(""), t(!0), delete window.COOEmailDraftPending;
+			a(n), r(!n.recipient || !!n.needs_details), m(""), d(!1), t(!0), delete window.COOEmailDraftPending;
 		};
 		window.COOEmailAgent = {
 			open: e,
@@ -19409,11 +19409,39 @@ function v() {
 			delete window.COOEmailAgent, window.removeEventListener("coo-email-draft", n);
 		};
 	}, []);
-	let u = (e, t) => a((n) => ({
+	let h = (e, t) => a((n) => ({
 		...n,
 		[e]: t
-	})), d = async (e) => {
-		e.preventDefault(), s(!0), l("");
+	})), v = async () => {
+		let e = i.body.trim() || i.subject.trim();
+		if (!e) {
+			m("Tell the AI what you want the email to say first."), r(!0);
+			return;
+		}
+		l(!0), m("");
+		try {
+			let t = i.recipient.trim() || "the recipient", n = await fetch("/api/v1/metrics/chat", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					message: `Draft an email to ${t} about: ${e}`,
+					context: "general"
+				})
+			}), o = await n.json().catch(() => ({}));
+			if (!n.ok || !o.email_draft) throw Error(o.detail || "AI drafting failed.");
+			a((e) => ({
+				...e,
+				...o.email_draft,
+				recipient: e.recipient || o.email_draft.recipient,
+				needs_details: !1
+			})), r(!1);
+		} catch (e) {
+			m(e instanceof Error ? e.message : "AI drafting failed.");
+		} finally {
+			l(!1);
+		}
+	}, y = async (e) => {
+		e.preventDefault(), s(!0), m("");
 		try {
 			let e = await fetch("/api/v1/notifications/email/send", {
 				method: "POST",
@@ -19422,26 +19450,28 @@ function v() {
 			}), n = await e.json().catch(() => ({}));
 			if (!e.ok) throw Error(n.detail || "The email could not be sent.");
 			if (!n.delivered) throw Error("SMTP is not configured for delivery.");
-			t(!1), window.dispatchEvent(new CustomEvent("coo-email-sent", { detail: { recipient: i.recipient } }));
+			d(!0), window.setTimeout(() => {
+				t(!1), d(!1), window.dispatchEvent(new CustomEvent("coo-email-sent", { detail: { recipient: i.recipient } }));
+			}, 1450);
 		} catch (e) {
-			l(e instanceof Error ? e.message : "The email could not be sent.");
+			m(e instanceof Error ? e.message : "The email could not be sent.");
 		} finally {
 			s(!1);
 		}
 	};
 	if (!e) return null;
-	let p = (e, t, n = !1, r = "") => /* @__PURE__ */ (0, g.jsxs)("label", {
+	let b = (e, t, n = !1, r = "") => /* @__PURE__ */ (0, g.jsxs)("label", {
 		className: "email-agent-field",
 		children: [/* @__PURE__ */ (0, g.jsx)("span", { children: e }), n ? /* @__PURE__ */ (0, g.jsx)("textarea", {
 			value: String(i[t] || ""),
-			onChange: (e) => u(t, e.target.value),
+			onChange: (e) => h(t, e.target.value),
 			placeholder: r,
 			rows: t === "body" ? 7 : 2,
 			required: !0
 		}) : /* @__PURE__ */ (0, g.jsx)("input", {
 			type: t === "recipient" ? "email" : "text",
 			value: String(i[t] || ""),
-			onChange: (e) => u(t, e.target.value),
+			onChange: (e) => h(t, e.target.value),
 			placeholder: r,
 			required: !0
 		})]
@@ -19453,8 +19483,20 @@ function v() {
 		"aria-labelledby": "email-agent-title",
 		children: /* @__PURE__ */ (0, g.jsxs)("form", {
 			className: "email-agent-modal",
-			onSubmit: d,
+			onSubmit: y,
 			children: [
+				u && /* @__PURE__ */ (0, g.jsxs)("div", {
+					className: "email-agent-sent",
+					role: "status",
+					children: [
+						/* @__PURE__ */ (0, g.jsx)("div", {
+							className: "email-agent-plane",
+							children: "✈"
+						}),
+						/* @__PURE__ */ (0, g.jsx)("strong", { children: "Email sent!" }),
+						/* @__PURE__ */ (0, g.jsxs)("span", { children: ["On its way to ", i.recipient] })
+					]
+				}),
 				/* @__PURE__ */ (0, g.jsxs)("header", {
 					className: "email-agent-header",
 					children: [
@@ -19488,13 +19530,13 @@ function v() {
 						}),
 						/* @__PURE__ */ (0, g.jsxs)("div", {
 							className: "email-agent-grid",
-							children: [p("Who should receive this?", "recipient", !1, "recipient@company.com"), p("Email subject", "subject", !1, "Enter a clear subject")]
+							children: [b("Who should receive this?", "recipient", !1, "recipient@company.com"), b("Email subject", "subject", !1, "Enter a clear subject")]
 						}),
-						p("Greeting", "greeting"),
-						p("What should the email say?", "body", !0, "Describe the update, request, or response you want to send…"),
+						b("Greeting", "greeting"),
+						b("What should the email say?", "body", !0, "Describe the update, request, or response you want to send…"),
 						/* @__PURE__ */ (0, g.jsxs)("div", {
 							className: "email-agent-grid",
-							children: [p("Closing", "closing"), p("Signature", "signature", !0)]
+							children: [b("Closing", "closing"), b("Signature", "signature", !0)]
 						})
 					]
 				}) : /* @__PURE__ */ (0, g.jsxs)("section", {
@@ -19515,10 +19557,10 @@ function v() {
 						})
 					] })]
 				}),
-				c && /* @__PURE__ */ (0, g.jsx)("p", {
+				p && /* @__PURE__ */ (0, g.jsx)("p", {
 					className: "email-agent-error",
 					role: "alert",
-					children: c
+					children: p
 				}),
 				/* @__PURE__ */ (0, g.jsxs)("footer", {
 					className: "email-agent-actions",
@@ -19531,6 +19573,13 @@ function v() {
 						}),
 						/* @__PURE__ */ (0, g.jsx)("button", {
 							type: "button",
+							className: "email-agent-ai",
+							onClick: v,
+							disabled: c || o,
+							children: c ? "AI is drafting…" : "✦ Draft with AI"
+						}),
+						/* @__PURE__ */ (0, g.jsx)("button", {
+							type: "button",
 							className: "email-agent-cancel",
 							onClick: () => t(!1),
 							children: "Cancel"
@@ -19539,7 +19588,7 @@ function v() {
 							type: "submit",
 							className: "email-agent-send",
 							disabled: o || !i.recipient,
-							children: o ? "Sending…" : "Send Email"
+							children: o ? "Sending…" : "Send Email  ➤"
 						})
 					]
 				})

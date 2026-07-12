@@ -27,6 +27,8 @@ export default function EmailAgentModal() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<EmailDraft>(EMPTY_DRAFT);
   const [sending, setSending] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function EmailAgentModal() {
       const merged = { ...EMPTY_DRAFT, ...next };
       setDraft(merged);
       setEditing(!merged.recipient || !!merged.needs_details);
-      setError(''); setOpen(true);
+      setError(''); setSent(false); setOpen(true);
       delete window.COOEmailDraftPending;
     };
     window.COOEmailAgent = {
@@ -49,6 +51,28 @@ export default function EmailAgentModal() {
 
   const update = (field: keyof EmailDraft, value: string) => setDraft(current => ({ ...current, [field]: value }));
 
+  const draftWithAI = async () => {
+    const instructions = draft.body.trim() || draft.subject.trim();
+    if (!instructions) { setError('Tell the AI what you want the email to say first.'); setEditing(true); return; }
+    setAiDrafting(true); setError('');
+    try {
+      const recipient = draft.recipient.trim() || 'the recipient';
+      const response = await fetch('/api/v1/metrics/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Draft an email to ${recipient} about: ${instructions}`, context: 'general' }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.email_draft) throw new Error(result.detail || 'AI drafting failed.');
+      setDraft(current => ({ ...current, ...result.email_draft, recipient: current.recipient || result.email_draft.recipient, needs_details: false }));
+      setEditing(false);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'AI drafting failed.');
+    } finally {
+      setAiDrafting(false);
+    }
+  };
+
   const send = async (event: FormEvent) => {
     event.preventDefault();
     setSending(true); setError('');
@@ -61,8 +85,11 @@ export default function EmailAgentModal() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.detail || 'The email could not be sent.');
       if (!result.delivered) throw new Error('SMTP is not configured for delivery.');
-      setOpen(false);
-      window.dispatchEvent(new CustomEvent('coo-email-sent', { detail: { recipient: draft.recipient } }));
+      setSent(true);
+      window.setTimeout(() => {
+        setOpen(false); setSent(false);
+        window.dispatchEvent(new CustomEvent('coo-email-sent', { detail: { recipient: draft.recipient } }));
+      }, 1450);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The email could not be sent.');
     } finally {
@@ -82,6 +109,7 @@ export default function EmailAgentModal() {
 
   return <div className="email-agent-overlay" role="dialog" aria-modal="true" aria-labelledby="email-agent-title">
     <form className="email-agent-modal" onSubmit={send}>
+      {sent && <div className="email-agent-sent" role="status"><div className="email-agent-plane">✈</div><strong>Email sent!</strong><span>On its way to {draft.recipient}</span></div>}
       <header className="email-agent-header">
         <div className="email-agent-mark">✦</div>
         <div><small>AI EMAIL AGENT</small><h2 id="email-agent-title">Review your email</h2><p>Nothing is sent until you confirm.</p></div>
@@ -101,8 +129,9 @@ export default function EmailAgentModal() {
       {error && <p className="email-agent-error" role="alert">{error}</p>}
       <footer className="email-agent-actions">
         <button type="button" className="email-agent-secondary" onClick={() => setEditing(value => !value)}>{editing ? 'Done Editing' : 'Edit'}</button>
+        <button type="button" className="email-agent-ai" onClick={draftWithAI} disabled={aiDrafting || sending}>{aiDrafting ? 'AI is drafting…' : '✦ Draft with AI'}</button>
         <button type="button" className="email-agent-cancel" onClick={() => setOpen(false)}>Cancel</button>
-        <button type="submit" className="email-agent-send" disabled={sending || !draft.recipient}>{sending ? 'Sending…' : 'Send Email'}</button>
+        <button type="submit" className="email-agent-send" disabled={sending || !draft.recipient}>{sending ? 'Sending…' : 'Send Email  ➤'}</button>
       </footer>
     </form>
   </div>;
