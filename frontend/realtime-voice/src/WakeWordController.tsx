@@ -140,6 +140,22 @@ export default function WakeWordController() {
       window.setTimeout(() => { try { engine.start(); } catch { /* restart race */ } }, 250);
     };
 
+    const pauseForComposeVoice = () => {
+      clearCommandTimer();
+      shouldRestart.current = false;
+      mode.current = 'wake';
+      document.body.classList.remove('coo-wake-active', 'coo-wake-thinking', 'coo-wake-speaking');
+      try { engine.abort(); } catch { /* already stopped */ }
+    };
+    const resumeAfterComposeVoice = () => {
+      if (!mounted.current) return;
+      mode.current = 'wake';
+      shouldRestart.current = true;
+      window.setTimeout(() => { try { engine.start(); } catch { /* restart race */ } }, 350);
+    };
+    window.addEventListener('coo-compose-voice-start', pauseForComposeVoice);
+    window.addEventListener('coo-compose-voice-end', resumeAfterComposeVoice);
+
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       stream.getTracks().forEach(track => track.stop());
       if (mounted.current) engine.start();
@@ -147,6 +163,8 @@ export default function WakeWordController() {
 
     return () => {
       mounted.current = false; shouldRestart.current = false; clearCommandTimer();
+      window.removeEventListener('coo-compose-voice-start', pauseForComposeVoice);
+      window.removeEventListener('coo-compose-voice-end', resumeAfterComposeVoice);
       speechSynthesis.cancel(); document.body.classList.remove('coo-wake-active', 'coo-wake-thinking', 'coo-wake-speaking');
       engine.onend = null; engine.abort(); recognition.current = null;
     };
