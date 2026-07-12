@@ -59,7 +59,7 @@ function s() {
 				m("Sorry, I could not reach the AI service. Please try again.");
 			}
 		};
-		return u.onresult = (e) => {
+		u.onresult = (e) => {
 			for (let n = e.resultIndex; n < e.results.length; n += 1) {
 				if (!e.results[n].isFinal) continue;
 				let a = e.results[n][0].transcript.trim();
@@ -79,12 +79,25 @@ function s() {
 					u.start();
 				} catch {}
 			}, 250);
-		}, navigator.mediaDevices.getUserMedia({ audio: !0 }).then((e) => {
+		};
+		let g = () => {
+			d(), l.current = !1, t.current = "wake", document.body.classList.remove("coo-wake-active", "coo-wake-thinking", "coo-wake-speaking");
+			try {
+				u.abort();
+			} catch {}
+		}, _ = () => {
+			c.current && (t.current = "wake", l.current = !0, window.setTimeout(() => {
+				try {
+					u.start();
+				} catch {}
+			}, 350));
+		};
+		return window.addEventListener("coo-compose-voice-start", g), window.addEventListener("coo-compose-voice-end", _), navigator.mediaDevices.getUserMedia({ audio: !0 }).then((e) => {
 			e.getTracks().forEach((e) => e.stop()), c.current && u.start();
 		}).catch(() => {
 			l.current = !1;
 		}), () => {
-			c.current = !1, l.current = !1, d(), speechSynthesis.cancel(), document.body.classList.remove("coo-wake-active", "coo-wake-thinking", "coo-wake-speaking"), u.onend = null, u.abort(), e.current = null;
+			c.current = !1, l.current = !1, d(), window.removeEventListener("coo-compose-voice-start", g), window.removeEventListener("coo-compose-voice-end", _), speechSynthesis.cancel(), document.body.classList.remove("coo-wake-active", "coo-wake-thinking", "coo-wake-speaking"), u.onend = null, u.abort(), e.current = null;
 		};
 	}, []), null;
 }

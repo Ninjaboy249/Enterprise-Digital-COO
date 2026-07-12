@@ -2323,6 +2323,7 @@ function _detectCtx(msg) {
 async function heroAsk() {
   const inp = document.getElementById('hero-ask-input');
   const msg = inp.value.trim(); if(!msg) return;
+  inp.value = '';
   const box = document.getElementById('hero-answer');
   box.classList.remove('hidden');
   box.textContent = 'Thinking…';
@@ -2672,7 +2673,7 @@ requestAnimationFrame(initPageMotion);
 setInterval(()=>{ checkStatus(); loadAllFYData(); }, 60000);
 </script>
 <script type="module" src="/static/assets/motion.js"></script>
-<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=7"></script>
-<script src="/static/assets/coo-bot-widget.js?v=8"></script>
+<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=8"></script>
+<script src="/static/assets/coo-bot-widget.js?v=13"></script>
 </body>
 </html>

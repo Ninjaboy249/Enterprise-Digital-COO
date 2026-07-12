@@ -19382,7 +19382,7 @@ var r = /* @__PURE__ */ e(((e) => {
 	})();
 })), g = (/* @__PURE__ */ e(((e, t) => {
 	process.env.NODE_ENV === "production" ? t.exports = m() : t.exports = h();
-})))(), _ = "coo-realtime-voice-history", v = (0, f.lazy)(() => import("./WakeWordController-CERSXZaZ.js"));
+})))(), _ = "coo-realtime-voice-history", v = (0, f.lazy)(() => import("./WakeWordController-C8PHNDn2.js"));
 function y() {
 	let e = location.pathname.replace(/\/+$/, "");
 	return e === "" || e === "/" || e === "/static" || e.endsWith("/index.html");
