@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './voice.css';
+import EmailAgentModal, { type EmailDraft } from './EmailAgentModal';
 
 type Role = 'user' | 'assistant';
 type Message = { id: string; role: Role; text: string; createdAt: number };
@@ -8,7 +9,10 @@ type VoiceStatus = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking'
 type RealtimeEvent = Record<string, any> & { type: string };
 
 declare global {
-  interface Window { COORealtimeVoice?: { open: () => void; close: () => void } }
+  interface Window {
+    COORealtimeVoice?: { open: () => void; close: () => void };
+    COOEmailAgent?: { open: (draft: EmailDraft) => void; close: () => void };
+  }
 }
 
 const HISTORY_KEY = 'coo-realtime-voice-history';
@@ -225,4 +229,4 @@ function VoiceConversation() {
 }
 
 const root = document.createElement('div'); root.id = 'coo-realtime-voice-root'; document.body.appendChild(root);
-createRoot(root).render(<><Suspense fallback={null}>{isMainDashboard() && <WakeWordController />}</Suspense><VoiceConversation /></>);
+createRoot(root).render(<><Suspense fallback={null}>{isMainDashboard() && <WakeWordController />}</Suspense><VoiceConversation />{isMainDashboard() && <EmailAgentModal />}</>);

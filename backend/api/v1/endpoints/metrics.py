@@ -766,6 +766,256 @@ async def _openai_answer(message: str, ctx: str, data_brief: str, req: "ChatRequ
     return resp.choices[0].message.content.strip()
 
 
+def _identify_business_intent(message: str, requested_context: str) -> Dict[str, str]:
+    """Classify the request before selecting an enterprise agent."""
+    text = message.lower()
+    email_actions = ["send email", "send an email", "draft email", "draft an email", "reply to", "reply email", "summarize email", "summarise email", "email to"]
+    if any(term in text for term in email_actions):
+        if "reply" in text:
+            email_intent = "reply_email"
+        elif "summar" in text:
+            email_intent = "summarize_email"
+        elif "send" in text:
+            email_intent = "send_email"
+        else:
+            email_intent = "draft_email"
+        return {"name": email_intent, "domain": "email", "objective": message.strip()}
+    domain_keywords = {
+        "sales": ["sales", "revenue", "pipeline", "deal", "win rate", "pricing", "customer growth"],
+        "finance": ["finance", "cash", "margin", "ebitda", "runway", "cost", "profit", "budget"],
+        "operations": ["operations", "uptime", "csat", "nps", "ticket", "support", "users", "delivery"],
+    }
+    scores = {domain: sum(term in text for term in terms) for domain, terms in domain_keywords.items()}
+    domain = max(scores, key=scores.get) if max(scores.values(), default=0) else requested_context
+    if domain not in domain_keywords:
+        domain = "general"
+
+    if any(term in text for term in ["forecast", "predict", "projection", "next quarter", "next year"]):
+        intent = "forecast"
+    elif any(term in text for term in ["risk", "concern", "problem", "issue", "why", "root cause"]):
+        intent = "risk_analysis"
+    elif any(term in text for term in ["recommend", "action", "should we", "what should", "next step"]):
+        intent = "decision_support"
+    elif any(term in text for term in ["summary", "summarise", "summarize", "overview", "brief"]):
+        intent = "executive_summary"
+    else:
+        intent = "performance_analysis"
+
+    return {
+        "name": intent,
+        "domain": domain,
+        "objective": message.strip(),
+    }
+
+
+def _select_business_agent(intent: Dict[str, str]) -> Dict[str, str]:
+    agents = {
+        "sales": ("sales_agent", "Sales Intelligence Agent"),
+        "finance": ("finance_agent", "Finance Strategy Agent"),
+        "operations": ("operations_agent", "Operations Excellence Agent"),
+        "general": ("executive_agent", "Executive Synthesis Agent"),
+        "email": ("email_agent", "AI Email Agent"),
+    }
+    agent_id, name = agents[intent["domain"]]
+    return {
+        "id": agent_id,
+        "name": name,
+        "reason": f"Selected for {intent['name']} in the {intent['domain']} domain.",
+    }
+
+
+def _collect_enterprise_data(req: "ChatRequest", domain: str) -> Dict[str, Any]:
+    domains = [domain] if domain in {"sales", "finance", "operations"} else ([] if domain == "email" else ["sales", "finance", "operations"])
+    snapshots: Dict[str, Any] = {}
+    systems: List[str] = []
+    for item in domains:
+        snapshot = _latest_domain_snapshot(req, item)
+        if snapshot:
+            snapshots[item] = snapshot
+            systems.append(f"{item.title()} Metrics System")
+    return {
+        "systems": systems,
+        "domains": domains,
+        "snapshots": snapshots,
+        "data_mode": "connected_dashboard" if req.live_data or req.data_snapshot else "enterprise_demo",
+    }
+
+
+def _analyse_and_forecast(data: Dict[str, Any]) -> Dict[str, List[str]]:
+    findings: List[str] = []
+    forecasts: List[str] = []
+    risks: List[str] = []
+    snapshots = data["snapshots"]
+
+    sales = snapshots.get("sales", {}).get("metrics", {})
+    if sales:
+        revenue = sales.get("total_revenue", 0)
+        expected = sales.get("expected_revenue", 0)
+        gap = sales.get("revenue_drop_percentage", 0)
+        findings.append(f"Revenue is {_money(revenue)} versus {_money(expected)} expected, a {gap}% gap.")
+        growth_assumption = max(0.02, min(0.15, float(sales.get("win_rate", 0.3)) * 0.25))
+        forecasts.append(f"Sales run-rate forecast: {_money(revenue * (1 + growth_assumption))} at the current conversion profile.")
+        if gap and gap > 5:
+            risks.append("Revenue remains materially below plan unless late-stage pipeline conversion improves.")
+
+    finance = snapshots.get("finance", {}).get("metrics", {})
+    if finance:
+        cash = finance.get("cash_balance", 0)
+        runway = finance.get("runway_months", 0)
+        margin = finance.get("gross_margin", 0)
+        findings.append(f"Cash is {_money(cash)}, runway is {runway} months, and gross margin is {_percent(margin)}.")
+        forecasts.append(f"Liquidity remains above the operating threshold for approximately {runway} months at current burn.")
+        if runway and runway < 9:
+            risks.append("Cash runway is below the nine-month operating threshold.")
+
+    operations = snapshots.get("operations", {}).get("metrics", {})
+    if operations:
+        uptime = operations.get("system_uptime", 0)
+        csat = operations.get("customer_satisfaction", 0)
+        tickets = operations.get("support_tickets", 0)
+        findings.append(f"Operations are at {uptime}% uptime, {csat}/5 CSAT, and {tickets} support tickets.")
+        forecasts.append("Service performance should remain stable if ticket resolution capacity keeps pace with user growth.")
+        if csat and csat < 4:
+            risks.append("Customer satisfaction is below the healthy operating threshold.")
+
+    return {"findings": findings, "forecasts": forecasts, "risks": risks}
+
+
+def _recommended_actions(domain: str) -> List[Dict[str, str]]:
+    actions = {
+        "sales": [
+            ("High", "Accelerate late-stage enterprise deals with named owners and weekly close plans.", "Sales"),
+            ("Medium", "Protect pricing while prioritising the highest-probability regional pipeline.", "Revenue Operations"),
+        ],
+        "finance": [
+            ("High", "Protect cash runway and tie discretionary investment to measurable revenue outcomes.", "Finance"),
+            ("Medium", "Review margin leakage, discounting, and non-critical operating spend.", "Finance Operations"),
+        ],
+        "operations": [
+            ("High", "Automate repeat support categories and reduce resolution-time outliers.", "Operations"),
+            ("Medium", "Feed recurring customer pain points into product priorities.", "Customer Success"),
+        ],
+        "general": [
+            ("High", "Accelerate high-probability pipeline while protecting cash and service reliability.", "Executive Team"),
+            ("Medium", "Review the leading risk indicators weekly with accountable owners.", "COO Office"),
+        ],
+        "email": [
+            ("High", "Review the generated email, confirm the recipient, and send only when ready.", "Email Agent"),
+            ("Medium", "Edit tone or content in the preview before confirmation.", "Requesting User"),
+        ],
+    }
+    return [
+        {"priority": priority, "action": action, "owner": owner, "expected_impact": "Improved execution against the current business signal"}
+        for priority, action, owner in actions[domain]
+    ]
+
+
+def _dashboard_schema(data: Dict[str, Any], analysis: Dict[str, List[str]], actions: List[Dict[str, str]], confidence: int) -> Dict[str, Any]:
+    snapshots = data["snapshots"]
+    sales = snapshots.get("sales", {}).get("metrics", {})
+    finance = snapshots.get("finance", {}).get("metrics", {})
+    operations = snapshots.get("operations", {}).get("metrics", {})
+    periods = [str(item.get("period") or f"FY {item.get('fiscal_year')}") for item in snapshots.values() if item]
+    first_finding = analysis["findings"][0] if analysis["findings"] else "Enterprise performance analysis completed."
+    first_forecast = analysis["forecasts"][0] if analysis["forecasts"] else "No material variance forecast."
+    signal = analysis["risks"][0] if analysis["risks"] else first_finding
+    revenue = sales.get("total_revenue")
+    cash = finance.get("cash_balance")
+    return {
+        "fiscal_year": periods[0] if periods else f"FY {_current_fy()}",
+        "confidence": f"AI Confidence {confidence}%",
+        "signal": signal,
+        "cause": first_finding,
+        "predicted_impact": first_forecast,
+        "impact_detail": "; ".join(analysis["risks"]) or "KPIs remain within the current operating range.",
+        "ai_opportunity": "Execution uplift from prioritised actions",
+        "potential_savings": "To be validated through scenario modelling",
+        "revenue": _money(revenue) if revenue is not None else "Not available",
+        "cash": _money(cash) if cash is not None else "Not available",
+        "csat": f"{operations.get('customer_satisfaction')}/5" if operations.get("customer_satisfaction") is not None else "Not available",
+        "users": f"{operations.get('active_users', 0):,}" if operations.get("active_users") is not None else "Not available",
+        "recommended_action": actions[0]["action"],
+    }
+
+
+def _structured_coo_response(req: "ChatRequest", ctx: str, answer: str, source: str) -> Dict[str, Any]:
+    intent = _identify_business_intent(req.message, ctx)
+    agent = _select_business_agent(intent)
+    enterprise_data = _collect_enterprise_data(req, intent["domain"])
+    analysis = _analyse_and_forecast(enterprise_data)
+    actions = _recommended_actions(intent["domain"])
+    snapshot_count = len(enterprise_data["snapshots"])
+    confidence = min(98, 82 + snapshot_count * 4 + (4 if source == "openai" else 0))
+    response = {
+        "business_intent": intent,
+        "selected_agent": agent,
+        "enterprise_data": enterprise_data,
+        "analysis": analysis,
+        "executive_summary": answer,
+        "confidence_score": confidence,
+        "recommended_actions": actions,
+        "dashboard_schema": _dashboard_schema(enterprise_data, analysis, actions, confidence),
+        "orchestration": [
+            {"step": "identify_business_intent", "status": "completed"},
+            {"step": "select_business_agent", "status": "completed"},
+            {"step": "collect_enterprise_data", "status": "completed"},
+            {"step": "analyse_and_forecast", "status": "completed"},
+            {"step": "generate_executive_summary", "status": "completed"},
+            {"step": "calculate_confidence", "status": "completed"},
+            {"step": "recommend_actions", "status": "completed"},
+            {"step": "map_dashboard_schema", "status": "completed"},
+        ],
+        "answer": answer,
+        "context": intent["domain"],
+        "source": source,
+        "timestamp": datetime.now().isoformat(),
+        "suggestions": [
+            "What are the key risks?",
+            "Show me a summary",
+            "What do you recommend?",
+            "How are trends looking?",
+        ],
+    }
+    if intent["domain"] == "email":
+        response["email_draft"] = _generate_email_draft(req.message, intent["name"])
+    return response
+
+
+def _generate_email_draft(message: str, intent: str) -> Dict[str, str]:
+    """Create an editable professional draft for the React confirmation modal."""
+    recipient_match = re.search(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", message)
+    recipient = recipient_match.group(0) if recipient_match else ""
+    cleaned = message.strip()
+    if recipient:
+        cleaned = cleaned.replace(recipient, "").strip(" ,.-")
+    cleaned = re.sub(
+        r"^(please\s+)?(send|draft|write|compose|reply to|summari[sz]e)\s+(an?\s+)?email\s*(to)?\s*",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip(" :,-")
+    topic = cleaned or "the requested business update"
+    topic_sentence = topic[0].upper() + topic[1:] if topic else "Business update"
+    if intent == "reply_email":
+        subject = "Re: Enterprise Digital COO Update"
+        body = f"Thank you for your message. {topic_sentence}\n\nPlease let me know if you would like any additional detail or supporting analysis."
+    elif intent == "summarize_email":
+        subject = "Enterprise Digital COO — Email Summary"
+        body = f"Here is the requested executive summary:\n\n{topic_sentence}\n\nThe key points have been consolidated for quick review and decision-making."
+    else:
+        subject_topic = re.sub(r"\s+", " ", topic_sentence).rstrip(".")
+        subject = f"Enterprise Digital COO — {subject_topic[:90]}"
+        body = f"I’m writing regarding {topic}.\n\nBased on the Enterprise Digital COO review, this item is ready for your attention. Please review the information and advise on the appropriate next steps."
+    return {
+        "recipient": recipient,
+        "subject": subject,
+        "greeting": "Hello,",
+        "body": body,
+        "closing": "Best regards,",
+        "signature": "Enterprise Digital COO\nAI Command Center",
+    }
+
+
 @router.post("/chat")
 async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     """
@@ -822,34 +1072,12 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
     if _openai_client is not None:
         try:
             answer = await _openai_answer(req.message, ctx, data_brief, req)
-            return {
-                "answer": answer,
-                "context": ctx,
-                "timestamp": datetime.now().isoformat(),
-                "source": "openai",
-                "suggestions": [
-                    "What are the key risks?",
-                    "Show me a summary",
-                    "What do you recommend?",
-                    "How are trends looking?",
-                ],
-            }
+            return _structured_coo_response(req, ctx, answer, "openai")
         except Exception as exc:
             logger.warning("OpenAI call failed (%s) — falling back to canned response.", exc)
 
     # ── 4. Grounded dashboard fallback (no OpenAI key or API error) ────────
     answer = _metric_fallback_answer(req, ctx, msg_lower)
-    return {
-        "answer": answer,
-        "context": ctx,
-        "timestamp": datetime.now().isoformat(),
-        "source": "dashboard",
-        "suggestions": [
-            "What are the key risks?",
-            "Show me a summary",
-            "What do you recommend?",
-            "How are trends looking?",
-        ],
-    }
+    return _structured_coo_response(req, ctx, answer, "dashboard")
 
 # Made with Codex

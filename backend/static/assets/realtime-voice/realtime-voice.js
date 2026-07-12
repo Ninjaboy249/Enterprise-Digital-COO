@@ -19382,19 +19382,174 @@ var r = /* @__PURE__ */ e(((e) => {
 	})();
 })), g = (/* @__PURE__ */ e(((e, t) => {
 	process.env.NODE_ENV === "production" ? t.exports = m() : t.exports = h();
-})))(), _ = "coo-realtime-voice-history", v = (0, f.lazy)(() => import("./WakeWordController-C8PHNDn2.js"));
-function y() {
+})))(), _ = {
+	recipient: "",
+	subject: "",
+	greeting: "Hello,",
+	body: "",
+	closing: "Best regards,",
+	signature: "Enterprise Digital COO\nAI Command Center"
+};
+function v() {
+	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)(!1), [i, a] = (0, f.useState)(_), [o, s] = (0, f.useState)(!1), [c, l] = (0, f.useState)("");
+	(0, f.useEffect)(() => (window.COOEmailAgent = {
+		open: (e) => {
+			a({
+				..._,
+				...e
+			}), r(!1), l(""), t(!0);
+		},
+		close: () => t(!1)
+	}, () => {
+		delete window.COOEmailAgent;
+	}), []);
+	let u = (e, t) => a((n) => ({
+		...n,
+		[e]: t
+	})), d = async (e) => {
+		e.preventDefault(), s(!0), l("");
+		try {
+			let e = await fetch("/api/v1/notifications/email/send", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(i)
+			}), n = await e.json().catch(() => ({}));
+			if (!e.ok) throw Error(n.detail || "The email could not be sent.");
+			if (!n.delivered) throw Error("SMTP is not configured for delivery.");
+			t(!1), window.dispatchEvent(new CustomEvent("coo-email-sent", { detail: { recipient: i.recipient } }));
+		} catch (e) {
+			l(e instanceof Error ? e.message : "The email could not be sent.");
+		} finally {
+			s(!1);
+		}
+	};
+	if (!e) return null;
+	let p = (e, t, n = !1) => /* @__PURE__ */ (0, g.jsxs)("label", {
+		className: "email-agent-field",
+		children: [/* @__PURE__ */ (0, g.jsx)("span", { children: e }), n ? /* @__PURE__ */ (0, g.jsx)("textarea", {
+			value: i[t],
+			onChange: (e) => u(t, e.target.value),
+			rows: t === "body" ? 7 : 2,
+			required: !0
+		}) : /* @__PURE__ */ (0, g.jsx)("input", {
+			type: t === "recipient" ? "email" : "text",
+			value: i[t],
+			onChange: (e) => u(t, e.target.value),
+			required: !0
+		})]
+	});
+	return /* @__PURE__ */ (0, g.jsx)("div", {
+		className: "email-agent-overlay",
+		role: "dialog",
+		"aria-modal": "true",
+		"aria-labelledby": "email-agent-title",
+		children: /* @__PURE__ */ (0, g.jsxs)("form", {
+			className: "email-agent-modal",
+			onSubmit: d,
+			children: [
+				/* @__PURE__ */ (0, g.jsxs)("header", {
+					className: "email-agent-header",
+					children: [
+						/* @__PURE__ */ (0, g.jsx)("div", {
+							className: "email-agent-mark",
+							children: "✦"
+						}),
+						/* @__PURE__ */ (0, g.jsxs)("div", { children: [
+							/* @__PURE__ */ (0, g.jsx)("small", { children: "AI EMAIL AGENT" }),
+							/* @__PURE__ */ (0, g.jsx)("h2", {
+								id: "email-agent-title",
+								children: "Review your email"
+							}),
+							/* @__PURE__ */ (0, g.jsx)("p", { children: "Nothing is sent until you confirm." })
+						] }),
+						/* @__PURE__ */ (0, g.jsx)("button", {
+							type: "button",
+							className: "email-agent-close",
+							onClick: () => t(!1),
+							"aria-label": "Cancel email",
+							children: "×"
+						})
+					]
+				}),
+				n ? /* @__PURE__ */ (0, g.jsxs)("div", {
+					className: "email-agent-editor",
+					children: [
+						/* @__PURE__ */ (0, g.jsxs)("div", {
+							className: "email-agent-grid",
+							children: [p("Recipient", "recipient"), p("Subject", "subject")]
+						}),
+						p("Greeting", "greeting"),
+						p("Body", "body", !0),
+						/* @__PURE__ */ (0, g.jsxs)("div", {
+							className: "email-agent-grid",
+							children: [p("Closing", "closing"), p("Signature", "signature", !0)]
+						})
+					]
+				}) : /* @__PURE__ */ (0, g.jsxs)("section", {
+					className: "email-agent-preview",
+					children: [/* @__PURE__ */ (0, g.jsxs)("div", {
+						className: "email-agent-meta",
+						children: [/* @__PURE__ */ (0, g.jsxs)("span", { children: [/* @__PURE__ */ (0, g.jsx)("b", { children: "To" }), i.recipient || "Recipient required"] }), /* @__PURE__ */ (0, g.jsxs)("span", { children: [/* @__PURE__ */ (0, g.jsx)("b", { children: "Subject" }), i.subject] })]
+					}), /* @__PURE__ */ (0, g.jsxs)("article", { children: [
+						/* @__PURE__ */ (0, g.jsx)("p", { children: i.greeting }),
+						/* @__PURE__ */ (0, g.jsx)("p", {
+							className: "email-agent-body",
+							children: i.body
+						}),
+						/* @__PURE__ */ (0, g.jsx)("p", { children: i.closing }),
+						/* @__PURE__ */ (0, g.jsx)("p", {
+							className: "email-agent-signature",
+							children: i.signature
+						})
+					] })]
+				}),
+				c && /* @__PURE__ */ (0, g.jsx)("p", {
+					className: "email-agent-error",
+					role: "alert",
+					children: c
+				}),
+				/* @__PURE__ */ (0, g.jsxs)("footer", {
+					className: "email-agent-actions",
+					children: [
+						/* @__PURE__ */ (0, g.jsx)("button", {
+							type: "button",
+							className: "email-agent-secondary",
+							onClick: () => r((e) => !e),
+							children: n ? "Done Editing" : "Edit"
+						}),
+						/* @__PURE__ */ (0, g.jsx)("button", {
+							type: "button",
+							className: "email-agent-cancel",
+							onClick: () => t(!1),
+							children: "Cancel"
+						}),
+						/* @__PURE__ */ (0, g.jsx)("button", {
+							type: "submit",
+							className: "email-agent-send",
+							disabled: o || !i.recipient,
+							children: o ? "Sending…" : "Send Email"
+						})
+					]
+				})
+			]
+		})
+	});
+}
+//#endregion
+//#region src/main.tsx
+var y = "coo-realtime-voice-history", b = (0, f.lazy)(() => import("./WakeWordController-C8PHNDn2.js"));
+function x() {
 	let e = location.pathname.replace(/\/+$/, "");
 	return e === "" || e === "/" || e === "/static" || e.endsWith("/index.html");
 }
-function b() {
+function ee() {
 	try {
-		return JSON.parse(localStorage.getItem(_) || "[]").slice(-40);
+		return JSON.parse(localStorage.getItem(y) || "[]").slice(-40);
 	} catch {
 		return [];
 	}
 }
-function x({ analyser: e, active: t }) {
+function te({ analyser: e, active: t }) {
 	let n = (0, f.useRef)(null);
 	return (0, f.useEffect)(() => {
 		let r = 0, i = () => {
@@ -19420,10 +19575,10 @@ function x({ analyser: e, active: t }) {
 		"aria-hidden": "true"
 	});
 }
-function ee() {
-	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)("idle"), [i, a] = (0, f.useState)(b), [o, s] = (0, f.useState)(""), [c, l] = (0, f.useState)(""), [u, d] = (0, f.useState)(""), [p, m] = (0, f.useState)(null), h = (0, f.useRef)(null), v = (0, f.useRef)(null), y = (0, f.useRef)(null), ee = (0, f.useRef)(null), te = (0, f.useRef)(null), ne = (0, f.useRef)(""), re = (0, f.useRef)(null), ie = (0, f.useRef)(null);
+function ne() {
+	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)("idle"), [i, a] = (0, f.useState)(ee), [o, s] = (0, f.useState)(""), [c, l] = (0, f.useState)(""), [u, d] = (0, f.useState)(""), [p, m] = (0, f.useState)(null), h = (0, f.useRef)(null), _ = (0, f.useRef)(null), v = (0, f.useRef)(null), b = (0, f.useRef)(null), x = (0, f.useRef)(null), ne = (0, f.useRef)(""), re = (0, f.useRef)(null), ie = (0, f.useRef)(null);
 	(0, f.useEffect)(() => {
-		localStorage.setItem(_, JSON.stringify(i.slice(-40)));
+		localStorage.setItem(y, JSON.stringify(i.slice(-40)));
 	}, [i]), (0, f.useEffect)(() => {
 		re.current?.scrollTo({
 			top: re.current.scrollHeight,
@@ -19448,7 +19603,7 @@ function ee() {
 	}, []), S = (0, f.useCallback)((e) => {
 		switch (ie.current &&= (clearTimeout(ie.current), null), e.type) {
 			case "input_audio_buffer.speech_started":
-				ee.current && (ee.current.muted = !0), r("listening"), s("Listening…");
+				b.current && (b.current.muted = !0), r("listening"), s("Listening…");
 				break;
 			case "input_audio_buffer.speech_stopped":
 				r("thinking"), s("Transcribing…");
@@ -19461,7 +19616,7 @@ function ee() {
 				break;
 			case "response.output_audio_transcript.delta":
 			case "response.audio_transcript.delta":
-				ee.current && (ee.current.muted = !1), ne.current += e.delta || "", l(ne.current), r("speaking");
+				b.current && (b.current.muted = !1), ne.current += e.delta || "", l(ne.current), r("speaking");
 				break;
 			case "response.output_audio_transcript.done":
 			case "response.audio_transcript.done":
@@ -19477,7 +19632,7 @@ function ee() {
 				break;
 		}
 	}, [ae]), oe = (0, f.useRef)(() => void 0), C = (0, f.useCallback)(() => {
-		ie.current &&= (clearTimeout(ie.current), null), v.current?.close(), h.current?.close(), y.current?.getTracks().forEach((e) => e.stop()), te.current?.close().catch(() => void 0), ee.current && (ee.current.srcObject = null), v.current = null, h.current = null, y.current = null, te.current = null, m(null), r("idle"), s(""), l(""), ne.current = "";
+		ie.current &&= (clearTimeout(ie.current), null), _.current?.close(), h.current?.close(), v.current?.getTracks().forEach((e) => e.stop()), x.current?.close().catch(() => void 0), b.current && (b.current.srcObject = null), _.current = null, h.current = null, v.current = null, x.current = null, m(null), r("idle"), s(""), l(""), ne.current = "";
 	}, []);
 	oe.current = C;
 	let se = (0, f.useCallback)(async () => {
@@ -19489,17 +19644,17 @@ function ee() {
 					noiseSuppression: !0,
 					autoGainControl: !0
 				} });
-				y.current = e;
+				v.current = e;
 				let t = new AudioContext(), n = t.createMediaStreamSource(e), i = t.createAnalyser();
-				i.fftSize = 128, i.smoothingTimeConstant = .82, n.connect(i), te.current = t, m(i);
+				i.fftSize = 128, i.smoothingTimeConstant = .82, n.connect(i), x.current = t, m(i);
 				let a = new RTCPeerConnection();
 				h.current = a, e.getTracks().forEach((t) => a.addTrack(t, e)), a.ontrack = (e) => {
-					ee.current && (ee.current.srcObject = e.streams[0], ee.current.play().catch(() => void 0));
+					b.current && (b.current.srcObject = e.streams[0], b.current.play().catch(() => void 0));
 				}, a.onconnectionstatechange = () => {
 					a.connectionState === "connected" && r("listening"), ["failed", "disconnected"].includes(a.connectionState) && (d("Voice connection was lost."), r("error"));
 				};
 				let o = a.createDataChannel("oai-events");
-				v.current = o, o.onmessage = (e) => {
+				_.current = o, o.onmessage = (e) => {
 					try {
 						S(JSON.parse(e.data));
 					} catch {}
@@ -19524,7 +19679,7 @@ function ee() {
 			}
 		}
 	}, [C, S]), ce = () => {
-		v.current?.readyState === "open" && v.current.send(JSON.stringify({ type: "response.cancel" })), ee.current && (ee.current.muted = !0), ne.current = "", l(""), r("listening");
+		_.current?.readyState === "open" && _.current.send(JSON.stringify({ type: "response.cancel" })), b.current && (b.current.muted = !0), ne.current = "", l(""), r("listening");
 	};
 	if ((0, f.useEffect)(() => (window.COORealtimeVoice = {
 		open: () => t(!0),
@@ -19586,7 +19741,7 @@ function ee() {
 							role: "status",
 							children: ue
 						}),
-						/* @__PURE__ */ (0, g.jsx)(x, {
+						/* @__PURE__ */ (0, g.jsx)(te, {
 							analyser: p,
 							active: le
 						}),
@@ -19649,16 +19804,20 @@ function ee() {
 					})]
 				}),
 				/* @__PURE__ */ (0, g.jsx)("audio", {
-					ref: ee,
+					ref: b,
 					autoPlay: !0
 				})
 			]
 		})
 	});
 }
-var te = document.createElement("div");
-te.id = "coo-realtime-voice-root", document.body.appendChild(te), (0, p.createRoot)(te).render(/* @__PURE__ */ (0, g.jsxs)(g.Fragment, { children: [/* @__PURE__ */ (0, g.jsx)(f.Suspense, {
-	fallback: null,
-	children: y() && /* @__PURE__ */ (0, g.jsx)(v, {})
-}), /* @__PURE__ */ (0, g.jsx)(ee, {})] }));
+var re = document.createElement("div");
+re.id = "coo-realtime-voice-root", document.body.appendChild(re), (0, p.createRoot)(re).render(/* @__PURE__ */ (0, g.jsxs)(g.Fragment, { children: [
+	/* @__PURE__ */ (0, g.jsx)(f.Suspense, {
+		fallback: null,
+		children: x() && /* @__PURE__ */ (0, g.jsx)(b, {})
+	}),
+	/* @__PURE__ */ (0, g.jsx)(ne, {}),
+	x() && /* @__PURE__ */ (0, g.jsx)(v, {})
+] }));
 //#endregion

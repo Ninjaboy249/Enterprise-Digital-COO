@@ -848,7 +848,7 @@
     }
   </style>
   <link rel="stylesheet" href="/static/assets/coo-bot-widget.css?v=12" />
-  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=3" />
+  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=4" />
   <link rel="stylesheet" href="/static/assets/atmosphere.css" />
 </head>
 <body id="top" class="bg-gray-100 min-h-screen">
@@ -943,6 +943,9 @@
           <button onclick="runScenarioByTitle('Revenue Crash')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 font-semibold"><i data-lucide="trending-down" class="icon-btn"></i> Revenue Crash</button>
           <button onclick="runScenarioByTitle('Customer Churn')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-semibold"><i data-lucide="users" class="icon-btn"></i> Customer Churn</button>
           <button onclick="runScenarioByTitle('Cash Crisis')" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold"><i data-lucide="circle-dollar-sign" class="icon-btn"></i> Cash Crisis</button>
+          <button id="judge-undo-approval-btn" onclick="ebUndoApprove()" class="hidden inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold">
+            <i data-lucide="undo-2" class="icon-btn"></i> Undo Executive Approval
+          </button>
         </div>
       </div>
       <div class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 min-h-[220px]">
@@ -1439,6 +1442,7 @@ const FYS = [CY, CY-1, CY-2];
 let selectedFY = CY;
 let allFYData  = { sales: null, finance: null, operations: null };
 let activeScenario = null;
+const JUDGE_SCENARIO_STORAGE_KEY = 'coo-judge-demo-scenario';
 // Holds imported KPIs — set by applyCompanyData(), cleared by loadAllFYData() on revert
 // Per-FY imported data: { filename, years: { "2025":{revenue,cash,users,csat}, ... } } | null
 let _importedKPIs = null;
@@ -1477,6 +1481,10 @@ async function init() {
   renderWorkflow();
   renderActions();
   renderScenarioBtns();
+  try {
+    const savedJudgeScenario = localStorage.getItem(JUDGE_SCENARIO_STORAGE_KEY);
+    if (savedJudgeScenario) activeScenario = SCENARIOS.find(s => s.title === savedJudgeScenario) || null;
+  } catch {}
   await loadAllFYData();
   refreshIcons();
   setTimeout(replayInvestigation, 800);
@@ -1726,7 +1734,7 @@ function _setApprovedState(isApproved) {
   const key = _approvalKey();
   if (!key || key === '::') return;
   const approved = _approvedActions();
-  if (isApproved) approved[key] = { action: window._ebCurrentAction, signal: window._ebCurrentSignal, at: new Date().toISOString(), undoUntil: null };
+  if (isApproved) approved[key] = { action: window._ebCurrentAction, signal: window._ebCurrentSignal, brief: _executiveBriefSnapshot(), at: new Date().toISOString(), undoUntil: null };
   else delete approved[key];
   try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
 }
@@ -1753,6 +1761,7 @@ function _setApprovedWithUndoWindow(seconds) {
   approved[key] = {
     action: window._ebCurrentAction,
     signal: window._ebCurrentSignal,
+    brief: _executiveBriefSnapshot(),
     at: new Date().toISOString(),
     undoUntil: Date.now() + seconds * 1000,
   };
@@ -1764,6 +1773,37 @@ function _saveApprovalRecord(key, record) {
   if (!approved[key]) return;
   approved[key] = record;
   try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
+}
+
+function _putApprovalRecord(key, record) {
+  const approved = _approvedActions();
+  approved[key] = record;
+  try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
+}
+
+function _removeApprovalRecord(key) {
+  const approved = _approvedActions();
+  delete approved[key];
+  try { localStorage.setItem(APPROVAL_STORAGE_KEY, JSON.stringify(approved)); } catch {}
+}
+
+function _executiveBriefSnapshot() {
+  const text = id => document.getElementById(id)?.textContent?.trim() || 'Not provided';
+  return {
+    fiscal_year: text('eb-fy-badge'),
+    confidence: text('eb-confidence'),
+    signal: text('eb-signal'),
+    cause: text('eb-cause'),
+    predicted_impact: text('eb-impact'),
+    impact_detail: text('eb-impact-sub'),
+    ai_opportunity: text('eb-opp'),
+    potential_savings: text('eb-save'),
+    revenue: text('eb-rev'),
+    cash: text('eb-cash'),
+    csat: text('eb-csat'),
+    users: text('eb-users'),
+    recommended_action: text('eb-action'),
+  };
 }
 
 function _approvalEmailUser() {
@@ -1806,51 +1846,55 @@ function cancelApprovalEmailLogin() {
   if (resolve) resolve(null);
 }
 
-async function _sendFinalApprovalEmail(key) {
-  let record = _approvedActions()[key];
-  if (!record || ['sending', 'sent', 'captured'].includes(record.emailStatus)) return;
+async function _finalizeApprovalWithEmail(key, pendingRecord) {
+  let record = pendingRecord || _approvedActions()[key];
+  if (!record || ['sending', 'sent'].includes(record.emailStatus)) return false;
   const user = await _requestApprovalEmailLogin();
   if (!user?.email) {
-    showToast('Approval saved. Sign in later to send its email notification.');
-    return;
+    _removeApprovalRecord(key);
+    syncApprovalButton();
+    showToast('Approval cancelled. No email was sent.');
+    return false;
   }
-  record = _approvedActions()[key];
-  if (!record) return;
   record.emailStatus = 'sending';
   record.email = user.email;
-  _saveApprovalRecord(key, record);
+  if (_approvedActions()[key]) _saveApprovalRecord(key, record);
   try {
     const response = await fetch('/api/v1/notifications/approval', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: record.action, signal: record.signal, email: user.email, send_email: true }),
+      body: JSON.stringify({ action: record.action, signal: record.signal, email: user.email, send_email: true, executive_brief: record.brief }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.detail || 'Email could not be sent.');
     const delivered = !!data.results?.email?.delivered;
-    record.emailStatus = delivered ? 'sent' : 'captured';
+    if (!delivered) throw new Error('SMTP is not configured for email delivery.');
+    record.emailStatus = 'sent';
+    record.undoUntil = null;
     record.emailSentAt = new Date().toISOString();
-    _saveApprovalRecord(key, record);
-    showToast(delivered ? `Approval email sent to ${user.email}.` : `Approval email prepared for ${user.email}. Configure SMTP to deliver it.`);
+    _putApprovalRecord(key, record);
+    syncApprovalButton();
+    addTodayAction(record.signal, 'Approved');
+    showToast(`✓ Approved and emailed to ${user.email}.`);
+    return true;
   } catch (error) {
-    record.emailStatus = 'failed';
-    record.emailError = error.message;
-    _saveApprovalRecord(key, record);
-    showToast(`Approval saved, but email failed: ${error.message}`);
+    _removeApprovalRecord(key);
+    syncApprovalButton();
+    showToast(`Not approved because email failed: ${error.message}`);
+    return false;
   }
 }
 
 function _lockApprovalAndNotify(key) {
   const record = _approvedActions()[key];
   if (!record) return;
-  record.undoUntil = null;
-  _saveApprovalRecord(key, record);
-  _sendFinalApprovalEmail(key);
+  _finalizeApprovalWithEmail(key, record);
 }
 
 function syncApprovalButton() {
   const approveBtn = document.getElementById('eb-approve-btn');
   const undoBtn = document.getElementById('eb-undo-btn');
+  const judgeUndoBtn = document.getElementById('judge-undo-approval-btn');
   if (!approveBtn || !undoBtn) return;
   if (_approvalCountdownTimer) {
     clearInterval(_approvalCountdownTimer);
@@ -1860,7 +1904,10 @@ function syncApprovalButton() {
   const approvalKey = _approvalKey();
   const approved = !!record;
   const undoUntil = Number(record?.undoUntil || 0);
-  const canUndo = approved && undoUntil > Date.now();
+  const timerCanUndo = approved && undoUntil > Date.now();
+  const judgeCanUndo = approved && !!activeScenario && !timerCanUndo;
+  const canUndo = timerCanUndo || judgeCanUndo;
+  judgeUndoBtn?.classList.toggle('hidden', !(approved && !!activeScenario));
   approveBtn.textContent = approved ? '✓ Approved' : '✓ Approve';
   approveBtn.onclick = approved ? null : openApprovalModal;
   if (approved) approveBtn.removeAttribute('onclick');
@@ -1869,14 +1916,14 @@ function syncApprovalButton() {
     ? 'flex-1 approved-action-glow text-white text-xs font-bold py-2.5 px-3 rounded-xl cursor-default'
     : 'flex-1 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-colors';
   undoBtn.classList.toggle('hidden', !canUndo);
-  if (canUndo) {
+  if (timerCanUndo) {
     const updateUndo = () => {
       const remaining = undoUntil - Date.now();
       if (remaining <= 0) {
         undoBtn.classList.add('hidden');
         clearInterval(_approvalCountdownTimer);
         _approvalCountdownTimer = null;
-        showToast('Review window closed. Approval locked.');
+        showToast('Undo window closed. Confirm email to complete approval.');
         _lockApprovalAndNotify(approvalKey);
         return;
       }
@@ -1885,7 +1932,9 @@ function syncApprovalButton() {
     updateUndo();
     _approvalCountdownTimer = setInterval(updateUndo, 1000);
   } else {
-    undoBtn.textContent = '↺ Undo';
+    undoBtn.innerHTML = judgeCanUndo
+      ? '↺ Undo approval <span class="approval-countdown">Judge demo</span>'
+      : '↺ Undo';
     if (approved && undoUntil > 0) queueMicrotask(() => _lockApprovalAndNotify(approvalKey));
   }
 }
@@ -1901,22 +1950,24 @@ function closeApprovalModal() {
   document.getElementById('approval-modal').classList.remove('open');
 }
 
-function confirmApprovalNow() {
+async function confirmApprovalNow() {
   const key = _approvalKey();
-  _setApprovedState(true);
+  const record = {
+    action: window._ebCurrentAction,
+    signal: window._ebCurrentSignal,
+    brief: _executiveBriefSnapshot(),
+    at: new Date().toISOString(),
+    undoUntil: null,
+  };
   closeApprovalModal();
-  syncApprovalButton();
-  showToast(`✓ Action approved: "${window._ebCurrentAction}"`);
-  addTodayAction(window._ebCurrentSignal, 'Approved');
-  _sendFinalApprovalEmail(key);
+  await _finalizeApprovalWithEmail(key, record);
 }
 
 function confirmApprovalWithTimer(seconds) {
   _setApprovedWithUndoWindow(seconds);
   closeApprovalModal();
   syncApprovalButton();
-  showToast(`Approved. Undo available for ${seconds < 60 ? `${seconds}s` : `${seconds / 60} min`}.`);
-  addTodayAction(window._ebCurrentSignal, 'Approved');
+  showToast(`Approval pending. Undo available for ${seconds < 60 ? `${seconds}s` : `${seconds / 60} min`}.`);
 }
 
 function ebUndoApprove() {
@@ -2257,6 +2308,7 @@ function renderScenarioBtns() {
 }
 function runScenario(i) {
   activeScenario = SCENARIOS[i];
+  try { localStorage.setItem(JUDGE_SCENARIO_STORAGE_KEY, activeScenario.title); } catch {}
   applyScenario(activeScenario);
 }
 
@@ -2307,6 +2359,7 @@ function applyScenario(s, opts = {}) {
 
 function resetScenario() {
   activeScenario = null;
+  try { localStorage.removeItem(JUDGE_SCENARIO_STORAGE_KEY); } catch {}
   _actions = [...DEFAULT_ACTIONS];
   document.getElementById('scenario-status').classList.add('hidden');
   document.getElementById('scenario-banner').classList.add('hidden');
@@ -2473,6 +2526,10 @@ async function heroAsk() {
     });
     const d = await r.json();
     box.textContent = d.answer || 'No response.';
+    if (d.email_draft) {
+      window.COOEmailAgent?.open(d.email_draft);
+      box.textContent = 'Email Agent prepared a draft. Review the preview before sending.';
+    }
   } catch { box.textContent = 'Could not reach AI. Is the backend running?'; }
 }
 function heroQuick(msg) { document.getElementById('hero-ask-input').value=msg; heroAsk(); }
@@ -2516,10 +2573,12 @@ async function sendChat() {
     });
     const d = await r.json();
     t.remove();
-    appendBotMsg(d.answer);
+    appendBotMsg(d.email_draft ? 'Email Agent prepared a draft. Review and confirm it before anything is sent.' : d.answer);
+    if (d.email_draft) window.COOEmailAgent?.open(d.email_draft);
   } catch(e){t.remove();appendBotMsg('Server error. Try again.');}
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
+window.addEventListener('coo-email-sent', event => showToast(`Email sent to ${event.detail?.recipient || 'recipient'}.`));
 
 // ── Toast ─────────────────────────────────────────────────────────
 function showToast(msg) {
@@ -2810,7 +2869,7 @@ requestAnimationFrame(initPageMotion);
 setInterval(()=>{ checkStatus(); loadAllFYData(); }, 60000);
 </script>
 <script type="module" src="/static/assets/motion.js"></script>
-<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=8"></script>
+<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=9"></script>
 <script src="/static/assets/coo-bot-widget.js?v=14"></script>
 </body>
 </html>
