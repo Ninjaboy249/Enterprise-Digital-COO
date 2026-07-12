@@ -202,6 +202,12 @@
     .approval-email-input::placeholder { color:var(--text-faint); opacity:1; }
     .approval-email-input:focus { outline:3px solid rgba(59,130,246,.2); border-color:#3b82f6 !important; }
     .approval-email-hint { color:var(--text-muted); background:var(--blue-bg); border:1px solid var(--blue-border); border-radius:.75rem; padding:.65rem .75rem; }
+    .email-fallback-overlay { position:fixed; inset:0; z-index:120200; display:grid; place-items:center; padding:20px; background:rgba(4,8,24,.72); backdrop-filter:blur(16px); }
+    .email-fallback-modal { position:relative; width:min(760px,96vw); max-height:92vh; overflow:auto; color:#e8edff; border:1px solid rgba(147,197,253,.32); border-radius:26px; padding:24px; background:linear-gradient(145deg,rgba(30,41,79,.98),rgba(15,23,42,.98)); box-shadow:0 32px 100px rgba(0,0,0,.6); }
+    .email-fallback-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }.email-fallback-head small { color:#67e8f9; font-weight:900; letter-spacing:.14em; }.email-fallback-head h2 { margin:3px 0; font-size:22px; }.email-fallback-head p { color:#aebbd5; margin:0; font-size:13px; }
+    .email-fallback-close { border:0; background:transparent; color:#cbd5e1; font-size:28px; cursor:pointer; }.email-fallback-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }.email-fallback-field { display:grid; gap:6px; margin-bottom:13px; }.email-fallback-field span { color:#bfdbfe; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; }.email-fallback-field input,.email-fallback-field textarea { width:100%; box-sizing:border-box; border:1px solid rgba(148,163,184,.38)!important; border-radius:12px; padding:11px 12px; background:rgba(15,23,42,.78)!important; color:#f8fafc!important; resize:vertical; }
+    .email-fallback-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:8px; }.email-fallback-actions button { border-radius:12px; padding:11px 16px; font-weight:800; cursor:pointer; }.email-fallback-ai { color:#cffafe; border:1px solid rgba(103,232,249,.35); background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(14,165,233,.26)); }.email-fallback-cancel { color:#cbd5e1; border:1px solid rgba(148,163,184,.3); background:transparent; }.email-fallback-send { color:#fff; border:0; background:linear-gradient(135deg,#7c3aed,#2563eb); }.email-fallback-error { color:#fecaca; margin:10px 0; font-size:13px; }.email-fallback-plane { position:absolute; inset:0; z-index:4; display:grid; place-content:center; text-align:center; border-radius:26px; background:radial-gradient(circle,#2563eb,#0f172a 70%); font-size:56px; animation:emailFallbackFly 1.35s both; }@keyframes emailFallbackFly { 0%{opacity:0;transform:translate(-180px,100px) rotate(-18deg) scale(.5)} 35%{opacity:1} 70%{opacity:1;transform:translate(0,-8px) rotate(-8deg)} 100%{opacity:0;transform:translate(350px,-220px) rotate(-18deg) scale(.55)} }
+    @media(max-width:620px){.email-fallback-grid{grid-template-columns:1fr}.email-fallback-actions{flex-wrap:wrap}.email-fallback-actions button{flex:1}}
     #import-box { background:var(--import-bg); border-radius:16px; padding:28px; width:min(480px,92vw);
                   box-shadow:var(--shadow-lg); color:var(--text); }
     #approval-box {
@@ -2514,6 +2520,53 @@ function openCOOEmailDraft(draft) {
   window.COOEmailDraftPending = draft;
   if (window.COOEmailAgent) window.COOEmailAgent.open(draft);
   else window.dispatchEvent(new CustomEvent('coo-email-draft', { detail: draft }));
+  setTimeout(() => {
+    if (!document.querySelector('.email-agent-overlay') && !document.querySelector('.email-fallback-overlay')) openFallbackEmailDraft(draft);
+  }, 350);
+}
+
+function openFallbackEmailDraft(draft) {
+  delete window.COOEmailDraftPending;
+  const overlay = document.createElement('div');
+  overlay.className = 'email-fallback-overlay';
+  overlay.innerHTML = `<form class="email-fallback-modal">
+    <div class="email-fallback-head"><div><small>AI EMAIL AGENT</small><h2>Draft and send an email</h2><p>Complete the details below. Nothing sends until you click Send Email.</p></div><button type="button" class="email-fallback-close" aria-label="Close">&times;</button></div>
+    <div class="email-fallback-grid"><label class="email-fallback-field"><span>Who should receive this?</span><input name="recipient" type="email" required placeholder="recipient@company.com"></label><label class="email-fallback-field"><span>Subject</span><input name="subject" required placeholder="Email subject"></label></div>
+    <label class="email-fallback-field"><span>Greeting</span><input name="greeting" required></label>
+    <label class="email-fallback-field"><span>What should the email say?</span><textarea name="body" rows="7" required placeholder="Describe the message you want AI to draft…"></textarea></label>
+    <div class="email-fallback-grid"><label class="email-fallback-field"><span>Closing</span><input name="closing" required></label><label class="email-fallback-field"><span>Signature</span><textarea name="signature" rows="2" required></textarea></label></div>
+    <p class="email-fallback-error hidden"></p><div class="email-fallback-actions"><button type="button" class="email-fallback-ai">✦ Draft with AI</button><button type="button" class="email-fallback-cancel">Cancel</button><button type="submit" class="email-fallback-send">Send Email ➤</button></div>
+  </form>`;
+  document.body.appendChild(overlay);
+  const form = overlay.querySelector('form');
+  const value = (name, fallback='') => { form.elements[name].value = draft[name] || fallback; };
+  value('recipient'); value('subject'); value('greeting','Hello,'); value('body'); value('closing','Best regards,'); value('signature','Enterprise Digital COO\nAI Command Center');
+  const close = () => overlay.remove();
+  overlay.querySelector('.email-fallback-close').onclick = close;
+  overlay.querySelector('.email-fallback-cancel').onclick = close;
+  overlay.querySelector('.email-fallback-ai').onclick = async () => {
+    const btn = overlay.querySelector('.email-fallback-ai'); const error = overlay.querySelector('.email-fallback-error');
+    const instructions = form.elements.body.value.trim() || form.elements.subject.value.trim();
+    if (!instructions) { error.textContent = 'Tell the AI what you want the email to say first.'; error.classList.remove('hidden'); return; }
+    btn.disabled = true; btn.textContent = 'AI is drafting…'; error.classList.add('hidden');
+    try {
+      const recipient = form.elements.recipient.value.trim() || 'the recipient';
+      const response = await fetch('/api/v1/metrics/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:`Draft an email to ${recipient} about: ${instructions}`,context:'general'})});
+      const result = await response.json(); if (!response.ok || !result.email_draft) throw new Error(result.detail || 'AI drafting failed.');
+      const next = result.email_draft; ['subject','greeting','body','closing','signature'].forEach(name => { if(next[name]) form.elements[name].value=next[name]; });
+    } catch (reason) { error.textContent = reason.message || 'AI drafting failed.'; error.classList.remove('hidden'); }
+    finally { btn.disabled=false; btn.textContent='✦ Draft with AI'; }
+  };
+  form.onsubmit = async event => {
+    event.preventDefault(); const error=overlay.querySelector('.email-fallback-error'); const send=overlay.querySelector('.email-fallback-send');
+    const payload=Object.fromEntries(new FormData(form).entries()); send.disabled=true; send.textContent='Sending…'; error.classList.add('hidden');
+    try {
+      const response=await fetch('/api/v1/notifications/email/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const result=await response.json();
+      if(!response.ok || !result.delivered) throw new Error(result.detail || 'Email delivery failed.');
+      const plane=document.createElement('div'); plane.className='email-fallback-plane'; plane.textContent='✈'; form.appendChild(plane);
+      setTimeout(()=>{ close(); showToast(`Email sent to ${payload.recipient}.`); },1400);
+    } catch(reason) { error.textContent=reason.message || 'Email delivery failed.'; error.classList.remove('hidden'); send.disabled=false; send.textContent='Send Email ➤'; }
+  };
 }
 
 async function heroAsk() {
