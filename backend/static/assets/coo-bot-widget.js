@@ -4,6 +4,8 @@
   const SILENCE_TO_SEND_MS = 2500;
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let activeVoice = null;
+  let pendingVoiceReply = false;
+  let replyAudio = null;
 
   function voiceSubmit(input) {
     if (input.id === 'hero-ask-input' && typeof window.heroAsk === 'function') return window.heroAsk();
@@ -38,10 +40,65 @@
     control.heardSpeech = false;
     control.finalText = '';
     setVoiceState(control, 'listening', '');
+    pendingVoiceReply = true;
     voiceSubmit(control.input);
     control.input.value = '';
     control.input.dispatchEvent(new Event('input', { bubbles: true }));
     control.originalText = '';
+  }
+
+  function resumeAfterSpeech(control) {
+    if (!control || !control.recognition) return;
+    control.pausedForSpeech = false;
+    control.keepListening = true;
+    window.setTimeout(() => {
+      try { control.recognition.start(); } catch (_) {}
+    }, 300);
+  }
+
+  async function speakOpenAIReply(text) {
+    const clean = String(text || '').trim();
+    if (!clean || !pendingVoiceReply) return;
+    pendingVoiceReply = false;
+    const control = activeVoice;
+    if (control?.recognition) {
+      clearTimeout(control.silenceTimer);
+      control.pausedForSpeech = true;
+      try { control.recognition.stop(); } catch (_) {}
+    }
+    try {
+      const response = await fetch('/api/v1/realtime/speech', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({text: clean})
+      });
+      if (!response.ok) throw new Error('OpenAI speech unavailable');
+      const url = URL.createObjectURL(await response.blob());
+      if (replyAudio) { replyAudio.pause(); replyAudio.src = ''; }
+      replyAudio = new Audio(url);
+      const finish = () => { URL.revokeObjectURL(url); resumeAfterSpeech(control); };
+      replyAudio.onended = finish;
+      replyAudio.onerror = finish;
+      await replyAudio.play();
+    } catch (_) {
+      resumeAfterSpeech(control);
+    }
+  }
+
+  function initSpokenReplies() {
+    const isFinalReply = text => text && !/^(thinking|analysing|analyzing|transcribing|sending)[…. .]*$/i.test(text.trim());
+    const hero = document.getElementById('hero-answer');
+    if (hero) new MutationObserver(() => {
+      if (!hero.classList.contains('hidden') && isFinalReply(hero.textContent)) speakOpenAIReply(hero.textContent);
+    }).observe(hero, {childList:true, characterData:true, subtree:true});
+    [document.getElementById('chat-messages'), document.getElementById('chat-log')].filter(Boolean).forEach(messages => {
+      new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        const text = node.textContent || '';
+        const isBot = node.classList?.contains('chat-msg-bot') || node.classList?.contains('msg-bot');
+        if (isBot && !node.classList?.contains('error') && isFinalReply(text)) speakOpenAIReply(text);
+      }))).observe(messages, {childList:true});
+    });
   }
 
   function startVoice(control) {
@@ -111,6 +168,7 @@
     };
     recognition.onend = () => {
       clearTimeout(control.silenceTimer);
+      if (control.pausedForSpeech) return;
       const submit = (control.shouldSubmit || control.heardSpeech) && control.input.value.trim();
       if (submit) submitVoiceTurn(control);
       if (control.keepListening && !control.manualStop) {
@@ -335,6 +393,7 @@
     bot.addEventListener('click', openChat);
     watchChatPanel(bot);
     initVoiceInputs();
+    initSpokenReplies();
   }
 
   if (document.readyState === 'loading') {
