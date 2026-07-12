@@ -12,6 +12,36 @@ from config import settings
 router = APIRouter()
 
 
+@router.post("/speech")
+async def create_speech(payload: dict = Body(...)) -> Response:
+    """Convert an AI text response to natural OpenAI speech without exposing the API key."""
+    api_key = settings.OPENAI_API_KEY.strip()
+    if not api_key or api_key == "your-openai-api-key":
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured")
+    text = str(payload.get("text", "")).strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+    text = text[:6000]
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            upstream = await client.post(
+                "https://api.openai.com/v1/audio/speech",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={
+                    "model": "gpt-4o-mini-tts",
+                    "voice": "coral",
+                    "input": text,
+                    "instructions": "Speak clearly, warmly, and confidently like an executive COO assistant.",
+                    "response_format": "mp3",
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="Could not connect to OpenAI speech") from exc
+    if upstream.status_code >= 400:
+        raise HTTPException(status_code=upstream.status_code, detail=upstream.text[:500])
+    return Response(content=upstream.content, media_type="audio/mpeg")
+
+
 @router.post("/call")
 async def create_realtime_call(sdp: str = Body(..., media_type="application/sdp")) -> Response:
     """Exchange a browser SDP offer for an OpenAI WebRTC SDP answer."""
