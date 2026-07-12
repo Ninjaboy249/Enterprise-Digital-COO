@@ -26,6 +26,10 @@ This repository currently ships a working FastAPI + static dashboard prototype:
 - Static pages for sales, finance, operations, reports, and Excel analysis
 - Vercel-compatible serverless entrypoint at `api/index.py`
 - Optional OpenAI-powered chat and report analysis when `OPENAI_API_KEY` is configured
+- React + TypeScript voice conversation UI with live transcripts, waveform feedback, and conversation history
+- Browser-native wake phrase support for **"Hey Enterprise Digital COO"**
+- Accessible microphone controls across dashboard, Sales, Finance, Operations, Reports, and Excel Analysis
+- OpenAI Realtime WebRTC handshake endpoint for low-latency speech conversations
 - Optional Slack and Teams alerts when notification credentials are configured
 - Demo approval email capture, with real email delivery when SMTP settings are configured
 - Architecture docs for the larger multi-agent vision using LangGraph, ChromaDB, PostgreSQL, Redis, and WebSockets
@@ -37,9 +41,10 @@ The production vision includes multi-agent orchestration, memory, and persistent
 1. Open the dashboard.
 2. Start with the impact strip: revenue loss, inventory spike, churn risk, and action plan.
 3. Ask the AI COO: "What happened to revenue this quarter?"
-4. Open Sales, Finance, and Operations to show cross-domain signals.
-5. Use Reports or Excel Analysis to show how business data can be uploaded and summarized.
-6. Close with the recommendation: supplier quality recovery, customer save plan, inventory rebalance, and cash protection.
+4. Alternatively, grant microphone permission and say **"Hey Enterprise Digital COO"**, then speak the command after the bot displays **"I'm listening..."**.
+5. Open Sales, Finance, and Operations to show cross-domain signals.
+6. Use Reports or Excel Analysis to show how business data can be uploaded and summarized.
+7. Close with the recommendation: supplier quality recovery, customer save plan, inventory rebalance, and cash protection.
 
 ## Architecture
 
@@ -48,13 +53,15 @@ The production vision includes multi-agent orchestration, memory, and persistent
 ```text
 Browser
   |
-  | Static HTML dashboard and pages
+  | Static HTML dashboard + React/TypeScript voice layer
+  | Web Speech API wake phrase + WebRTC audio
   v
 FastAPI
   |
   | /api/v1/metrics
   | /api/v1/reports
   | /api/v1/notifications
+  | /api/v1/realtime
   v
 Deterministic demo data + optional OpenAI analysis
   |
@@ -83,6 +90,10 @@ PostgreSQL + ChromaDB + Redis + OpenAI
 - **Executive command center**: one screen for business health, risk, and recommended action.
 - **Cross-domain metrics**: sales, finance, and operations endpoints expose fiscal-year data and comparisons.
 - **AI COO assistant**: dashboard chat summarizes risks and recommends next steps.
+- **Hands-free wake phrase**: continuously ignores unrelated speech until "Hey Enterprise Digital COO" is detected, then captures one command and returns to wake mode.
+- **Voice conversation**: synthesized responses, live transcript, animated waveform, interruption support, and locally persisted conversation history.
+- **Accessible AI compose fields**: visible microphone control, listening status, keyboard support, and screen-reader announcements.
+- **Motion-aware dashboard**: progressive 3D spiral scrolling with reduced-motion and mobile fallbacks; the Ask Enterprise COO compose card remains flat.
 - **Report intelligence**: upload JSON, Excel, or Power BI-style files and ask questions about them.
 - **Notification integrations**: send approved actions and COO summary alerts to Slack, Microsoft Teams, and demo approval email.
 - **Deployment-friendly prototype**: `api/index.py` excludes persistent database startup so the demo can run serverlessly.
@@ -103,6 +114,8 @@ enterprise-digital-coo/
 │   ├── static/                   # Working dashboard and demo pages
 │   ├── config.py                 # App configuration
 │   └── main.py                   # Full backend entrypoint
+├── frontend/
+│   └── realtime-voice/           # React + TypeScript voice/wake-word source and Vite build
 ├── docs/                         # Architecture, demo, and presentation material
 ├── tools/                        # Node helper scripts
 ├── pyproject.toml                # Lightweight deploy/runtime dependencies
@@ -141,6 +154,18 @@ python main.py
 
 The full backend starts on the configured `PORT`, defaulting to `8001`.
 
+### Voice frontend development
+
+The production bundle is committed under `backend/static/assets/realtime-voice/`. Rebuild it after changing the React or TypeScript source:
+
+```bash
+cd frontend/realtime-voice
+npm install
+npm run build
+```
+
+The build writes directly to the backend static assets directory.
+
 ## Useful Endpoints
 
 ```text
@@ -154,6 +179,7 @@ POST /api/v1/metrics/chat
 POST /api/v1/reports/upload
 POST /api/v1/reports/chat
 POST /api/v1/reports/ai-import
+POST /api/v1/realtime/call
 GET  /api/v1/notifications/integrations/status
 GET  /api/v1/notifications/slack/status
 POST /api/v1/notifications/slack/test
@@ -172,6 +198,22 @@ POST /api/v1/notifications/approval
 Copy `backend/.env.example` to `backend/.env` for local full-backend runs.
 
 For the demo, `OPENAI_API_KEY` is optional. Without it, the deterministic dashboard and metrics still work; OpenAI-backed chat/report analysis requires a valid key.
+
+The Realtime WebRTC conversation also uses `OPENAI_API_KEY`. The permanent key remains on the FastAPI server; the browser sends its SDP offer to `/api/v1/realtime/call`, and the backend performs the authenticated OpenAI handshake.
+
+```env
+OPENAI_API_KEY=your-openai-api-key
+```
+
+### Voice and wake-word browser support
+
+- Microphone access requires user permission and a secure context: HTTPS or localhost.
+- The wake phrase uses the browser Web Speech API and works best in current Chrome and Edge.
+- Other browsers may support the microphone compose control while lacking continuous wake-word recognition.
+- The wake-word recognizer ignores other final transcripts until it detects "Hey Enterprise Digital COO".
+- After activation, it waits up to 10 seconds for one command, speaks the AI response using Speech Synthesis, and automatically returns to wake mode.
+- Voice history is stored locally in the browser and can be cleared from the voice panel.
+- Reduced-motion preferences disable nonessential blinking and motion effects.
 
 Slack is optional. For the simplest setup, create a Slack incoming webhook and set:
 
@@ -199,6 +241,14 @@ EMAIL_FROM=coo@example.com
 When deploying on Vercel, add the same Slack, Teams, and SMTP variables in the Vercel project environment settings. The serverless entrypoint at `api/index.py` includes the notification routes.
 
 ## Validation
+
+Validate the React voice interface and regenerate its production assets:
+
+```bash
+cd frontend/realtime-voice
+npx tsc --noEmit
+npm run build
+```
 
 From `backend/`:
 
