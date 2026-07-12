@@ -19392,18 +19392,23 @@ var r = /* @__PURE__ */ e(((e) => {
 };
 function v() {
 	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)(!1), [i, a] = (0, f.useState)(_), [o, s] = (0, f.useState)(!1), [c, l] = (0, f.useState)("");
-	(0, f.useEffect)(() => (window.COOEmailAgent = {
-		open: (e) => {
+	(0, f.useEffect)(() => {
+		let e = (e) => {
 			let n = {
 				..._,
 				...e
 			};
-			a(n), r(!n.recipient || !!n.needs_details), l(""), t(!0);
-		},
-		close: () => t(!1)
-	}, () => {
-		delete window.COOEmailAgent;
-	}), []);
+			a(n), r(!n.recipient || !!n.needs_details), l(""), t(!0), delete window.COOEmailDraftPending;
+		};
+		window.COOEmailAgent = {
+			open: e,
+			close: () => t(!1)
+		};
+		let n = (t) => e(t.detail);
+		return window.addEventListener("coo-email-draft", n), window.COOEmailDraftPending && e(window.COOEmailDraftPending), () => {
+			delete window.COOEmailAgent, window.removeEventListener("coo-email-draft", n);
+		};
+	}, []);
 	let u = (e, t) => a((n) => ({
 		...n,
 		[e]: t
@@ -19825,6 +19830,6 @@ re.id = "coo-realtime-voice-root", document.body.appendChild(re), (0, p.createRo
 		children: x() && /* @__PURE__ */ (0, g.jsx)(b, {})
 	}),
 	/* @__PURE__ */ (0, g.jsx)(ne, {}),
-	x() && /* @__PURE__ */ (0, g.jsx)(v, {})
+	/* @__PURE__ */ (0, g.jsx)(v, {})
 ] }));
 //#endregion

@@ -848,7 +848,7 @@
     }
   </style>
   <link rel="stylesheet" href="/static/assets/coo-bot-widget.css?v=12" />
-  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=5" />
+  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=6" />
   <link rel="stylesheet" href="/static/assets/atmosphere.css" />
 </head>
 <body id="top" class="bg-gray-100 min-h-screen">
@@ -2510,6 +2510,12 @@ function _detectCtx(msg) {
   return 'general';
 }
 
+function openCOOEmailDraft(draft) {
+  window.COOEmailDraftPending = draft;
+  if (window.COOEmailAgent) window.COOEmailAgent.open(draft);
+  else window.dispatchEvent(new CustomEvent('coo-email-draft', { detail: draft }));
+}
+
 async function heroAsk() {
   const inp = document.getElementById('hero-ask-input');
   const msg = inp.value.trim(); if(!msg) return;
@@ -2527,7 +2533,7 @@ async function heroAsk() {
     const d = await r.json();
     box.textContent = d.answer || 'No response.';
     if (d.email_draft) {
-      window.COOEmailAgent?.open(d.email_draft);
+      openCOOEmailDraft(d.email_draft);
       box.textContent = 'Email Agent prepared a draft. Review the preview before sending.';
     }
   } catch { box.textContent = 'Could not reach AI. Is the backend running?'; }
@@ -2574,7 +2580,7 @@ async function sendChat() {
     const d = await r.json();
     t.remove();
     appendBotMsg(d.email_draft ? 'Email Agent prepared a draft. Review and confirm it before anything is sent.' : d.answer);
-    if (d.email_draft) window.COOEmailAgent?.open(d.email_draft);
+    if (d.email_draft) openCOOEmailDraft(d.email_draft);
   } catch(e){t.remove();appendBotMsg('Server error. Try again.');}
 }
 function quickAsk(m){document.getElementById('chat-input').value=m;sendChat();}
@@ -2869,7 +2875,7 @@ requestAnimationFrame(initPageMotion);
 setInterval(()=>{ checkStatus(); loadAllFYData(); }, 60000);
 </script>
 <script type="module" src="/static/assets/motion.js"></script>
-<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=10"></script>
+<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=11"></script>
 <script src="/static/assets/coo-bot-widget.js?v=14"></script>
 </body>
 </html>

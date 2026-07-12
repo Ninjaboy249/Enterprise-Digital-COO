@@ -12,6 +12,7 @@ declare global {
   interface Window {
     COORealtimeVoice?: { open: () => void; close: () => void };
     COOEmailAgent?: { open: (draft: EmailDraft) => void; close: () => void };
+    COOEmailDraftPending?: EmailDraft;
   }
 }
 
@@ -229,4 +230,4 @@ function VoiceConversation() {
 }
 
 const root = document.createElement('div'); root.id = 'coo-realtime-voice-root'; document.body.appendChild(root);
-createRoot(root).render(<><Suspense fallback={null}>{isMainDashboard() && <WakeWordController />}</Suspense><VoiceConversation />{isMainDashboard() && <EmailAgentModal />}</>);
+createRoot(root).render(<><Suspense fallback={null}>{isMainDashboard() && <WakeWordController />}</Suspense><VoiceConversation /><EmailAgentModal /></>);

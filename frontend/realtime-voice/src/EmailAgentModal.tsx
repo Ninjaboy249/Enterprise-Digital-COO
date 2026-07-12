@@ -18,6 +18,7 @@ const EMPTY_DRAFT: EmailDraft = {
 declare global {
   interface Window {
     COOEmailAgent?: { open: (draft: EmailDraft) => void; close: () => void };
+    COOEmailDraftPending?: EmailDraft;
   }
 }
 
@@ -29,16 +30,21 @@ export default function EmailAgentModal() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const showDraft = (next: EmailDraft) => {
+      const merged = { ...EMPTY_DRAFT, ...next };
+      setDraft(merged);
+      setEditing(!merged.recipient || !!merged.needs_details);
+      setError(''); setOpen(true);
+      delete window.COOEmailDraftPending;
+    };
     window.COOEmailAgent = {
-      open: next => {
-        const merged = { ...EMPTY_DRAFT, ...next };
-        setDraft(merged);
-        setEditing(!merged.recipient || !!merged.needs_details);
-        setError(''); setOpen(true);
-      },
+      open: showDraft,
       close: () => setOpen(false),
     };
-    return () => { delete window.COOEmailAgent; };
+    const handleDraft = (event: Event) => showDraft((event as CustomEvent<EmailDraft>).detail);
+    window.addEventListener('coo-email-draft', handleDraft);
+    if (window.COOEmailDraftPending) showDraft(window.COOEmailDraftPending);
+    return () => { delete window.COOEmailAgent; window.removeEventListener('coo-email-draft', handleDraft); };
   }, []);
 
   const update = (field: keyof EmailDraft, value: string) => setDraft(current => ({ ...current, [field]: value }));
