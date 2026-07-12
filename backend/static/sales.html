@@ -106,7 +106,9 @@
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
   </style>
-  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css" />
+  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css?v=12" />
+  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=3" />
+  <link rel="stylesheet" href="/static/assets/atmosphere.css" />
 </head>
 <body class="bg-gray-100">
 <div class="min-h-screen">
@@ -659,6 +661,8 @@ setInterval(() => { loadFYData(); loadSalesData(currentFY); }, 60000);
 <script>
 // (toast initialised inline above)
 </script>
-<script src="/static/assets/coo-bot-widget.js?v=4"></script>
+<script type="module" src="/static/assets/motion.js"></script>
+<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=7"></script>
+<script src="/static/assets/coo-bot-widget.js?v=8"></script>
 </body>
 </html>

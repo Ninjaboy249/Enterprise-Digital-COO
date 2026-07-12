@@ -149,7 +149,9 @@
       #tab-chat input { min-width:0; }
     }
   </style>
-  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css" />
+  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css?v=12" />
+  <link rel="stylesheet" href="/static/assets/realtime-voice/realtime-voice.css?v=3" />
+  <link rel="stylesheet" href="/static/assets/atmosphere.css" />
 </head>
 <body class="bg-slate-100 min-h-screen">
 
@@ -707,7 +709,9 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' });
 }
 </script>
-<script src="/static/assets/coo-bot-widget.js?v=4"></script>
+<script type="module" src="/static/assets/motion.js"></script>
+<script type="module" src="/static/assets/realtime-voice/realtime-voice.js?v=7"></script>
+<script src="/static/assets/coo-bot-widget.js?v=8"></script>
 <div id="toast"></div>
 </body>
 </html>

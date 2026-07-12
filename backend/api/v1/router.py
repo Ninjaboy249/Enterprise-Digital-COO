@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from api.v1.endpoints import metrics
 from api.v1.endpoints import notifications
 from api.v1.endpoints import reports
+from api.v1.endpoints import realtime
 
 # Create main API router
 api_router = APIRouter()
@@ -13,6 +14,7 @@ api_router = APIRouter()
 api_router.include_router(metrics.router, prefix="/metrics", tags=["metrics"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(realtime.router, prefix="/realtime", tags=["realtime"])
 
 @api_router.get("/health")
 async def health_check():

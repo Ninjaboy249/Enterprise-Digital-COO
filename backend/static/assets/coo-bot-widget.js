@@ -1,6 +1,134 @@
 (function () {
   const READY_DELAY_MS = 5000;
   const STORY_MESSAGE = "Hi, I'm COO Bot. Share your question and I'll turn the numbers into a clear business story with the next best move.";
+  const SILENCE_TO_SEND_MS = 2500;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let activeVoice = null;
+
+  function voiceSubmit(input) {
+    if (input.id === 'hero-ask-input' && typeof window.heroAsk === 'function') return window.heroAsk();
+    if (input.id === 'ai-import-prompt' && typeof window.submitAIImport === 'function') return window.submitAIImport();
+    if (input.id === 'chat-input' && typeof window.sendChat === 'function') return window.sendChat();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  }
+
+  function setVoiceState(control, state, message) {
+    control.wrap.classList.toggle('is-listening', state === 'listening');
+    control.wrap.classList.toggle('is-processing', state === 'processing');
+    control.button.setAttribute('aria-pressed', String(state === 'listening'));
+    control.button.setAttribute('aria-label', state === 'listening' ? 'Stop listening' : 'Speak your question');
+    control.status.textContent = message || '';
+  }
+
+  function stopVoice(control, shouldSubmit) {
+    if (!control) return;
+    clearTimeout(control.silenceTimer);
+    control.shouldSubmit = shouldSubmit;
+    if (control.recognition) {
+      try { control.recognition.stop(); } catch (_) {}
+    }
+  }
+
+  function startVoice(control) {
+    if (window.COORealtimeVoice) {
+      window.COORealtimeVoice.open();
+      return;
+    }
+    if (!SpeechRecognition) {
+      setVoiceState(control, 'idle', 'Voice input is not supported in this browser.');
+      return;
+    }
+    if (activeVoice && activeVoice !== control) stopVoice(activeVoice, false);
+    if (activeVoice === control) return stopVoice(control, true);
+
+    const recognition = new SpeechRecognition();
+    control.recognition = recognition;
+    control.shouldSubmit = false;
+    control.finalText = '';
+    control.originalText = control.input.value.trim();
+    recognition.lang = document.documentElement.lang || navigator.language || 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onstart = () => {
+      activeVoice = control;
+      setVoiceState(control, 'listening', 'Listening… pause for 2.5 seconds to send.');
+    };
+    recognition.onresult = event => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const words = event.results[i][0].transcript;
+        if (event.results[i].isFinal) control.finalText += words + ' ';
+        else interim += words;
+      }
+      const spoken = (control.finalText + interim).trim();
+      control.input.value = [control.originalText, spoken].filter(Boolean).join(control.originalText && spoken ? ' ' : '');
+      control.input.dispatchEvent(new Event('input', { bubbles: true }));
+      clearTimeout(control.silenceTimer);
+      control.silenceTimer = setTimeout(() => stopVoice(control, true), SILENCE_TO_SEND_MS);
+    };
+    recognition.onerror = event => {
+      const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed';
+      setVoiceState(control, 'idle', denied ? 'Microphone permission is needed for voice input.' : 'I could not hear that. Please try again.');
+      activeVoice = null;
+    };
+    recognition.onend = () => {
+      clearTimeout(control.silenceTimer);
+      const submit = control.shouldSubmit && control.input.value.trim();
+      activeVoice = null;
+      control.recognition = null;
+      if (submit) {
+        setVoiceState(control, 'processing', 'Sending your question…');
+        window.setTimeout(() => {
+          voiceSubmit(control.input);
+          setVoiceState(control, 'idle', 'Sent.');
+        }, 120);
+      } else {
+        setVoiceState(control, 'idle', '');
+      }
+    };
+    try { recognition.start(); } catch (_) { setVoiceState(control, 'idle', 'Could not start the microphone.'); }
+  }
+
+  function enhanceVoiceInput(input) {
+    if (!input || input.dataset.voiceReady === 'true') return;
+    input.dataset.voiceReady = 'true';
+    const wrap = document.createElement('div');
+    wrap.className = 'voice-input-shell';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    input.classList.add('voice-enabled-input');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'voice-mic-button';
+    button.setAttribute('aria-label', 'Speak your question');
+    button.setAttribute('aria-pressed', 'false');
+    button.title = 'Speak your question';
+    button.innerHTML = '<svg class="voice-mic-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"></path></svg><span class="voice-wave" aria-hidden="true"><i></i><i></i><i></i></span><span class="voice-sr-only">Microphone</span>';
+    const status = document.createElement('span');
+    status.className = 'voice-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    wrap.append(button, status);
+    const control = { input, wrap, button, status, recognition: null, silenceTimer: null };
+    button.addEventListener('click', () => startVoice(control));
+  }
+
+  function initVoiceInputs() {
+    ['hero-ask-input', 'chat-input', 'ai-import-prompt'].forEach(id => enhanceVoiceInput(document.getElementById(id)));
+    const messages = document.getElementById('chat-messages');
+    if (messages) {
+      messages.setAttribute('role', 'log');
+      messages.setAttribute('aria-live', 'polite');
+      messages.setAttribute('aria-relevant', 'additions text');
+    }
+    const heroAnswer = document.getElementById('hero-answer');
+    if (heroAnswer) {
+      heroAnswer.setAttribute('role', 'status');
+      heroAnswer.setAttribute('aria-live', 'polite');
+    }
+  }
 
   function createBot() {
     const bot = document.createElement('button');
@@ -140,6 +268,7 @@
     }
     bot.addEventListener('click', openChat);
     watchChatPanel(bot);
+    initVoiceInputs();
   }
 
   if (document.readyState === 'loading') {
