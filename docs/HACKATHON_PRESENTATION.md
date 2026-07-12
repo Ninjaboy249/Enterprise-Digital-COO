@@ -94,33 +94,33 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                    │
-│              React Dashboard (Real-time)                 │
+│                    PRESENTATION LAYER                   │
+│              React Dashboard (Real-time)                │
 └─────────────────────────────────────────────────────────┘
                           ↕ WebSocket + REST
 ┌─────────────────────────────────────────────────────────┐
-│                      API LAYER                           │
-│                   FastAPI Backend                        │
+│                      API LAYER                          │
+│                   FastAPI Backend                       │
 └─────────────────────────────────────────────────────────┘
                           ↕
 ┌─────────────────────────────────────────────────────────┐
-│              ORCHESTRATION LAYER (LangGraph)             │
-│                  Digital COO Orchestrator                │
+│              ORCHESTRATION LAYER (LangGraph)            │
+│                  Digital COO Orchestrator               │
 └─────────────────────────────────────────────────────────┘
                           ↕
 ┌─────────────────────────────────────────────────────────┐
-│                   AGENT LAYER                            │
-│  [Sales] [Finance] [Supply] [Proc] [HR] [Risk]         │
+│                   AGENT LAYER                           │
+│  [Sales] [Finance] [Supply] [Proc] [HR] [Risk]          │
 └─────────────────────────────────────────────────────────┘
                           ↕
 ┌─────────────────────────────────────────────────────────┐
-│                INTELLIGENCE LAYER                        │
-│  [Anomaly] [RCA] [Simulation] [Recommendation]         │
+│                INTELLIGENCE LAYER                       │
+│  [Anomaly] [RCA] [Simulation] [Recommendation]          │
 └─────────────────────────────────────────────────────────┘
                           ↕
 ┌─────────────────────────────────────────────────────────┐
-│                  DATA & MEMORY LAYER                     │
-│     [PostgreSQL] [ChromaDB] [Redis] [OpenAI]           │
+│                  DATA & MEMORY LAYER                    │
+│     [PostgreSQL] [ChromaDB] [Redis] [OpenAI]            │
 └─────────────────────────────────────────────────────────┘
 ```
 

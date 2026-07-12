@@ -593,6 +593,126 @@ def _build_data_brief(req: "ChatRequest") -> str:
     return "\n".join(lines)
 
 
+def _money(value: Any) -> str:
+    if isinstance(value, (int, float)):
+        return f"${value:,.0f}"
+    return str(value)
+
+
+def _percent(value: Any) -> str:
+    if isinstance(value, (int, float)):
+        return f"{value * 100:.1f}%" if abs(value) <= 1 else f"{value:.1f}%"
+    return str(value)
+
+
+def _latest_domain_snapshot(req: "ChatRequest", ctx: str) -> Dict[str, Any]:
+    if req.data_snapshot:
+        return req.data_snapshot
+
+    if req.live_data:
+        domain_data = req.live_data.get(ctx, {}).get("data", {})
+        if domain_data:
+            return sorted(
+                domain_data.values(),
+                key=lambda item: item.get("fiscal_year", 0),
+                reverse=True,
+            )[0]
+
+    fy = _current_fy()
+    if ctx == "sales":
+        return _fy_sales(fy)
+    if ctx == "finance":
+        return _fy_finance(fy)
+    if ctx == "operations":
+        return _fy_operations(fy)
+    return {}
+
+
+def _metric_fallback_answer(req: "ChatRequest", ctx: str, msg_lower: str) -> str:
+    """
+    Deterministic COO-style answer used when OpenAI is not configured or fails.
+    It stays grounded in current dashboard numbers instead of rotating canned text.
+    """
+    if ctx == "general":
+        fy = _current_fy()
+        sales = _latest_domain_snapshot(req, "sales") or _fy_sales(fy)
+        finance = _latest_domain_snapshot(req, "finance") or _fy_finance(fy)
+        ops = _latest_domain_snapshot(req, "operations") or _fy_operations(fy)
+        sm, fm, om = sales.get("metrics", {}), finance.get("metrics", {}), ops.get("metrics", {})
+        return (
+            f"Here is the current COO story: sales revenue is {_money(sm.get('total_revenue', 0))} "
+            f"against an expected {_money(sm.get('expected_revenue', 0))}, so the revenue gap is "
+            f"{sm.get('revenue_drop_percentage', 0)}%. Finance is stable with {_money(fm.get('cash_balance', 0))} "
+            f"cash and {fm.get('runway_months', 0)} months of runway. Operations are healthy at "
+            f"{om.get('system_uptime', 0)}% uptime and {om.get('customer_satisfaction', 0)}/5 CSAT. "
+            "Next move: protect cash, accelerate high-probability pipeline, and keep support response time low."
+        )
+
+    snap = _latest_domain_snapshot(req, ctx)
+    metrics = snap.get("metrics", {})
+    period = snap.get("period") or f"FY {snap.get('fiscal_year', _current_fy())}"
+    wants_risk = any(w in msg_lower for w in ["risk", "concern", "problem", "issue", "warn", "alert", "why", "happened"])
+    wants_action = any(w in msg_lower for w in ["recommend", "suggest", "action", "improve", "next", "do"])
+    wants_summary = any(w in msg_lower for w in ["summar", "overview", "brief", "status", "how"])
+
+    if ctx == "sales":
+        revenue = metrics.get("total_revenue", 0)
+        expected = metrics.get("expected_revenue", 0)
+        gap = metrics.get("revenue_drop_percentage", 0)
+        pipeline = metrics.get("pipeline_value", 0)
+        win_rate = metrics.get("win_rate", 0)
+        deals = metrics.get("active_deals", 0)
+        base = (
+            f"For {period}, sales revenue is {_money(revenue)} versus an expected {_money(expected)}, "
+            f"leaving a {gap}% revenue gap. Pipeline is {_money(pipeline)} across {deals} active deals, "
+            f"with win rate at {_percent(win_rate)}."
+        )
+        if wants_risk:
+            return f"{base} The main risk is not demand volume; it is conversion and deal velocity. Focus weekly inspection on late-stage deals, blocked enterprise opportunities, and regions under target."
+        if wants_action:
+            return f"{base} Next move: pull forward high-probability enterprise deals, assign owners to stalled opportunities, and protect pricing on the largest pipeline accounts."
+        if wants_summary:
+            return f"{base} The business story is a strong pipeline with a target gap that needs sharper execution."
+        return f"{base} I would treat this as a pipeline execution issue and prioritize conversion, deal velocity, and enterprise close plans."
+
+    if ctx == "finance":
+        cash = metrics.get("cash_balance", 0)
+        burn = metrics.get("burn_rate", 0)
+        runway = metrics.get("runway_months", 0)
+        gross_margin = metrics.get("gross_margin", 0)
+        ebitda = metrics.get("ebitda", 0)
+        net_income = metrics.get("net_income", 0)
+        base = (
+            f"For {period}, cash is {_money(cash)}, monthly burn is {_money(burn)}, and runway is "
+            f"{runway} months. Gross margin is {_percent(gross_margin)}, EBITDA is {_money(ebitda)}, "
+            f"and net income is {_money(net_income)}."
+        )
+        if wants_risk:
+            return f"{base} The key financial risk is margin discipline as revenue and expenses scale. Watch burn, hiring pace, and discounting pressure."
+        if wants_action:
+            return f"{base} Next move: keep runway above the operating threshold, review discretionary spend, and tie new investment to revenue conversion."
+        return f"{base} Finance looks stable, but the COO focus should be preserving margin while funding the highest-return growth work."
+
+    if ctx == "operations":
+        csat = metrics.get("customer_satisfaction", 0)
+        nps = metrics.get("nps_score", 0)
+        tickets = metrics.get("support_tickets", 0)
+        resolution = metrics.get("avg_resolution_time", 0)
+        uptime = metrics.get("system_uptime", 0)
+        users = metrics.get("active_users", 0)
+        base = (
+            f"For {period}, operations show {uptime}% uptime, {csat}/5 CSAT, NPS {nps}, "
+            f"{tickets} support tickets, {resolution}h average resolution time, and {users:,} active users."
+        )
+        if wants_risk:
+            return f"{base} The main operational risk is support load rising faster than resolution capacity. Keep backlog aging and response-time outliers visible."
+        if wants_action:
+            return f"{base} Next move: automate repeat ticket categories, protect uptime capacity, and route customer pain points back into product priorities."
+        return f"{base} The operating story is healthy reliability with continued focus needed on customer support efficiency."
+
+    return CANNED_INSIGHTS.get("general", [_DEFAULT_HELP_LINE])[0]
+
+
 async def _openai_answer(message: str, ctx: str, data_brief: str, req: "ChatRequest") -> str:
     """Call OpenAI GPT with a rich system prompt that includes live data."""
     from config import settings as _settings
@@ -717,44 +837,13 @@ async def chat_summarise(req: ChatRequest) -> Dict[str, Any]:
         except Exception as exc:
             logger.warning("OpenAI call failed (%s) — falling back to canned response.", exc)
 
-    # ── 4. Canned fallback (no OpenAI key or API error) ────────────────────
-    # Build a single snapshot note for the canned answer suffix
-    snapshot_note = ""
-    if req.data_snapshot:
-        m = req.data_snapshot.get("metrics", {})
-        if ctx == "sales" and "total_revenue" in m:
-            snapshot_note = f"Current FY revenue: ${m['total_revenue']:,}"
-        elif ctx == "finance" and "cash_balance" in m:
-            snapshot_note = f"Current cash balance: ${m['cash_balance']:,}"
-        elif ctx == "operations" and "customer_satisfaction" in m:
-            snapshot_note = f"CSAT: {m['customer_satisfaction']}/5.0"
-    elif req.live_data:
-        s_data = req.live_data.get("sales", {}).get("data", {})
-        for fy_obj in sorted(s_data.values(), key=lambda x: x.get("fiscal_year", 0), reverse=True)[:1]:
-            rev = fy_obj.get("metrics", {}).get("total_revenue")
-            if rev:
-                snapshot_note = f"Revenue: ${rev:,}"
-
-    if any(w in msg_lower for w in ["summar", "overview", "tldr", "brief"]):
-        answer = CANNED_INSIGHTS[ctx][0]
-    elif any(w in msg_lower for w in ["risk", "concern", "problem", "issue", "warn", "alert"]):
-        answer = CANNED_INSIGHTS[ctx][1] if len(CANNED_INSIGHTS[ctx]) > 1 else CANNED_INSIGHTS[ctx][0]
-    elif any(w in msg_lower for w in ["recommend", "suggest", "action", "improve", "next"]):
-        answer = CANNED_INSIGHTS[ctx][-1]
-    elif any(w in msg_lower for w in ["trend", "trajectory", "growth", "decline"]):
-        answer = CANNED_INSIGHTS[ctx][2] if len(CANNED_INSIGHTS[ctx]) > 2 else CANNED_INSIGHTS[ctx][0]
-    else:
-        idx = len(req.message) % len(CANNED_INSIGHTS[ctx])
-        answer = CANNED_INSIGHTS[ctx][idx]
-
-    if snapshot_note:
-        answer += f" ({snapshot_note})"
-
+    # ── 4. Grounded dashboard fallback (no OpenAI key or API error) ────────
+    answer = _metric_fallback_answer(req, ctx, msg_lower)
     return {
         "answer": answer,
         "context": ctx,
         "timestamp": datetime.now().isoformat(),
-        "source": "canned",
+        "source": "dashboard",
         "suggestions": [
             "What are the key risks?",
             "Show me a summary",

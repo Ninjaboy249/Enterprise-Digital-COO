@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise Digital COO Presentation</title>
+  <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --ink:#eef2ff;
+      --muted:#a7b4d8;
+      --bg:#07111f;
+      --panel:#0f1d34;
+      --cyan:#22d3ee;
+      --blue:#2563eb;
+      --purple:#8b5cf6;
+      --green:#10b981;
+      --orange:#f59e0b;
+      --red:#ef4444;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      min-height:100vh;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(34,211,238,.2), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(139,92,246,.22), transparent 30%),
+        linear-gradient(135deg,#07111f 0%,#141039 54%,#061625 100%);
+      color:var(--ink);
+      overflow-x:hidden;
+    }
+    .deck-shell {
+      min-height:100vh;
+      padding:24px clamp(14px,3vw,42px) 36px;
+    }
+    .deck-header {
+      position:sticky;
+      top:0;
+      z-index:30;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:14px clamp(10px,2vw,18px);
+      margin:-24px calc(clamp(14px,3vw,42px) * -1) 28px;
+      background:rgba(7,17,31,.82);
+      border-bottom:1px solid rgba(125,211,252,.18);
+      backdrop-filter:blur(18px);
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+    .brand img {
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      background:#fff;
+      padding:4px;
+      box-shadow:0 0 24px rgba(34,211,238,.42);
+      flex:0 0 auto;
+    }
+    .brand strong {
+      display:block;
+      font-size:18px;
+      line-height:1.05;
+    }
+    .brand span {
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:3px;
+    }
+    .deck-actions {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pager {
+      display:flex;
+      gap:6px;
+      padding:5px;
+      border:1px solid rgba(255,255,255,.13);
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+    }
+    .pager a {
+      width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      color:var(--ink);
+      text-decoration:none;
+      border-radius:999px;
+      font-weight:800;
+      font-size:12px;
+    }
+    .pager a:hover { background:rgba(34,211,238,.22); }
+    .back-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:40px;
+      padding:0 14px;
+      border-radius:12px;
+      background:rgba(255,255,255,.92);
+      color:#312e81;
+      text-decoration:none;
+      font-weight:800;
+      box-shadow:0 10px 26px rgba(0,0,0,.18);
+    }
+    .slides {
+      display:grid;
+      gap:42px;
+      perspective:1600px;
+    }
+    .slide-page {
+      position:relative;
+      min-height:min(760px, calc(100vh - 124px));
+      display:grid;
+      align-items:center;
+      grid-template-columns:minmax(0, .92fr) minmax(340px, 1.08fr);
+      gap:clamp(24px,4vw,60px);
+      padding:clamp(22px,4vw,60px);
+      border:1px solid rgba(125,211,252,.34);
+      border-radius:26px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.13), rgba(255,255,255,.045)),
+        radial-gradient(circle at 82% 18%, rgba(34,211,238,.18), transparent 36%);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.06) inset,
+        0 0 42px rgba(34,211,238,.32),
+        0 38px 100px rgba(0,0,0,.38);
+      transform-style:preserve-3d;
+      overflow:hidden;
+    }
+    .slide-page::before {
+      content:"";
+      position:absolute;
+      inset:14px;
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.08);
+      pointer-events:none;
+      transform:translateZ(-18px);
+    }
+    .slide-page::after {
+      content:"";
+      position:absolute;
+      inset:auto 8% -34px 8%;
+      height:60px;
+      border-radius:50%;
+      background:radial-gradient(ellipse, rgba(34,211,238,.34), transparent 70%);
+      filter:blur(12px);
+      pointer-events:none;
+    }
+    .slide-copy {
+      position:relative;
+      z-index:2;
+      transform:translateZ(28px);
+    }
+    .eyebrow {
+      margin:0 0 18px;
+      color:#67e8f9;
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+    }
+    h1, h2 {
+      margin:0;
+      letter-spacing:0;
+      line-height:1.03;
+    }
+    h1 { font-size:clamp(40px,6vw,82px); max-width:880px; }
+    h2 { font-size:clamp(34px,4vw,58px); max-width:720px; }
+    .lead {
+      max-width:660px;
+      margin:24px 0 0;
+      color:#cad5f7;
+      font-size:clamp(18px,2vw,26px);
+      line-height:1.35;
+    }
+    .welcome-title {
+      max-width:920px;
+      font-size:clamp(38px,5.7vw,78px);
+    }
+    .slide-kpis {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:34px;
+      max-width:660px;
+    }
+    .mini-kpi {
+      padding:14px;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:16px;
+      background:rgba(255,255,255,.08);
+    }
+    .mini-kpi strong {
+      display:block;
+      font-size:22px;
+      color:#fff;
+    }
+    .mini-kpi span {
+      color:var(--muted);
+      font-size:12px;
+    }
+    .stack-wrap {
+      position:relative;
+      min-height:440px;
+      transform-style:preserve-3d;
+    }
+    .glow-page {
+      position:absolute;
+      inset:0;
+      min-height:420px;
+      border:1px solid rgba(125,211,252,.32);
+      border-radius:24px;
+      background:linear-gradient(145deg,#f8fafc,#eef4ff);
+      color:#081426;
+      box-shadow:
+        0 0 22px rgba(34,211,238,.5),
+        0 24px 70px rgba(3,7,18,.42);
+      overflow:hidden;
+      transform:rotateY(-13deg) rotateX(7deg) translateZ(44px);
+    }
+    .glow-page.back {
+      inset:24px -20px -24px 20px;
+      opacity:.38;
+      transform:rotateY(-18deg) rotateX(7deg) translateZ(6px);
+      filter:blur(.2px);
+    }
+    .glow-page.middle {
+      inset:12px -10px -12px 10px;
+      opacity:.68;
+      transform:rotateY(-16deg) rotateX(7deg) translateZ(24px);
+    }
+    .shot {
+      height:100%;
+      min-height:420px;
+      padding:22px;
+      background:#f8fafc;
+      color:#061227;
+      transform-origin:center;
+    }
+    .shot-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-height:54px;
+      padding:10px 12px;
+      border-radius:16px;
+      background:linear-gradient(135deg,#120d35,#2d2762);
+      color:#fff;
+      box-shadow:0 12px 26px rgba(15,23,42,.16);
+    }
+    .shot-logo {
+      width:32px;
+      height:32px;
+      border-radius:10px;
+      background:#fff url("/static/assets/edcoo-logo.svg") center/25px 25px no-repeat;
+      flex:0 0 auto;
+    }
+    .shot-title {
+      display:flex;
+      align-items:center;
+      gap:9px;
+      min-width:0;
+      font-weight:900;
+      font-size:20px;
+    }
+    .shot-pill {
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.16);
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .shot-section {
+      margin-top:16px;
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 12px 24px rgba(15,23,42,.08);
+      padding:18px;
+    }
+    .shot-grid { display:grid; gap:14px; }
+    .shot-grid.two { grid-template-columns:1fr 1fr; }
+    .shot-grid.three { grid-template-columns:repeat(3,1fr); }
+    .shot-grid.four { grid-template-columns:repeat(4,1fr); }
+    .shot-card {
+      min-height:96px;
+      padding:16px;
+      border-radius:15px;
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+    }
+    .shot-card strong {
+      display:block;
+      margin-bottom:9px;
+      font-size:18px;
+    }
+    .shot-card b {
+      display:block;
+      margin:8px 0;
+      font-size:27px;
+    }
+    .shot-card span {
+      color:#64748b;
+      font-size:13px;
+    }
+    .ask-band {
+      background:linear-gradient(135deg,#221858,#302b82);
+      color:#fff;
+    }
+    .ask-input {
+      height:52px;
+      border-radius:14px;
+      background:#fff;
+      color:#c084fc;
+      padding:15px 18px;
+      font-size:14px;
+    }
+    .ask-btn {
+      display:grid;
+      place-items:center;
+      min-height:52px;
+      border-radius:14px;
+      background:linear-gradient(135deg,#7c3aed,#06b6d4);
+      color:#fff;
+      font-weight:900;
+    }
+    .chart-bars {
+      height:160px;
+      display:flex;
+      align-items:end;
+      gap:20px;
+      padding:18px 18px 0;
+      border-left:1px solid #cbd5e1;
+      border-bottom:1px solid #cbd5e1;
+    }
+    .bar {
+      flex:1;
+      border-radius:9px 9px 0 0;
+      background:linear-gradient(180deg,#8b5cf6,#6d28d9);
+      opacity:.82;
+    }
+    .line-chart {
+      height:170px;
+      border-radius:14px;
+      background:
+        linear-gradient(180deg, rgba(16,185,129,.12), rgba(37,99,235,.08)),
+        repeating-linear-gradient(0deg, transparent 0 39px, rgba(100,116,139,.18) 40px),
+        repeating-linear-gradient(90deg, transparent 0 120px, rgba(100,116,139,.14) 121px);
+      position:relative;
+      overflow:hidden;
+    }
+    .line-chart::before {
+      content:"";
+      position:absolute;
+      left:8%;
+      top:28%;
+      width:84%;
+      height:52%;
+      border-top:5px solid #10b981;
+      border-right:5px solid #10b981;
+      transform:skewY(-4deg);
+      border-radius:50% 10% 0 0;
+    }
+    .workflow {
+      display:grid;
+      gap:10px;
+      text-align:center;
+    }
+    .workflow div {
+      padding:13px 16px;
+      border-radius:999px;
+      font-weight:900;
+    }
+    .modal-shot {
+      max-width:470px;
+      margin:18px auto 0;
+      padding:20px;
+      border-radius:20px;
+      background:#fff;
+      box-shadow:0 30px 70px rgba(15,23,42,.3);
+    }
+    .tabbar {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      overflow:hidden;
+      border-radius:12px;
+      color:#fff;
+      font-weight:900;
+      text-align:center;
+    }
+    .tabbar span { padding:13px; }
+    .tabbar span:first-child { background:#9333ea; }
+    .tabbar span:last-child { background:linear-gradient(135deg,#7c3aed,#06b6d4); }
+    .upload-box {
+      border:2px dashed #c4b5fd;
+      border-radius:16px;
+      padding:22px;
+      text-align:center;
+      color:#6d28d9;
+      font-weight:800;
+      margin-top:16px;
+    }
+    .bot-card {
+      position:absolute;
+      right:22px;
+      bottom:22px;
+      width:270px;
+      height:120px;
+      border:1px solid rgba(34,211,238,.62);
+      border-radius:18px;
+      background:linear-gradient(135deg, rgba(8,30,45,.94), rgba(13,53,77,.9));
+      box-shadow:0 0 28px rgba(34,211,238,.48);
+      display:flex;
+      align-items:center;
+      gap:16px;
+      padding:15px 18px;
+      color:#fff;
+    }
+    .bot-mini {
+      width:78px;
+      height:86px;
+      position:relative;
+      flex:0 0 auto;
+    }
+    .bot-head {
+      position:absolute;
+      left:10px;
+      top:0;
+      width:58px;
+      height:44px;
+      border-radius:20px;
+      background:linear-gradient(145deg,#f8fafc,#94a3b8);
+    }
+    .bot-face {
+      position:absolute;
+      left:9px;
+      top:9px;
+      width:40px;
+      height:24px;
+      border-radius:12px;
+      background:#020617;
+    }
+    .bot-face::before, .bot-face::after {
+      content:"";
+      position:absolute;
+      top:6px;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#e0f2fe;
+      box-shadow:0 0 0 4px #0ea5e9, 0 0 12px #38bdf8;
+    }
+    .bot-face::before { left:9px; }
+    .bot-face::after { right:9px; }
+    .bot-body {
+      position:absolute;
+      left:20px;
+      top:45px;
+      width:38px;
+      height:35px;
+      border-radius:13px;
+      background:#111827;
+    }
+    .bot-arm {
+      position:absolute;
+      right:8px;
+      top:45px;
+      width:16px;
+      height:38px;
+      border-radius:999px;
+      background:#e5e7eb;
+      transform:rotate(-16deg);
+    }
+    .bot-copy strong {
+      display:block;
+      font-size:19px;
+      line-height:1;
+    }
+    .bot-copy span {
+      display:block;
+      color:#67e8f9;
+      font-size:14px;
+      font-weight:900;
+      margin-top:4px;
+    }
+    .welcome-visual {
+      min-height:460px;
+    }
+    .welcome-visual .glow-page {
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:34px;
+      background:
+        radial-gradient(circle at 28% 20%, rgba(34,211,238,.18), transparent 32%),
+        linear-gradient(145deg,#ffffff,#eef2ff);
+    }
+    .welcome-visual h3 {
+      margin:20px 0 10px;
+      font-size:32px;
+      line-height:1.05;
+    }
+    .welcome-visual p {
+      margin:0;
+      color:#475569;
+      font-size:16px;
+    }
+    .page-number {
+      position:absolute;
+      right:28px;
+      top:24px;
+      z-index:3;
+      color:rgba(255,255,255,.42);
+      font-weight:900;
+    }
+    @media (max-width: 980px) {
+      .slide-page {
+        grid-template-columns:1fr;
+        min-height:auto;
+      }
+      .stack-wrap { min-height:400px; }
+      .slide-kpis { grid-template-columns:1fr; }
+      .deck-header { align-items:flex-start; }
+      .pager { display:none; }
+    }
+    @media (max-width: 640px) {
+      .deck-shell { padding:18px 10px 28px; }
+      .deck-header { margin:-18px -10px 20px; }
+      .brand strong { font-size:15px; }
+      .brand span { display:none; }
+      .back-btn { min-height:36px; padding:0 11px; }
+      .slide-page {
+        border-radius:18px;
+        padding:22px 14px;
+        gap:18px;
+      }
+      .glow-page, .glow-page.middle, .glow-page.back {
+        transform:none;
+        inset:0;
+      }
+      .glow-page.middle, .glow-page.back { display:none; }
+      .stack-wrap { min-height:440px; }
+      .shot { padding:14px; overflow:hidden; }
+      .shot-grid.two, .shot-grid.three, .shot-grid.four { grid-template-columns:1fr; }
+      .bot-card {
+        width:220px;
+        height:96px;
+        right:12px;
+        bottom:12px;
+        transform:scale(.88);
+        transform-origin:right bottom;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck-shell">
+    <header class="deck-header">
+      <div class="brand">
+        <img src="/static/assets/edcoo-logo.svg" alt="Enterprise Digital COO logo" />
+        <div>
+          <strong>Enterprise Digital COO</strong>
+          <span>AI Command Centre presentation</span>
+        </div>
+      </div>
+      <div class="deck-actions">
+        <nav class="pager" aria-label="Presentation pages">
+          <a href="#page-1">1</a>
+          <a href="#page-2">2</a>
+          <a href="#page-3">3</a>
+          <a href="#page-4">4</a>
+          <a href="#page-5">5</a>
+          <a href="#page-6">6</a>
+          <a href="#page-7">7</a>
+          <a href="#page-8">8</a>
+          <a href="#page-9">9</a>
+        </nav>
+        <a class="back-btn" href="/static/index.html">← Dashboard</a>
+      </div>
+    </header>
+
+    <section class="slides">
+      <article id="page-1" class="slide-page">
+        <span class="page-number">01</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Presentation</p>
+          <h1 class="welcome-title">Welcome to the Presentation of Enterprise Digital COO - AI Command Centre</h1>
+          <p class="lead">A guided walkthrough of the AI command center, dashboard evidence, COO Bot, imports, agents, and domain views.</p>
+          <div class="slide-kpis">
+            <div class="mini-kpi"><strong>9</strong><span>glowing pages</span></div>
+            <div class="mini-kpi"><strong>3D</strong><span>page experience</span></div>
+            <div class="mini-kpi"><strong>AI</strong><span>COO operating layer</span></div>
+          </div>
+        </div>
+        <div class="stack-wrap welcome-visual">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <img src="/static/assets/edcoo-logo.svg" alt="" style="width:96px;height:96px;border-radius:24px;box-shadow:0 0 30px rgba(37,99,235,.35)" />
+            <h3>Enterprise Digital COO</h3>
+            <p>Turning data into decisions with AI-powered business command.</p>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-2" class="slide-page">
+        <span class="page-number">02</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Main Dashboard</p>
+          <h2>The AI COO starts with a three-click executive demo path.</h2>
+          <p class="lead">The first dashboard view frames crisis signals, a short decision path, and a video-backed product story before the user dives into AI actions.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-header">
+                <div class="shot-title"><span class="shot-logo"></span>Enterprise Digital COO</div>
+                <span class="shot-pill">Online · v1.0.0</span>
+              </div>
+              <div class="shot-section">
+                <p class="eyebrow" style="color:#7c3aed;margin-bottom:12px">Judge Demo Path</p>
+                <h3 style="margin:0 0 18px;font-size:26px">Experience the AI COO in three clicks</h3>
+                <div class="shot-grid three">
+                  <div class="shot-card" style="background:#fee2e2"><strong>1. Click</strong><b style="font-size:20px">Revenue Crash</b></div>
+                  <div class="shot-card" style="background:#ede9fe"><strong>2. Ask</strong><b style="font-size:20px">AI COO</b></div>
+                  <div class="shot-card" style="background:#dcfce7"><strong>3. Open</strong><b style="font-size:20px">Finance/Sales</b></div>
+                </div>
+              </div>
+              <div class="shot-section" style="border:2px solid #67e8f9">
+                <h3 style="margin:0 0 12px;font-size:24px">From scattered warning signs to one COO action plan</h3>
+                <div class="shot-grid four">
+                  <div class="shot-card"><strong>Revenue</strong><b style="color:#b91c1c">-15%</b><span>monthly exposure</span></div>
+                  <div class="shot-card"><strong>Operations</strong><b style="color:#b45309">+35%</b><span>inventory spike</span></div>
+                  <div class="shot-card"><strong>Customer</strong><b style="color:#7c3aed">+12%</b><span>churn risk</span></div>
+                  <div class="shot-card"><strong>Decision</strong><b style="color:#047857">$2.4M</b><span>recovery plan</span></div>
+                </div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-3" class="slide-page">
+        <span class="page-number">03</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Ask Enterprise COO</p>
+          <h2>Users ask questions in plain English and receive an executive brief.</h2>
+          <p class="lead">The AI section joins quick prompts, business impact, recommended action, approval, simulation, and agent investigation in one operating flow.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-section ask-band">
+                <p class="eyebrow" style="margin-bottom:12px;color:#f0abfc">Ask Enterprise COO</p>
+                <div class="shot-grid" style="grid-template-columns:1fr 160px">
+                  <div class="ask-input">What happened to revenue this quarter?</div>
+                  <div class="ask-btn">Ask AI</div>
+                </div>
+              </div>
+              <div class="shot-section" style="background:linear-gradient(135deg,#2d2672,#1e3a8a);color:#fff">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px">
+                  <h3 style="margin:0;font-size:24px">Executive Brief</h3>
+                  <span class="shot-pill" style="background:#0f766e">AI Confidence 96%</span>
+                </div>
+                <div class="shot-grid four">
+                  <div><span>Signal</span><b style="display:block;font-size:24px;margin-top:8px">Revenue up 5.5%</b></div>
+                  <div><span>Predicted FY Impact</span><b style="display:block;font-size:28px;color:#6ee7b7;margin-top:8px">+$0.1M</b></div>
+                  <div><span>KPI Snapshot</span><b style="display:block;font-size:17px;margin-top:8px">Revenue $1.50M</b></div>
+                  <div><span>Recommended Action</span><b style="display:block;font-size:18px;margin-top:8px">Accelerate expansion</b></div>
+                </div>
+              </div>
+              <div class="shot-grid two" style="margin-top:16px">
+                <div class="shot-section"><h3 style="margin-top:0">AI Investigation</h3><div class="workflow"><div style="background:#fee2e2;color:#b91c1c">Revenue anomaly detected</div><div style="background:#dbeafe;color:#1d4ed8">Sales Agent investigating...</div><div style="background:#f8fafc">Pipeline data checked</div></div></div>
+                <div class="shot-section"><h3 style="margin-top:0">AI Workforce</h3><div class="shot-grid two"><div class="shot-card"><strong>CEO Agent</strong><span>Online</span></div><div class="shot-card"><strong>Sales Agent</strong><span>Online</span></div><div class="shot-card"><strong>Finance Agent</strong><span>Online</span></div><div class="shot-card"><strong>Operations Agent</strong><span>Online</span></div></div></div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-4" class="slide-page">
+        <span class="page-number">04</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Actions And Findings</p>
+          <h2>AI recommendations turn into tracked actions and visible risk findings.</h2>
+          <p class="lead">The dashboard distinguishes completed work, approvals still needed, business impact, and top findings that executives can scan quickly.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-grid two">
+                <div class="shot-section">
+                  <h3 style="margin-top:0">Today's AI Actions <span class="shot-pill" style="float:right;background:#ede9fe;color:#7c3aed">3 completed</span></h3>
+                  <div class="workflow" style="text-align:left">
+                    <div style="background:#fff">Reduce excess inventory <span style="float:right;color:#92400e">Awaiting Approval</span></div>
+                    <div style="background:#fff">Increase marketing budget <span style="float:right;color:#1d4ed8">Approved</span></div>
+                    <div style="background:#fff">Send cash flow alert <span style="float:right;color:#047857">Completed</span></div>
+                    <div style="background:#fff">Generate Q3 board summary <span style="float:right;color:#047857">Completed</span></div>
+                  </div>
+                </div>
+                <div class="shot-section">
+                  <h3 style="margin-top:0">Business Impact</h3>
+                  <div class="shot-grid two">
+                    <div class="shot-card"><strong>Revenue</strong><b>$1.5M</b><span>Medium Risk</span></div>
+                    <div class="shot-card"><strong>Cash Balance</strong><b>$16.8M</b><span>Low Risk</span></div>
+                    <div class="shot-card"><strong>Forecast Accuracy</strong><b>96%</b><span>Low Risk</span></div>
+                    <div class="shot-card"><strong>Churn Risk Index</strong><b>Low</b><span>3 at-risk accounts</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="shot-section">
+                <h3 style="margin-top:0">Top AI Findings</h3>
+                <div class="shot-grid three">
+                  <div class="shot-card" style="background:#dcfce7"><strong>Revenue Anomaly</strong><span>Low</span></div>
+                  <div class="shot-card" style="background:#fef9c3"><strong>Customer Churn Signal</strong><span>Medium</span></div>
+                  <div class="shot-card" style="background:#fef9c3"><strong>Cash Flow Risk</strong><span>Medium</span></div>
+                </div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-5" class="slide-page">
+        <span class="page-number">05</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Workflow And Snapshot</p>
+          <h2>Agent workflow and fiscal snapshots show how decisions move through the system.</h2>
+          <p class="lead">A clear workflow explains the investigation path while the FY table gives executives the multi-year KPI baseline.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-grid two">
+                <div class="shot-section">
+                  <h3 style="margin-top:0">Agent Workflow</h3>
+                  <div class="workflow">
+                    <div style="background:#fee2e2;color:#dc2626">Problem Detected</div>
+                    <div style="background:#dbeafe;color:#2563eb">Sales Agent</div>
+                    <div style="background:#dcfce7;color:#047857">Finance Agent</div>
+                    <div style="background:#ede9fe;color:#7c3aed">Operations Agent</div>
+                    <div style="background:#fef9c3;color:#a16207">Executive Decision</div>
+                    <div style="background:#dcfce7;color:#047857">Approved</div>
+                  </div>
+                </div>
+                <div class="shot-section">
+                  <h3 style="margin-top:0">3-Year FY Snapshot</h3>
+                  <table style="width:100%;border-collapse:collapse;font-size:14px">
+                    <thead><tr style="background:#f8fafc"><th align="left">Metric</th><th>FY 2024</th><th>FY 2025</th><th>FY 2026</th></tr></thead>
+                    <tbody>
+                      <tr><td>Revenue</td><td>$1.29M</td><td>$1.43M</td><td>$1.50M</td></tr>
+                      <tr><td>Cash Balance</td><td>$14.4M</td><td>$15.6M</td><td>$16.8M</td></tr>
+                      <tr><td>Gross Margin</td><td>71.0%</td><td>72.5%</td><td>74.0%</td></tr>
+                      <tr><td>CSAT</td><td>4.2/5</td><td>4.2/5</td><td>4.3/5</td></tr>
+                      <tr><td>Users</td><td>13,000</td><td>14,500</td><td>16,000</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-6" class="slide-page">
+        <span class="page-number">06</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Explore Dashboards</p>
+          <h2>Each domain page keeps the AI COO context but gives teams focused views.</h2>
+          <p class="lead">Sales, finance, operations, reports, Excel analysis, and company data routes are available from the main dashboard.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-section">
+                <h3 style="margin-top:0">Explore Dashboards</h3>
+                <div class="shot-grid three">
+                  <div class="shot-card" style="border-color:#ddd6fe;background:#f5f3ff"><strong>AI Executive</strong><span>Command Center</span></div>
+                  <div class="shot-card"><strong>Sales</strong><span>Revenue · Pipeline · Regional breakdown</span></div>
+                  <div class="shot-card"><strong>Finance</strong><span>Cash · Margins · Runway</span></div>
+                  <div class="shot-card"><strong>Operations</strong><span>Uptime · CSAT · NPS</span></div>
+                  <div class="shot-card"><strong>Reports Portal</strong><span>.pbix · .json · AI summary</span></div>
+                  <div class="shot-card"><strong>Excel AI Analysis</strong><span>.xlsx · Power BI-style AI report</span></div>
+                </div>
+              </div>
+              <div class="modal-shot">
+                <h3 style="margin:0 0 12px">Import Your Company Data</h3>
+                <div class="tabbar"><span>Upload File</span><span>Ask AI</span></div>
+                <p style="color:#64748b">Upload an Excel file with a Year column or use AI extraction.</p>
+                <div class="upload-box">Choose File · Import Data</div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-7" class="slide-page">
+        <span class="page-number">07</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Company Data Import</p>
+          <h2>The Company Data card opens a guided import modal for files or AI extraction.</h2>
+          <p class="lead">This snapshot shows the exact flow users see when they click Import My Data: upload file, switch to Ask AI, download a sample, and import KPI data into the dashboard.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot" style="background:#f3f4f6">
+              <div class="shot-section" style="filter:brightness(.72);opacity:.74">
+                <h3 style="margin-top:0">Explore Dashboards</h3>
+                <div class="shot-grid three">
+                  <div class="shot-card"><strong>Operations</strong><span>Uptime · CSAT · NPS · Support tickets</span><b style="font-size:16px;color:#7c3aed">View Operations →</b></div>
+                  <div class="shot-card"><strong>Reports Portal</strong><span>.pbix · .json · AI executive summary</span><b style="font-size:16px;color:#0284c7">Open Reports →</b></div>
+                  <div class="shot-card"><strong>Excel AI Analysis</strong><span>.xlsx · Power BI-style AI report</span><b style="font-size:16px;color:#059669">Open Analyser →</b></div>
+                  <div class="shot-card" style="border:2px dashed #c4b5fd;background:#faf5ff"><strong>Company Data</strong><span>Upload Excel / .pbix or describe data via AI to replace demo KPIs</span><b style="font-size:16px;color:#7c3aed">Import My Data →</b></div>
+                  <div class="shot-card"><strong>Active Alerts</strong><span>HIGH · revenue: Revenue dropped vs target</span></div>
+                  <div class="shot-card"><strong>AI Findings</strong><span>Customer churn and cash flow risks</span></div>
+                </div>
+              </div>
+              <div class="modal-shot" style="position:absolute;left:50%;top:50%;width:min(560px,82%);max-width:560px;transform:translate(-50%,-50%);z-index:5">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px">
+                  <h3 style="margin:0;font-size:24px">Import Your Company Data</h3>
+                  <span style="color:#94a3b8;font-size:26px;line-height:1">×</span>
+                </div>
+                <div class="tabbar"><span>📁 Upload File</span><span>✧ Ask AI</span></div>
+                <p style="color:#64748b;font-size:16px;line-height:1.45">Upload an Excel file with a <strong>Year</strong> column to automatically populate all 3 fiscal years, or use a single-year file for the current FY only.</p>
+                <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;color:#64748b;font-size:14px;line-height:1.7;margin:14px 0">
+                  <div><strong>▦ Detected columns:</strong> Year · Revenue / Cash / Users / CSAT</div>
+                  <div><strong>🗓 Multi-year:</strong> Add a Year column (e.g. 2023, 2024, 2025) to fill all 3 FYs</div>
+                  <div><strong>📁 Supported:</strong> .xlsx, .xls, .pbix</div>
+                </div>
+                <div class="upload-box" style="margin-top:0">⬇ Download Sample Excel (3-Year)</div>
+                <div style="margin-top:16px;border:1px solid #cbd5e1;border-radius:10px;padding:12px;color:#111827;background:#fff">Choose File&nbsp;&nbsp; <span style="color:#475569">No file chosen</span></div>
+                <div class="shot-grid two" style="margin-top:18px">
+                  <div class="ask-btn" style="min-height:50px;background:linear-gradient(135deg,#a855f7,#7c3aed)">Import Data</div>
+                  <div class="ask-btn" style="min-height:50px;background:#f8fafc;color:#374151">Cancel</div>
+                </div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-8" class="slide-page">
+        <span class="page-number">08</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Sales And Finance</p>
+          <h2>Domain dashboards expose KPI detail, comparisons, and charts.</h2>
+          <p class="lead">Sales focuses on revenue risk and pipeline, while finance highlights cash pressure, runway, margins, and expense trends.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-header" style="background:linear-gradient(135deg,#667eea,#7c3aed)">
+                <div class="shot-title"><span class="shot-logo"></span>Sales Dashboard</div>
+                <span class="shot-pill">← Back</span>
+              </div>
+              <div class="shot-section">
+                <p class="eyebrow" style="color:#7c3aed;margin-bottom:8px">AI COO / Sales Impact</p>
+                <div class="shot-grid three">
+                  <div><span>Signal</span><b style="display:block;font-size:23px">Revenue risk detected</b></div>
+                  <div><span>Business Impact</span><b style="display:block;font-size:23px;color:#dc2626">$2.8M exposure</b></div>
+                  <div><span>Recommended Action</span><b style="display:block;font-size:18px">Prioritise renewals</b></div>
+                </div>
+              </div>
+              <div class="shot-grid two" style="margin-top:16px">
+                <div class="shot-section"><h3 style="margin-top:0">Revenue - 3-Year FY Comparison</h3><div class="chart-bars"><span class="bar" style="height:58%"></span><span class="bar" style="height:74%;opacity:.35"></span><span class="bar" style="height:72%"></span><span class="bar" style="height:88%;opacity:.35"></span><span class="bar" style="height:76%"></span><span class="bar" style="height:96%;opacity:.35"></span></div></div>
+                <div class="shot-section"><h3 style="margin-top:0">Finance Margin Trends</h3><div class="line-chart"></div></div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article id="page-9" class="slide-page">
+        <span class="page-number">09</span>
+        <div class="slide-copy">
+          <p class="eyebrow">Reports And Excel AI</p>
+          <h2>Report and spreadsheet workflows convert uploads into executive narratives.</h2>
+          <p class="lead">The reports portal handles unstructured report files, while Excel AI Analysis turns workbooks into KPI trend views and recommendations.</p>
+        </div>
+        <div class="stack-wrap">
+          <div class="glow-page back"></div>
+          <div class="glow-page middle"></div>
+          <div class="glow-page">
+            <div class="shot">
+              <div class="shot-header" style="background:#172b49">
+                <div class="shot-title"><span class="shot-logo"></span>Reports Portal</div>
+                <span class="shot-pill">Backend Online</span>
+              </div>
+              <div class="shot-section">
+                <p class="eyebrow" style="color:#2563eb;margin-bottom:8px">AI COO / Report Impact</p>
+                <div class="shot-grid three">
+                  <div><span>Signal</span><b style="display:block;font-size:23px">Reports become decisions</b></div>
+                  <div><span>Business Impact</span><b style="display:block;font-size:23px;color:#2563eb">Minutes instead of hours</b></div>
+                  <div><span>Recommended Action</span><b style="display:block;font-size:18px">Review AI summary</b></div>
+                </div>
+              </div>
+              <div class="shot-grid two" style="margin-top:16px">
+                <div class="shot-section">
+                  <h3 style="margin-top:0">Upload Report</h3>
+                  <div class="upload-box" style="color:#2563eb;border-color:#93c5fd">Drag & drop here, or browse<br><span style="color:#94a3b8">.pbix and .json report files</span></div>
+                </div>
+                <div class="shot-section">
+                  <h3 style="margin-top:0">Upload Excel Workbook</h3>
+                  <div class="upload-box" style="color:#059669;border-color:#6ee7b7">Drag & drop your Excel file here<br><span style="color:#94a3b8">.xlsx and .xls workbooks</span></div>
+                </div>
+              </div>
+              <div class="bot-card"><div class="bot-mini"><span class="bot-head"><span class="bot-face"></span></span><span class="bot-body"></span><span class="bot-arm"></span></div><div class="bot-copy"><strong>COO BOT</strong><span>AI Insights</span></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

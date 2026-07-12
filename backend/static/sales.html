@@ -106,6 +106,7 @@
       .rounded-lg, table, th, td { border: 1px solid ButtonText !important; }
     }
   </style>
+  <link rel="stylesheet" href="/static/assets/coo-bot-widget.css" />
 </head>
 <body class="bg-gray-100">
 <div class="min-h-screen">
@@ -123,9 +124,6 @@
       </div>
       <div class="flex items-center gap-3">
         <button id="theme-toggle" title="Toggle theme" onclick="cycleTheme()">🌙</button>
-        <button id="chat-toggle" class="trianglify-btn font-semibold px-4 py-2 rounded-lg">
-          💬 AI Insights
-        </button>
         <a href="/#top" class="shine-sweep-btn bg-white text-purple-600 px-4 py-2 rounded">← Back</a>
       </div>
     </div>
@@ -582,11 +580,11 @@ function toggleChat() {
   const hidden = panel.classList.contains('hidden');
   panel.classList.toggle('hidden', !hidden);
   if (hidden && document.getElementById('chat-messages').children.length === 0) {
-    appendBotMsg("Hi! I'm your Sales AI assistant. Ask me about revenue, deals, trends, or regional performance for the loaded fiscal year data.");
+    appendBotMsg("Hi, I'm COO Bot. Tell me the sales question and I'll shape the revenue signals into a short business story with the next best move.");
   }
 }
 
-document.getElementById('chat-toggle').addEventListener('click', toggleChat);
+document.getElementById('chat-toggle')?.addEventListener('click', toggleChat);
 
 function appendUserMsg(text) {
   const div = document.createElement('div');
@@ -661,5 +659,6 @@ setInterval(() => { loadFYData(); loadSalesData(currentFY); }, 60000);
 <script>
 // (toast initialised inline above)
 </script>
+<script src="/static/assets/coo-bot-widget.js"></script>
 </body>
 </html>
