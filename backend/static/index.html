@@ -761,7 +761,7 @@
 
     /* Cinematic page entrance + scroll depth (progressive enhancement). */
     html { scroll-behavior:smooth; }
-    body { overflow-x:hidden; perspective:1400px; }
+    body { overflow-x:hidden; }
     header {
       transform-origin:50% 0;
       animation:pageHeaderIn .85s cubic-bezier(.2,.78,.24,1) both;
@@ -2669,6 +2669,6 @@ init();
 requestAnimationFrame(initPageMotion);
 setInterval(()=>{ checkStatus(); loadAllFYData(); }, 60000);
 </script>
-<script src="/static/assets/coo-bot-widget.js"></script>
+<script src="/static/assets/coo-bot-widget.js?v=4"></script>
 </body>
 </html>
