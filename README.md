@@ -93,7 +93,6 @@ PostgreSQL + ChromaDB + Redis + OpenAI
 - **Hands-free wake phrase**: continuously ignores unrelated speech until "Hey Enterprise Digital COO" is detected, then captures one command and returns to wake mode.
 - **Voice conversation**: synthesized responses, live transcript, animated waveform, interruption support, and locally persisted conversation history.
 - **Accessible AI compose fields**: visible microphone control, listening status, keyboard support, and screen-reader announcements.
-- **Motion-aware dashboard**: progressive 3D spiral scrolling with reduced-motion and mobile fallbacks; the Ask Enterprise COO compose card remains flat.
 - **Report intelligence**: upload JSON, Excel, or Power BI-style files and ask questions about them.
 - **Notification integrations**: send approved actions and COO summary alerts to Slack, Microsoft Teams, and demo approval email.
 - **Deployment-friendly prototype**: `api/index.py` excludes persistent database startup so the demo can run serverlessly.
