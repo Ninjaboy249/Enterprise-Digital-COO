@@ -26,6 +26,22 @@ class TeamsMessageRequest(BaseModel):
     title: str = Field("Enterprise Digital COO", min_length=1, max_length=120)
 
 
+class ExecutiveBriefData(BaseModel):
+    fiscal_year: Optional[str] = Field(None, max_length=50)
+    confidence: Optional[str] = Field(None, max_length=100)
+    signal: Optional[str] = Field(None, max_length=500)
+    cause: Optional[str] = Field(None, max_length=1000)
+    predicted_impact: Optional[str] = Field(None, max_length=200)
+    impact_detail: Optional[str] = Field(None, max_length=500)
+    ai_opportunity: Optional[str] = Field(None, max_length=200)
+    potential_savings: Optional[str] = Field(None, max_length=200)
+    revenue: Optional[str] = Field(None, max_length=200)
+    cash: Optional[str] = Field(None, max_length=200)
+    csat: Optional[str] = Field(None, max_length=200)
+    users: Optional[str] = Field(None, max_length=200)
+    recommended_action: Optional[str] = Field(None, max_length=1000)
+
+
 class ApprovalNotificationRequest(BaseModel):
     action: str = Field(..., min_length=1, max_length=1000)
     signal: Optional[str] = Field(None, max_length=500)
@@ -34,6 +50,16 @@ class ApprovalNotificationRequest(BaseModel):
     send_teams: bool = False
     send_email: bool = False
     channel: Optional[str] = None
+    executive_brief: Optional[ExecutiveBriefData] = None
+
+
+class GeneratedEmailRequest(BaseModel):
+    recipient: str = Field(..., min_length=3, max_length=320)
+    subject: str = Field(..., min_length=1, max_length=200)
+    greeting: str = Field(..., max_length=300)
+    body: str = Field(..., min_length=1, max_length=10000)
+    closing: str = Field(..., max_length=300)
+    signature: str = Field(..., max_length=500)
 
 
 def _slack_error(exc: Exception) -> HTTPException:
@@ -210,6 +236,25 @@ async def email_status() -> Dict[str, Any]:
     }
 
 
+@router.post("/email/send")
+async def send_generated_email(req: GeneratedEmailRequest) -> Dict[str, Any]:
+    """Send an Email Agent draft only after explicit UI confirmation."""
+    message_body = "\n\n".join(
+        part.strip()
+        for part in [req.greeting, req.body, req.closing, req.signature]
+        if part.strip()
+    )
+    try:
+        result = await email_service.send_generated_email(
+            req.recipient,
+            subject=req.subject,
+            body=message_body,
+        )
+    except Exception as exc:
+        raise _email_error(exc)
+    return {"sent": bool(result.get("delivered")), **result, "timestamp": datetime.now().isoformat()}
+
+
 @router.post("/approval")
 async def send_approval_notification(req: ApprovalNotificationRequest) -> Dict[str, Any]:
     """Send an approved-action notification to selected demo integrations."""
@@ -239,6 +284,7 @@ async def send_approval_notification(req: ApprovalNotificationRequest) -> Dict[s
                 req.email,
                 action=req.action,
                 signal=req.signal,
+                executive_brief=req.executive_brief.model_dump() if req.executive_brief else None,
             )
         except Exception as exc:
             raise _email_error(exc)
