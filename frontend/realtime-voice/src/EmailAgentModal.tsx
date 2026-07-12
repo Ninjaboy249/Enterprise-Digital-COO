@@ -8,6 +8,7 @@ export type EmailDraft = {
   body: string;
   closing: string;
   signature: string;
+  needs_details?: boolean;
 };
 
 const EMPTY_DRAFT: EmailDraft = {
@@ -29,7 +30,12 @@ export default function EmailAgentModal() {
 
   useEffect(() => {
     window.COOEmailAgent = {
-      open: next => { setDraft({ ...EMPTY_DRAFT, ...next }); setEditing(false); setError(''); setOpen(true); },
+      open: next => {
+        const merged = { ...EMPTY_DRAFT, ...next };
+        setDraft(merged);
+        setEditing(!merged.recipient || !!merged.needs_details);
+        setError(''); setOpen(true);
+      },
       close: () => setOpen(false),
     };
     return () => { delete window.COOEmailAgent; };
@@ -59,12 +65,12 @@ export default function EmailAgentModal() {
   };
 
   if (!open) return null;
-  const field = (label: string, key: keyof EmailDraft, multiline = false) => (
+  const field = (label: string, key: keyof EmailDraft, multiline = false, placeholder = '') => (
     <label className="email-agent-field">
       <span>{label}</span>
       {multiline ?
-        <textarea value={draft[key]} onChange={event => update(key, event.target.value)} rows={key === 'body' ? 7 : 2} required /> :
-        <input type={key === 'recipient' ? 'email' : 'text'} value={draft[key]} onChange={event => update(key, event.target.value)} required />}
+        <textarea value={String(draft[key] || '')} onChange={event => update(key, event.target.value)} placeholder={placeholder} rows={key === 'body' ? 7 : 2} required /> :
+        <input type={key === 'recipient' ? 'email' : 'text'} value={String(draft[key] || '')} onChange={event => update(key, event.target.value)} placeholder={placeholder} required />}
     </label>
   );
 
@@ -77,8 +83,9 @@ export default function EmailAgentModal() {
       </header>
 
       {editing ? <div className="email-agent-editor">
-        <div className="email-agent-grid">{field('Recipient', 'recipient')}{field('Subject', 'subject')}</div>
-        {field('Greeting', 'greeting')}{field('Body', 'body', true)}
+        {(!draft.recipient || draft.needs_details) && <p className="email-agent-details-note">Complete the recipient and tell the Email Agent what you want to communicate.</p>}
+        <div className="email-agent-grid">{field('Who should receive this?', 'recipient', false, 'recipient@company.com')}{field('Email subject', 'subject', false, 'Enter a clear subject')}</div>
+        {field('Greeting', 'greeting')}{field('What should the email say?', 'body', true, 'Describe the update, request, or response you want to send…')}
         <div className="email-agent-grid">{field('Closing', 'closing')}{field('Signature', 'signature', true)}</div>
       </div> : <section className="email-agent-preview">
         <div className="email-agent-meta"><span><b>To</b>{draft.recipient || 'Recipient required'}</span><span><b>Subject</b>{draft.subject}</span></div>
