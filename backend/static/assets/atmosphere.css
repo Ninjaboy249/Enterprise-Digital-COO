@@ -1,0 +1,100 @@
+:root {
+  --atmosphere-x: 50%;
+  --atmosphere-y: 24%;
+}
+
+body {
+  position: relative;
+  isolation: isolate;
+}
+
+.ambient-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  background:
+    radial-gradient(circle at var(--atmosphere-x) var(--atmosphere-y), rgb(var(--atmosphere-primary) / .09), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgb(var(--atmosphere-secondary) / .065), transparent 30%),
+    linear-gradient(125deg, transparent 22%, rgb(var(--atmosphere-accent) / .035) 50%, transparent 78%);
+}
+
+.ambient-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: .72;
+}
+
+.ambient-atmosphere__light,
+.ambient-atmosphere__beam {
+  position: absolute;
+  display: block;
+  will-change: transform, opacity;
+}
+
+.ambient-atmosphere__light {
+  width: min(62vw, 880px);
+  aspect-ratio: 1;
+  left: -16vw;
+  top: 18vh;
+  border-radius: 50%;
+  background: rgb(var(--atmosphere-primary) / .09);
+  filter: blur(90px);
+  animation: atmosphereDrift 18s ease-in-out infinite alternate;
+}
+
+.ambient-atmosphere__beam {
+  width: 24vw;
+  height: 115vh;
+  right: 7vw;
+  top: -30vh;
+  opacity: .16;
+  background: linear-gradient(180deg, transparent, rgb(var(--atmosphere-secondary) / .28), transparent 76%);
+  filter: blur(22px);
+  transform: rotate(22deg);
+  animation: atmosphereBeam 14s ease-in-out infinite alternate;
+}
+
+.atmosphere-content {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes atmosphereDrift {
+  from { transform: translate3d(-3%, -2%, 0) scale(.92); opacity: .55; }
+  to { transform: translate3d(26vw, 7vh, 0) scale(1.12); opacity: .9; }
+}
+
+@keyframes atmosphereBeam {
+  from { transform: translate3d(0, -4%, 0) rotate(20deg); opacity: .09; }
+  to { transform: translate3d(-18vw, 12%, 0) rotate(26deg); opacity: .2; }
+}
+
+[data-theme="dark"] .ambient-atmosphere,
+[data-theme="auto"] .ambient-atmosphere {
+  opacity: .92;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] .ambient-atmosphere { opacity: .65; }
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .ambient-background { opacity: .52; }
+  .ambient-atmosphere__beam { display: none; }
+  .ambient-atmosphere__light { filter: blur(70px); opacity: .55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-atmosphere__light,
+  .ambient-atmosphere__beam { animation: none; }
+  .ambient-background { display: none; }
+}
+
+@media (forced-colors: active) {
+  .ambient-atmosphere { display: none; }
+}
