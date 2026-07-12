@@ -131,8 +131,13 @@
     if (document.getElementById('story-coo-bot')) return;
     hideLegacyButton();
     const bot = createBot();
+    const path = window.location.pathname.replace(/\/+$/, '');
+    const isMainDashboard = path === '' || path === '/static' || path.endsWith('/index.html');
+    if (!isMainDashboard) bot.classList.add('is-ready');
     document.body.appendChild(bot);
-    window.setTimeout(() => bot.classList.add('is-ready'), READY_DELAY_MS);
+    if (isMainDashboard) {
+      window.setTimeout(() => bot.classList.add('is-ready'), READY_DELAY_MS);
+    }
     bot.addEventListener('click', openChat);
     watchChatPanel(bot);
   }
