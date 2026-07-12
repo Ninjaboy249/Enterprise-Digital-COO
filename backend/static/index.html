@@ -188,7 +188,20 @@
     #approval-modal.open { display:flex; }
     #approval-email-login { display:none; position:fixed; inset:0; background:var(--modal-overlay); z-index:10002; align-items:center; justify-content:center; padding:1rem; }
     #approval-email-login.open { display:flex; }
-    #approval-email-box { width:min(100%, 420px); background:var(--card); border:1px solid var(--border); border-radius:1.25rem; padding:1.25rem; box-shadow:0 24px 70px rgba(15,23,42,.32); }
+    #approval-email-form { width:min(100%, 440px); }
+    #approval-email-box {
+      width:100%; color:var(--text); border:1px solid var(--blue-border); border-radius:1.5rem; padding:1.5rem;
+      background:linear-gradient(145deg,var(--surface),var(--surface-2));
+      box-shadow:0 26px 80px rgba(15,23,42,.48),0 0 0 5px rgba(59,130,246,.1);
+    }
+    .approval-email-icon { display:grid; place-items:center; width:44px; height:44px; flex:0 0 auto; border-radius:14px; color:#fff; background:linear-gradient(135deg,#2563eb,#7c3aed); box-shadow:0 10px 24px rgba(37,99,235,.3); }
+    .approval-email-title { color:var(--text) !important; }
+    .approval-email-copy, .approval-email-label { color:var(--text-muted) !important; }
+    .approval-email-label { display:block; font-size:.75rem; line-height:1rem; font-weight:800; margin-bottom:.4rem; }
+    .approval-email-input { width:100%; min-height:46px; border:1px solid var(--input-border) !important; border-radius:.8rem; padding:.7rem .85rem; background:var(--input-bg) !important; color:var(--text) !important; caret-color:#3b82f6; }
+    .approval-email-input::placeholder { color:var(--text-faint); opacity:1; }
+    .approval-email-input:focus { outline:3px solid rgba(59,130,246,.2); border-color:#3b82f6 !important; }
+    .approval-email-hint { color:var(--text-muted); background:var(--blue-bg); border:1px solid var(--blue-border); border-radius:.75rem; padding:.65rem .75rem; }
     #import-box { background:var(--import-bg); border-radius:16px; padding:28px; width:min(480px,92vw);
                   box-shadow:var(--shadow-lg); color:var(--text); }
     #approval-box {
@@ -1330,19 +1343,23 @@
   <form id="approval-email-form" onsubmit="submitApprovalEmailLogin(event)">
     <div id="approval-email-box">
       <div class="flex justify-between items-start gap-4 mb-4">
-        <div>
-          <p class="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">Email notification</p>
-          <h2 class="text-xl font-black text-gray-800">Sign in to send approval</h2>
+        <div class="flex items-center gap-3">
+          <div class="approval-email-icon" aria-hidden="true">✉</div>
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-blue-600 mb-1">Approval notification</p>
+            <h2 class="approval-email-title text-xl font-black">Where should we send it?</h2>
+          </div>
         </div>
-        <button type="button" onclick="cancelApprovalEmailLogin()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        <button type="button" onclick="cancelApprovalEmailLogin()" aria-label="Close" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
       </div>
-      <p class="text-sm text-gray-600 mb-4">The approval email will be sent to the address below after the action is final.</p>
-      <label class="block text-xs font-bold text-gray-600 mb-1" for="approval-login-email">Username or email</label>
-      <input id="approval-login-email" type="email" autocomplete="email" required placeholder="name@company.com" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 focus:outline-none focus:border-blue-500" />
-      <label class="block text-xs font-bold text-gray-600 mb-1" for="approval-login-password">Password</label>
-      <input id="approval-login-password" type="password" autocomplete="current-password" required placeholder="Enter password" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+      <p class="approval-email-copy text-sm mb-4">Enter the recipient email. We’ll remember it on this device for future approved actions.</p>
+      <label class="approval-email-label" for="approval-login-email">Recipient email</label>
+      <input id="approval-login-email" type="email" autocomplete="email" required placeholder="name@company.com" class="approval-email-input text-sm mb-3" />
+      <label class="approval-email-label" for="approval-login-password">Demo access password</label>
+      <input id="approval-login-password" type="password" autocomplete="current-password" required placeholder="Enter admin password" class="approval-email-input text-sm" />
+      <p class="approval-email-hint text-xs mt-3">Your Gmail credentials stay securely on the server and are never entered here.</p>
       <p id="approval-login-error" class="hidden text-xs font-semibold text-red-600 mt-2"></p>
-      <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-3 text-sm font-black">Sign in and send email</button>
+      <button type="submit" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-3 text-sm font-black shadow-lg">Continue and send email</button>
     </div>
   </form>
 </div>
