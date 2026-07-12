@@ -19394,10 +19394,11 @@ function v() {
 	let [e, t] = (0, f.useState)(!1), [n, r] = (0, f.useState)(!1), [i, a] = (0, f.useState)(_), [o, s] = (0, f.useState)(!1), [c, l] = (0, f.useState)("");
 	(0, f.useEffect)(() => (window.COOEmailAgent = {
 		open: (e) => {
-			a({
+			let n = {
 				..._,
 				...e
-			}), r(!1), l(""), t(!0);
+			};
+			a(n), r(!n.recipient || !!n.needs_details), l(""), t(!0);
 		},
 		close: () => t(!1)
 	}, () => {
@@ -19424,17 +19425,19 @@ function v() {
 		}
 	};
 	if (!e) return null;
-	let p = (e, t, n = !1) => /* @__PURE__ */ (0, g.jsxs)("label", {
+	let p = (e, t, n = !1, r = "") => /* @__PURE__ */ (0, g.jsxs)("label", {
 		className: "email-agent-field",
 		children: [/* @__PURE__ */ (0, g.jsx)("span", { children: e }), n ? /* @__PURE__ */ (0, g.jsx)("textarea", {
-			value: i[t],
+			value: String(i[t] || ""),
 			onChange: (e) => u(t, e.target.value),
+			placeholder: r,
 			rows: t === "body" ? 7 : 2,
 			required: !0
 		}) : /* @__PURE__ */ (0, g.jsx)("input", {
 			type: t === "recipient" ? "email" : "text",
-			value: i[t],
+			value: String(i[t] || ""),
 			onChange: (e) => u(t, e.target.value),
+			placeholder: r,
 			required: !0
 		})]
 	});
@@ -19474,12 +19477,16 @@ function v() {
 				n ? /* @__PURE__ */ (0, g.jsxs)("div", {
 					className: "email-agent-editor",
 					children: [
+						(!i.recipient || i.needs_details) && /* @__PURE__ */ (0, g.jsx)("p", {
+							className: "email-agent-details-note",
+							children: "Complete the recipient and tell the Email Agent what you want to communicate."
+						}),
 						/* @__PURE__ */ (0, g.jsxs)("div", {
 							className: "email-agent-grid",
-							children: [p("Recipient", "recipient"), p("Subject", "subject")]
+							children: [p("Who should receive this?", "recipient", !1, "recipient@company.com"), p("Email subject", "subject", !1, "Enter a clear subject")]
 						}),
 						p("Greeting", "greeting"),
-						p("Body", "body", !0),
+						p("What should the email say?", "body", !0, "Describe the update, request, or response you want to send…"),
 						/* @__PURE__ */ (0, g.jsxs)("div", {
 							className: "email-agent-grid",
 							children: [p("Closing", "closing"), p("Signature", "signature", !0)]

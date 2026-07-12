@@ -769,8 +769,11 @@ async def _openai_answer(message: str, ctx: str, data_brief: str, req: "ChatRequ
 def _identify_business_intent(message: str, requested_context: str) -> Dict[str, str]:
     """Classify the request before selecting an enterprise agent."""
     text = message.lower()
-    email_actions = ["send email", "send an email", "draft email", "draft an email", "reply to", "reply email", "summarize email", "summarise email", "email to"]
-    if any(term in text for term in email_actions):
+    email_request = re.search(
+        r"\b(send|draft|write|compose|reply|summari[sz]e)\b.*\b(e-?mail|mail)\b|\b(e-?mail|mail)\b.*\b(to|about|regarding)\b",
+        text,
+    )
+    if email_request:
         if "reply" in text:
             email_intent = "reply_email"
         elif "summar" in text:
@@ -981,7 +984,7 @@ def _structured_coo_response(req: "ChatRequest", ctx: str, answer: str, source: 
     return response
 
 
-def _generate_email_draft(message: str, intent: str) -> Dict[str, str]:
+def _generate_email_draft(message: str, intent: str) -> Dict[str, Any]:
     """Create an editable professional draft for the React confirmation modal."""
     recipient_match = re.search(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", message)
     recipient = recipient_match.group(0) if recipient_match else ""
@@ -989,12 +992,13 @@ def _generate_email_draft(message: str, intent: str) -> Dict[str, str]:
     if recipient:
         cleaned = cleaned.replace(recipient, "").strip(" ,.-")
     cleaned = re.sub(
-        r"^(please\s+)?(send|draft|write|compose|reply to|summari[sz]e)\s+(an?\s+)?email\s*(to)?\s*",
+        r"^(please\s+)?(send|draft|write|compose|reply to|summari[sz]e)\s+(an?\s+)?(e-?mail|mail)\s*(to)?\s*",
         "",
         cleaned,
         flags=re.IGNORECASE,
     ).strip(" :,-")
-    topic = cleaned or "the requested business update"
+    needs_details = not bool(cleaned)
+    topic = cleaned or "the business update you would like to share"
     topic_sentence = topic[0].upper() + topic[1:] if topic else "Business update"
     if intent == "reply_email":
         subject = "Re: Enterprise Digital COO Update"
@@ -1013,6 +1017,7 @@ def _generate_email_draft(message: str, intent: str) -> Dict[str, str]:
         "body": body,
         "closing": "Best regards,",
         "signature": "Enterprise Digital COO\nAI Command Center",
+        "needs_details": needs_details,
     }
 
 
