@@ -1,10 +1,31 @@
 (function () {
   const READY_DELAY_MS = 5000;
   const STORY_MESSAGE = "Hi, I'm COO Bot. Share your question and I'll turn the numbers into a clear business story with the next best move.";
-  const SILENCE_TO_SEND_MS = 2500;
+  const SILENCE_TO_SEND_MS = 1400;
   let activeVoice = null;
   let pendingVoiceReply = false;
   let replyAudio = null;
+
+  function canonicalVoiceQuestion(text) {
+    const value = String(text || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (value.includes('revenue') && /(drop|dropped|happen|quarter|decline|down)/.test(value)) return 'What happened to revenue?';
+    if (value.includes('risk') && /(top|main|business|right now|current)/.test(value)) return 'What are the top risks right now?';
+    if (value.includes('executive') && value.includes('summary')) return 'Give me a full executive summary';
+    if (value.includes('cash') && /(flow|do|action|improve|about)/.test(value)) return 'What should we do about cash flow?';
+    if ((value.includes('churn') || value.includes('leav')) && /(customer|client|account|risk)/.test(value)) return 'Which customers are at churn risk?';
+    return String(text || '').trim();
+  }
+
+  function unlockReplyAudio() {
+    if (!replyAudio) { replyAudio = new Audio(); replyAudio.playsInline = true; replyAudio.preload = 'auto'; }
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+      const context = new AudioContextClass(); const oscillator = context.createOscillator(); const gain = context.createGain();
+      gain.gain.value = 0.00001; oscillator.connect(gain).connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + 0.02);
+      context.resume().catch(() => {}); oscillator.onended = () => context.close().catch(() => {});
+    } catch (_) {}
+  }
 
   function voiceSubmit(input) {
     if (input.id === 'hero-ask-input' && typeof window.heroAsk === 'function') return window.heroAsk();
@@ -19,6 +40,20 @@
     control.button.setAttribute('aria-pressed', String(state === 'listening'));
     control.button.setAttribute('aria-label', state === 'listening' ? 'Stop listening' : 'Speak your question');
     control.status.textContent = message || '';
+  }
+
+  function suppressMobileKeyboard(control) {
+    control.previousInputMode = control.input.getAttribute('inputmode');
+    control.input.setAttribute('inputmode', 'none');
+    control.input.blur();
+    if (document.activeElement === control.input) document.activeElement.blur();
+  }
+
+  function restoreMobileKeyboard(control) {
+    if (control.previousInputMode == null) control.input.removeAttribute('inputmode');
+    else control.input.setAttribute('inputmode', control.previousInputMode);
+    control.previousInputMode = null;
+    control.input.blur();
   }
 
   function stopVoice(control, shouldSubmit) {
@@ -43,25 +78,13 @@
     control.originalText = '';
   }
 
-  function resumeAfterSpeech(control) {
-    if (!control || !control.recognition) return;
-    control.pausedForSpeech = false;
-    control.keepListening = true;
-    window.setTimeout(() => {
-      try { control.recognition.start(); } catch (_) {}
-    }, 300);
-  }
+  function resumeAfterSpeech() {}
 
   async function speakOpenAIReply(text) {
     const clean = String(text || '').trim();
     if (!clean || !pendingVoiceReply) return;
     pendingVoiceReply = false;
     const control = activeVoice;
-    if (control?.recognition) {
-      clearTimeout(control.silenceTimer);
-      control.pausedForSpeech = true;
-      try { control.recognition.stop(); } catch (_) {}
-    }
     try {
       const response = await fetch('/api/v1/realtime/speech', {
         method: 'POST',
@@ -70,8 +93,8 @@
       });
       if (!response.ok) throw new Error('OpenAI speech unavailable');
       const url = URL.createObjectURL(await response.blob());
-      if (replyAudio) { replyAudio.pause(); replyAudio.src = ''; }
-      replyAudio = new Audio(url);
+      if (!replyAudio) replyAudio = new Audio();
+      replyAudio.pause(); replyAudio.src = url; replyAudio.playsInline = true; replyAudio.preload = 'auto'; replyAudio.load();
       const finish = () => { URL.revokeObjectURL(url); resumeAfterSpeech(control); };
       replyAudio.onended = finish;
       replyAudio.onerror = finish;
@@ -100,6 +123,8 @@
   function startVoice(control) {
     if (activeVoice && activeVoice !== control) stopVoice(activeVoice, false);
     if (activeVoice === control) return stopVoice(control, true);
+    suppressMobileKeyboard(control);
+    unlockReplyAudio();
     activeVoice = control;
     window.dispatchEvent(new Event('coo-compose-voice-start'));
     const launchRecording = async () => {
@@ -134,7 +159,7 @@
             const response = await fetch('/api/v1/realtime/transcribe', { method: 'POST', body: form });
             const result = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(result.detail || 'OpenAI transcription failed.');
-            const spoken = String(result.text || '').trim(); if (!spoken) throw new Error('No speech detected.');
+            const spoken = canonicalVoiceQuestion(result.text); if (!spoken) throw new Error('No speech detected.');
             control.input.value = [control.originalText, spoken].filter(Boolean).join(' ');
             control.input.dispatchEvent(new Event('input', { bubbles: true }));
             control.heardSpeech = true; pendingVoiceReply = true; voiceSubmit(control.input);
@@ -142,22 +167,25 @@
             setVoiceState(control, 'idle', '');
           } catch (reason) { setVoiceState(control, 'idle', reason.message || 'Transcription failed.'); }
           finally {
-            activeVoice = null; control.recorder = null; window.dispatchEvent(new Event('coo-compose-voice-end'));
+            restoreMobileKeyboard(control); activeVoice = null; control.recorder = null; window.dispatchEvent(new Event('coo-compose-voice-end'));
             if (!control.status.textContent) setVoiceState(control, 'idle', '');
           }
         };
+        control.noiseFloor = 0.006; control.calibrationUntil = Date.now() + 450;
         const monitorLevel = () => {
           analyser.getByteTimeDomainData(samples);
           let energy = 0; for (const sample of samples) { const value = (sample - 128) / 128; energy += value * value; }
           const rms = Math.sqrt(energy / samples.length);
-          if (rms > 0.025) { control.heardAudio = true; control.lastSoundAt = Date.now(); }
+          if (Date.now() < control.calibrationUntil && rms < 0.03) control.noiseFloor = control.noiseFloor * 0.82 + rms * 0.18;
+          const speechThreshold = Math.max(0.01, Math.min(0.024, control.noiseFloor * 2.6));
+          if (rms > speechThreshold) { control.heardAudio = true; control.lastSoundAt = Date.now(); }
           if (control.heardAudio && Date.now() - control.lastSoundAt >= SILENCE_TO_SEND_MS) return stopVoice(control, true);
           control.levelFrame = requestAnimationFrame(monitorLevel);
         };
         recorder.start(250); setVoiceState(control, 'listening', ''); monitorLevel();
         control.silenceTimer = setTimeout(() => stopVoice(control, true), 30000);
       } catch (reason) {
-        activeVoice = null;
+        restoreMobileKeyboard(control); activeVoice = null;
         window.dispatchEvent(new Event('coo-compose-voice-end'));
         setVoiceState(control, 'idle', reason?.name === 'NotAllowedError' ? 'Microphone permission was denied. Allow it and try again.' : 'Could not start microphone recording.');
       }
@@ -187,6 +215,8 @@
     status.setAttribute('aria-live', 'polite');
     wrap.append(button, status);
     const control = { input, wrap, button, status, recorder: null, stream: null, audioContext: null, silenceTimer: null, levelFrame: null };
+    button.addEventListener('pointerdown', () => input.blur());
+    button.addEventListener('touchstart', () => input.blur(), { passive: true });
     button.addEventListener('click', () => startVoice(control));
   }
 
