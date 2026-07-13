@@ -2,7 +2,6 @@
   const READY_DELAY_MS = 5000;
   const STORY_MESSAGE = "Hi, I'm COO Bot. Share your question and I'll turn the numbers into a clear business story with the next best move.";
   const SILENCE_TO_SEND_MS = 2500;
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let activeVoice = null;
   let pendingVoiceReply = false;
   let replyAudio = null;
@@ -26,11 +25,8 @@
     if (!control) return;
     clearTimeout(control.silenceTimer);
     control.shouldSubmit = shouldSubmit;
-    control.keepListening = false;
     control.manualStop = true;
-    if (control.recognition) {
-      try { control.recognition.stop(); } catch (_) {}
-    }
+    if (control.recorder?.state === 'recording') control.recorder.stop();
   }
 
   function submitVoiceTurn(control) {
@@ -102,92 +98,12 @@
   }
 
   function startVoice(control) {
-    if (!SpeechRecognition) {
-      setVoiceState(control, 'idle', 'Voice input is not supported in this browser.');
-      return;
-    }
     if (activeVoice && activeVoice !== control) stopVoice(activeVoice, false);
     if (activeVoice === control) return stopVoice(control, true);
-
-    const recognition = new SpeechRecognition();
-    control.recognition = recognition;
-    control.shouldSubmit = false;
-    control.heardSpeech = false;
-    control.keepListening = true;
-    control.manualStop = false;
-    control.finalText = '';
-    control.originalText = control.input.value.trim();
-    recognition.lang = document.documentElement.lang || navigator.language || 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      activeVoice = control;
-      setVoiceState(control, 'listening', '');
-      clearTimeout(control.silenceTimer);
-      control.silenceTimer = setTimeout(() => stopVoice(control, false), 10000);
-    };
-    recognition.onresult = event => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const words = event.results[i][0].transcript;
-        if (event.results[i].isFinal) control.finalText += words + ' ';
-        else interim += words;
-      }
-      const spoken = (control.finalText + interim).trim();
-      control.heardSpeech = Boolean(spoken);
-      control.input.value = [control.originalText, spoken].filter(Boolean).join(control.originalText && spoken ? ' ' : '');
-      control.input.dispatchEvent(new Event('input', { bubbles: true }));
-      control.input.dispatchEvent(new Event('change', { bubbles: true }));
-      control.input.focus({ preventScroll: true });
-      if (typeof control.input.setSelectionRange === 'function') {
-        const end = control.input.value.length;
-        control.input.setSelectionRange(end, end);
-      }
-      setVoiceState(control, 'listening', '');
-      clearTimeout(control.silenceTimer);
-      control.silenceTimer = setTimeout(() => submitVoiceTurn(control), SILENCE_TO_SEND_MS);
-    };
-    recognition.onerror = event => {
-      const denied = event.error === 'not-allowed' || event.error === 'service-not-allowed';
-      const fatal = denied || event.error === 'audio-capture';
-      if (fatal) control.keepListening = false;
-      const messages = {
-        'not-allowed': 'Microphone permission was blocked. Allow it in browser site settings.',
-        'service-not-allowed': 'Speech recognition is blocked by this browser.',
-        'audio-capture': 'No working microphone was found.',
-        'network': 'Speech recognition needs an internet connection in this browser.',
-        'no-speech': '',
-        'aborted': ''
-      };
-      const message = Object.prototype.hasOwnProperty.call(messages, event.error)
-        ? messages[event.error]
-        : `Speech error: ${event.error}`;
-      setVoiceState(control, fatal ? 'idle' : 'listening', message);
-    };
-    recognition.onend = () => {
-      clearTimeout(control.silenceTimer);
-      if (control.pausedForSpeech) return;
-      const submit = (control.shouldSubmit || control.heardSpeech) && control.input.value.trim();
-      if (submit) submitVoiceTurn(control);
-      if (control.keepListening && !control.manualStop) {
-        setVoiceState(control, 'listening', '');
-        window.setTimeout(() => {
-          try { recognition.start(); }
-          catch (_) { stopVoice(control, false); }
-        }, 300);
-        return;
-      }
-      activeVoice = null;
-      control.recognition = null;
-      window.dispatchEvent(new Event('coo-compose-voice-end'));
-      setVoiceState(control, 'idle', '');
-    };
+    activeVoice = control;
     window.dispatchEvent(new Event('coo-compose-voice-start'));
-    const launchRecognition = async () => {
+    const launchRecording = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
-        control.keepListening = false;
         window.dispatchEvent(new Event('coo-compose-voice-end'));
         setVoiceState(control, 'idle', 'Microphone access requires HTTPS or localhost.');
         return;
@@ -196,22 +112,57 @@
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
-        stream.getTracks().forEach(track => track.stop());
-        window.setTimeout(() => {
-          try { recognition.start(); }
-          catch (_) {
-            control.keepListening = false;
-            window.dispatchEvent(new Event('coo-compose-voice-end'));
-            setVoiceState(control, 'idle', 'Could not start speech recognition. Try Chrome or Edge.');
+        const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        const chunks = [];
+        const audioContext = new AudioContext();
+        const analyser = audioContext.createAnalyser(); analyser.fftSize = 512;
+        audioContext.createMediaStreamSource(stream).connect(analyser);
+        const samples = new Uint8Array(analyser.fftSize);
+        control.recorder = recorder; control.stream = stream; control.audioContext = audioContext;
+        control.heardAudio = false; control.lastSoundAt = Date.now(); control.originalText = control.input.value.trim();
+        control.manualStop = false; activeVoice = control;
+        recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+        recorder.onstop = async () => {
+          cancelAnimationFrame(control.levelFrame); clearTimeout(control.silenceTimer);
+          stream.getTracks().forEach(track => track.stop()); audioContext.close().catch(() => {});
+          setVoiceState(control, 'processing', 'Transcribing…');
+          try {
+            if (!chunks.length || !control.heardAudio) throw new Error('No speech detected.');
+            const extension = mimeType.includes('mp4') ? 'm4a' : 'webm';
+            const form = new FormData(); form.append('file', new Blob(chunks, { type: mimeType || 'audio/webm' }), `recording.${extension}`);
+            const response = await fetch('/api/v1/realtime/transcribe', { method: 'POST', body: form });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.detail || 'OpenAI transcription failed.');
+            const spoken = String(result.text || '').trim(); if (!spoken) throw new Error('No speech detected.');
+            control.input.value = [control.originalText, spoken].filter(Boolean).join(' ');
+            control.input.dispatchEvent(new Event('input', { bubbles: true }));
+            control.heardSpeech = true; pendingVoiceReply = true; voiceSubmit(control.input);
+            control.input.value = ''; control.input.dispatchEvent(new Event('input', { bubbles: true }));
+            setVoiceState(control, 'idle', '');
+          } catch (reason) { setVoiceState(control, 'idle', reason.message || 'Transcription failed.'); }
+          finally {
+            activeVoice = null; control.recorder = null; window.dispatchEvent(new Event('coo-compose-voice-end'));
+            if (!control.status.textContent) setVoiceState(control, 'idle', '');
           }
-        }, 500);
-      } catch (_) {
-        control.keepListening = false;
+        };
+        const monitorLevel = () => {
+          analyser.getByteTimeDomainData(samples);
+          let energy = 0; for (const sample of samples) { const value = (sample - 128) / 128; energy += value * value; }
+          const rms = Math.sqrt(energy / samples.length);
+          if (rms > 0.025) { control.heardAudio = true; control.lastSoundAt = Date.now(); }
+          if (control.heardAudio && Date.now() - control.lastSoundAt >= SILENCE_TO_SEND_MS) return stopVoice(control, true);
+          control.levelFrame = requestAnimationFrame(monitorLevel);
+        };
+        recorder.start(250); setVoiceState(control, 'listening', ''); monitorLevel();
+        control.silenceTimer = setTimeout(() => stopVoice(control, true), 30000);
+      } catch (reason) {
+        activeVoice = null;
         window.dispatchEvent(new Event('coo-compose-voice-end'));
-        setVoiceState(control, 'idle', 'Microphone permission was denied. Allow it and try again.');
+        setVoiceState(control, 'idle', reason?.name === 'NotAllowedError' ? 'Microphone permission was denied. Allow it and try again.' : 'Could not start microphone recording.');
       }
     };
-    void launchRecognition();
+    void launchRecording();
   }
 
   function enhanceVoiceInput(input) {
@@ -235,7 +186,7 @@
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     wrap.append(button, status);
-    const control = { input, wrap, button, status, recognition: null, silenceTimer: null };
+    const control = { input, wrap, button, status, recorder: null, stream: null, audioContext: null, silenceTimer: null, levelFrame: null };
     button.addEventListener('click', () => startVoice(control));
   }
 

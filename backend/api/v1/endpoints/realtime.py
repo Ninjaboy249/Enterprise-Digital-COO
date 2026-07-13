@@ -3,13 +3,42 @@
 import json
 
 import httpx
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, File, HTTPException, UploadFile
 from fastapi.responses import Response
 
 from config import settings
 
 
 router = APIRouter()
+
+
+@router.post("/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)) -> dict:
+    """Transcribe compose-box microphone audio with OpenAI instead of browser speech recognition."""
+    api_key = settings.OPENAI_API_KEY.strip()
+    if not api_key or api_key == "your-openai-api-key":
+        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured")
+    audio = await file.read()
+    if not audio:
+        raise HTTPException(status_code=400, detail="Audio is required")
+    if len(audio) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Audio recording is too large")
+    filename = file.filename or "recording.webm"
+    content_type = file.content_type or "audio/webm"
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            upstream = await client.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                data={"model": "gpt-4o-mini-transcribe", "response_format": "json"},
+                files={"file": (filename, audio, content_type)},
+            )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="Could not connect to OpenAI transcription") from exc
+    if upstream.status_code >= 400:
+        raise HTTPException(status_code=upstream.status_code, detail=upstream.text[:500])
+    payload = upstream.json()
+    return {"text": str(payload.get("text", "")).strip()}
 
 
 @router.post("/speech")
