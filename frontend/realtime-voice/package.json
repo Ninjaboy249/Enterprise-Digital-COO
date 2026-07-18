@@ -4,9 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "build:presentation": "vite build --config vite.presentation.config.ts"
   },
   "dependencies": {
+    "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "latest",
     "clsx": "^2.1.1",
     "gsap": "^3.15.0",
@@ -14,6 +16,7 @@
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.185.1",
     "typescript": "latest",
     "vite": "latest"
   },

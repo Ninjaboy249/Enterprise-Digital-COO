@@ -568,6 +568,7 @@
     }
   </style>
   <link rel="stylesheet" href="/static/assets/atmosphere.css" />
+  <link rel="stylesheet" href="/static/assets/presentation-ripple/presentation-ripple.css?v=2" />
 </head>
 <body>
   <main class="deck-shell">
@@ -608,14 +609,13 @@
             <div class="mini-kpi"><strong>AI</strong><span>COO operating layer</span></div>
           </div>
         </div>
-        <div class="stack-wrap welcome-visual">
-          <div class="glow-page back"></div>
-          <div class="glow-page middle"></div>
-          <div class="glow-page">
-            <img src="/static/assets/edcoo-logo.svg" alt="" style="width:96px;height:96px;border-radius:24px;box-shadow:0 0 30px rgba(37,99,235,.35)" />
-            <h3>Enterprise Digital COO</h3>
-            <p>Turning data into decisions with AI-powered business command.</p>
+        <div class="ripple-stage welcome-visual" data-ripple-presentation role="button" tabindex="0" aria-label="Animated Enterprise Digital COO presentation. Click to advance.">
+          <canvas aria-hidden="true"></canvas>
+          <div class="ripple-copy">
+            <p class="ripple-kicker" data-ripple-kicker>AI command centre</p>
+            <h3 class="ripple-title" data-ripple-title>Enterprise Digital COO</h3>
           </div>
+          <div class="ripple-meta"><span data-ripple-status>01 / 03</span><span>Click to advance</span></div>
         </div>
       </article>
 
@@ -952,5 +952,6 @@
     lucide.createIcons();
   </script>
 <script type="module" src="/static/assets/motion.js"></script>
+<script type="module" src="/static/assets/presentation-ripple/presentation-ripple.js?v=2"></script>
 </body>
 </html>
