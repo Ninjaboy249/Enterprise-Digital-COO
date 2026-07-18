@@ -8,8 +8,12 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
+    "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
+    "next-themes": "^0.4.6",
     "react": "latest",
     "react-dom": "latest",
+    "tailwind-merge": "^3.6.0",
     "typescript": "latest",
     "vite": "latest"
   },
